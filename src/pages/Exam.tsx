@@ -86,7 +86,7 @@ const Exam = () => {
               <button
                 key={q.id}
                 onClick={() => setCurrentQuestion(idx)}
-                className={`w-10 h-10 rounded text-sm font-medium border transition-all ${
+                className={`w-10 h-10 rounded text-xs font-medium border transition-all flex flex-col items-center justify-center ${
                   currentQuestion === idx
                     ? 'nav-btn-current'
                     : isAnswered(q.id)
@@ -94,7 +94,10 @@ const Exam = () => {
                     : 'nav-btn-unanswered'
                 }`}
               >
-                {q.id}
+                <span className="leading-none">{q.id}</span>
+                {answers[q.id] && (
+                  <span className="text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
+                )}
               </button>
             ))}
           </div>
