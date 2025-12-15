@@ -86,34 +86,57 @@ const Results = () => {
             <BookOpen className="w-5 h-5" /> Kunci Jawaban & Pembahasan
           </h3>
           <div className="space-y-4 max-h-[600px] overflow-y-auto">
-            {questions.map((q) => {
-              const userAnswer = answers[q.id];
-              const isCorrect = q.category === 'TKP' 
-                ? q.options.find(o => o.key === userAnswer)?.score === 5
-                : userAnswer === q.correctAnswer;
-              
-              return (
-                <div key={q.id} className="p-4 border rounded-lg">
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-semibold">Soal {q.id}</span>
-                    {isCorrect ? (
-                      <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
-                    )}
-                  </div>
-                  <div className="px-2 py-1.5 bg-accent/10 text-accent rounded text-xs font-medium leading-relaxed mb-2">
-                    {q.category} - {q.code}
-                  </div>
-                  <p className="text-sm mb-2">{q.text.substring(0, 150)}...</p>
-                  <p className="text-sm">
-                    <strong>Jawaban Anda:</strong> {userAnswer || '-'} | 
-                    <strong> Kunci:</strong> {q.correctAnswer || 'Skor bertingkat'}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">{q.explanation}</p>
-                </div>
-              );
-            })}
+                {questions.map((q) => {
+                  const userAnswer = answers[q.id];
+                  const userOptionScore = q.options.find(o => o.key === userAnswer)?.score;
+                  const isCorrect = q.category === 'TKP' 
+                    ? userOptionScore === 5
+                    : userAnswer === q.correctAnswer;
+                  
+                  return (
+                    <div key={q.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className="font-semibold">Soal {q.id}</span>
+                        {isCorrect ? (
+                          <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
+                        )}
+                      </div>
+                      <div className="px-2 py-1.5 bg-accent/10 text-accent rounded text-xs font-medium leading-relaxed mb-2">
+                        {q.category} - {q.code}
+                      </div>
+                      <p className="text-sm mb-2">{q.text.substring(0, 150)}...</p>
+                      <p className="text-sm">
+                        <strong>Jawaban Anda:</strong> {userAnswer || '-'} | 
+                        <strong> Kunci:</strong> {q.correctAnswer || 'Skor bertingkat'}
+                      </p>
+                      
+                      {/* Show TKP option scores */}
+                      {q.category === 'TKP' && (
+                        <div className="mt-2 p-2 bg-muted/50 rounded text-xs">
+                          <strong>Skor per opsi:</strong>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {q.options.map(opt => (
+                              <span 
+                                key={opt.key} 
+                                className={`px-2 py-0.5 rounded ${
+                                  opt.score === 5 
+                                    ? 'bg-success/20 text-success font-semibold' 
+                                    : 'bg-muted'
+                                }`}
+                              >
+                                {opt.key}={opt.score}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-muted-foreground mt-1">{q.explanation}</p>
+                    </div>
+                  );
+                })}
           </div>
         </Card>
       </main>
