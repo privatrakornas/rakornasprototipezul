@@ -235,4 +235,20 @@
   .animate-pulse-slow {
     animation: pulse 3s infinite;
   }
+
+  /* Content Protection Styles */
+  .protected-content {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .no-print {
+    @media print {
+      display: none !important;
+    }
+  }
 }
