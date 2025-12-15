@@ -137,11 +137,13 @@ const Exam = () => {
         {/* Main Question Panel */}
         <main className="flex-1 p-6 overflow-y-auto">
           <Card className="p-6 animate-fade-in">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-4">
-              <span className="px-3 py-1.5 bg-accent/20 text-accent rounded-lg text-sm font-medium leading-relaxed break-words max-w-full sm:max-w-[70%]">
+            <div className="flex flex-col gap-2 mb-4">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <span className="text-muted-foreground text-sm whitespace-nowrap">Soal {question.id} / 110</span>
+              </div>
+              <div className="px-3 py-2 bg-accent/20 text-accent rounded-lg text-sm font-medium leading-relaxed">
                 {question.category} - {question.code}
-              </span>
-              <span className="text-muted-foreground whitespace-nowrap">Soal {question.id} / 110</span>
+              </div>
             </div>
 
             <p className="text-lg leading-relaxed mb-6 whitespace-pre-line">{question.text}</p>

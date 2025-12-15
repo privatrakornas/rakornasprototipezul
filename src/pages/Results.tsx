@@ -94,16 +94,16 @@ const Results = () => {
               
               return (
                 <div key={q.id} className="p-4 border rounded-lg">
-                  <div className="flex flex-col sm:flex-row justify-between items-start gap-2 mb-2">
-                    <div className="flex-1">
-                      <span className="font-semibold block">Soal {q.id}</span>
-                      <span className="text-sm text-muted-foreground break-words">{q.category} - {q.code}</span>
-                    </div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="font-semibold">Soal {q.id}</span>
                     {isCorrect ? (
                       <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
                     ) : (
                       <XCircle className="w-5 h-5 text-destructive flex-shrink-0" />
                     )}
+                  </div>
+                  <div className="px-2 py-1.5 bg-accent/10 text-accent rounded text-xs font-medium leading-relaxed mb-2">
+                    {q.category} - {q.code}
                   </div>
                   <p className="text-sm mb-2">{q.text.substring(0, 150)}...</p>
                   <p className="text-sm">
