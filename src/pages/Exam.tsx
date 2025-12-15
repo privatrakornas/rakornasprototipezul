@@ -12,6 +12,7 @@ const Exam = () => {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
+  const userName = localStorage.getItem('userName') || 'Peserta';
 
   // Anti-cheat: detect tab switch
   useEffect(() => {
@@ -69,56 +70,71 @@ const Exam = () => {
       {/* Fixed Header */}
       <header className="metallic-maroon py-3 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center px-4">
-          <span className="text-white font-semibold">CAT SKD - RAKORNAS</span>
-          <div className={`flex items-center gap-2 text-white font-mono text-xl ${timeLeft < 300 ? 'timer-danger' : timeLeft < 600 ? 'timer-warning' : ''}`}>
-            <Clock className="w-5 h-5" />
-            {formatTime(timeLeft)}
+          {/* Left: Timer & Submit Button */}
+          <div className="flex items-center gap-4">
+            <div className={`flex items-center gap-2 text-white font-mono text-xl ${timeLeft < 300 ? 'timer-danger' : timeLeft < 600 ? 'timer-warning' : ''}`}>
+              <Clock className="w-5 h-5" />
+              {formatTime(timeLeft)}
+            </div>
+            <Button onClick={handleSubmit} variant="destructive" size="sm" className="bg-red-600 hover:bg-red-700">
+              Selesai & Submit
+            </Button>
+          </div>
+          
+          {/* Right: Title & Username */}
+          <div className="text-right">
+            <span className="text-white font-semibold block">CAT SKD - RAKORNAS</span>
+            <span className="text-white/80 text-sm">{userName}</span>
           </div>
         </div>
       </header>
 
       <div className="flex-1 flex">
-        {/* Navigation Panel */}
-        <aside className="w-64 bg-card border-r p-4 overflow-y-auto scrollbar-thin">
-          <h3 className="font-semibold mb-3 text-sm">Navigasi Soal</h3>
-          <div className="grid grid-cols-5 gap-2">
-            {questions.map((q, idx) => (
-              <button
-                key={q.id}
-                onClick={() => setCurrentQuestion(idx)}
-                className={`w-10 h-10 rounded text-xs font-medium border transition-all flex flex-col items-center justify-center ${
-                  currentQuestion === idx
-                    ? 'nav-btn-current'
-                    : isAnswered(q.id)
-                    ? 'nav-btn-answered'
-                    : 'nav-btn-unanswered'
-                }`}
-              >
-                <span className="leading-none">{q.id}</span>
-                {answers[q.id] && (
-                  <span className="text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
-                )}
-              </button>
-            ))}
+        {/* Left Sidebar - Question Navigation */}
+        <aside className="w-64 bg-card border-r flex flex-col h-[calc(100vh-56px)] sticky top-14">
+          {/* Header with Title and Legend */}
+          <div className="p-4 border-b">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-semibold text-sm">Navigasi Soal</h3>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-answered" />
+                  <span>{Object.keys(answers).length}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-unanswered border" />
+                  <span>{110 - Object.keys(answers).length}</span>
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="mt-6 space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-answered" />
-              <span>Terjawab ({Object.keys(answers).length})</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-unanswered border" />
-              <span>Belum dijawab ({110 - Object.keys(answers).length})</span>
+          {/* Scrollable Question Grid */}
+          <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+            <div className="grid grid-cols-5 gap-2">
+              {questions.map((q, idx) => (
+                <button
+                  key={q.id}
+                  onClick={() => setCurrentQuestion(idx)}
+                  className={`w-10 h-10 rounded text-xs font-medium border transition-all flex flex-col items-center justify-center ${
+                    currentQuestion === idx
+                      ? 'nav-btn-current'
+                      : isAnswered(q.id)
+                      ? 'nav-btn-answered'
+                      : 'nav-btn-unanswered'
+                  }`}
+                >
+                  <span className="leading-none">{q.id}</span>
+                  {answers[q.id] && (
+                    <span className="text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
+                  )}
+                </button>
+              ))}
             </div>
           </div>
-
-          <Button onClick={handleSubmit} className="w-full mt-6" variant="destructive">
-            Selesai & Submit
-          </Button>
         </aside>
 
-        {/* Question Panel */}
+        {/* Main Question Panel */}
         <main className="flex-1 p-6 overflow-y-auto">
           <Card className="p-6 animate-fade-in">
             <div className="flex justify-between items-start mb-4">
