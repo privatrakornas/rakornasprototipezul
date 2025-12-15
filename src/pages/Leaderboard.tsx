@@ -64,24 +64,34 @@ const Leaderboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((entry, idx) => (
-                  <TableRow key={idx} className={idx < 3 ? 'bg-secondary/50' : ''}>
-                    <TableCell className="flex items-center justify-center">
-                      {getRankIcon(idx + 1)}
-                    </TableCell>
-                    <TableCell className="font-medium">{entry.name}</TableCell>
-                    <TableCell className="text-center">{entry.twk}</TableCell>
-                    <TableCell className="text-center">{entry.tiu}</TableCell>
-                    <TableCell className="text-center">{entry.tkp}</TableCell>
-                    <TableCell className="text-center font-bold">{entry.total}</TableCell>
-                  </TableRow>
-                ))}
+                {data.map((entry, idx) => {
+                  const rank = idx + 1;
+                  let rowClass = '';
+                  if (rank <= 3) {
+                    rowClass = 'bg-yellow-100/70 dark:bg-yellow-900/30';
+                  } else if (rank <= 10) {
+                    rowClass = 'bg-slate-100/70 dark:bg-slate-800/30';
+                  }
+                  return (
+                    <TableRow key={idx} className={rowClass}>
+                      <TableCell className="flex items-center justify-center">
+                        {getRankIcon(rank)}
+                      </TableCell>
+                      <TableCell className="font-medium">{entry.name}</TableCell>
+                      <TableCell className="text-center">{entry.twk}</TableCell>
+                      <TableCell className="text-center">{entry.tiu}</TableCell>
+                      <TableCell className="text-center">{entry.tkp}</TableCell>
+                      <TableCell className="text-center font-bold">{entry.total}</TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
 
-          <div className="mt-6 text-center">
+          <div className="mt-6 flex justify-center gap-3">
             <Button onClick={() => navigate('/')}>Kembali ke Beranda</Button>
+            <Button variant="outline" onClick={() => navigate('/results')}>Kembali ke Hasil Ujian</Button>
           </div>
         </Card>
       </main>
