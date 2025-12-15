@@ -91,7 +91,12 @@ const Leaderboard = () => {
 
           <div className="mt-6 flex justify-center gap-3">
             <Button onClick={() => navigate('/')}>Kembali ke Beranda</Button>
-            <Button variant="outline" onClick={() => navigate('/results')}>Kembali ke Hasil Ujian</Button>
+            <Button 
+              onClick={() => navigate('/results')} 
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              Kembali ke Hasil Ujian
+            </Button>
           </div>
         </Card>
       </main>
