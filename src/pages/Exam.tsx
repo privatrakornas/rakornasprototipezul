@@ -1,12 +1,69 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { questions } from '@/data/questions';
 import { Clock, ChevronLeft, ChevronRight, Grid3X3 } from 'lucide-react';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
+
+// Memoized Question Navigation Grid - prevents re-renders from timer
+interface QuestionNavGridProps {
+  answers: Record<number, string>;
+  currentQuestion: number;
+  onNavClick: (idx: number) => void;
+}
+
+const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: QuestionNavGridProps) => {
+  const isAnswered = (id: number) => answers[id] !== undefined;
+
+  return (
+    <>
+      <div className="p-3 md:p-4 border-b">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="font-semibold text-xs md:text-sm">Navigasi Soal</h3>
+          <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-xs">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--answered))]" />
+              <span>{Object.keys(answers).length}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--unanswered))] border" />
+              <span>{110 - Object.keys(answers).length}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 scrollbar-thin">
+        <div className="grid grid-cols-5 gap-1.5 md:gap-2">
+          {questions.map((q, idx) => (
+            <button
+              key={q.id}
+              onClick={() => onNavClick(idx)}
+              className={`w-8 h-8 md:w-10 md:h-10 rounded text-[10px] md:text-xs font-medium border transition-all flex flex-col items-center justify-center ${
+                currentQuestion === idx
+                  ? 'nav-btn-current'
+                  : isAnswered(q.id)
+                  ? 'nav-btn-answered'
+                  : 'nav-btn-unanswered'
+              }`}
+            >
+              <span className="leading-none">{q.id}</span>
+              {answers[q.id] && (
+                <span className="text-[8px] md:text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+});
+
+QuestionNavGrid.displayName = 'QuestionNavGrid';
 
 const Exam = () => {
   const navigate = useNavigate();
@@ -64,57 +121,12 @@ const Exam = () => {
     navigate('/results');
   }, [answers, navigate, timeLeft]);
 
-  const question = questions[currentQuestion];
-  const isAnswered = (id: number) => answers[id] !== undefined;
-
-  const handleNavClick = (idx: number) => {
+  const handleNavClick = useCallback((idx: number) => {
     setCurrentQuestion(idx);
     setNavOpen(false);
-  };
+  }, []);
 
-  // Question Navigation Grid Component
-  const QuestionNavGrid = () => (
-    <>
-      <div className="p-3 md:p-4 border-b">
-        <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-xs md:text-sm">Navigasi Soal</h3>
-          <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-xs">
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--answered))]" />
-              <span>{Object.keys(answers).length}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--unanswered))] border" />
-              <span>{110 - Object.keys(answers).length}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex-1 overflow-y-auto p-3 md:p-4 scrollbar-thin">
-        <div className="grid grid-cols-5 gap-1.5 md:gap-2">
-          {questions.map((q, idx) => (
-            <button
-              key={q.id}
-              onClick={() => handleNavClick(idx)}
-              className={`w-8 h-8 md:w-10 md:h-10 rounded text-[10px] md:text-xs font-medium border transition-all flex flex-col items-center justify-center ${
-                currentQuestion === idx
-                  ? 'nav-btn-current'
-                  : isAnswered(q.id)
-                  ? 'nav-btn-answered'
-                  : 'nav-btn-unanswered'
-              }`}
-            >
-              <span className="leading-none">{q.id}</span>
-              {answers[q.id] && (
-                <span className="text-[8px] md:text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
-              )}
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
-  );
+  const question = questions[currentQuestion];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -203,7 +215,11 @@ const Exam = () => {
 
         {/* Desktop: Right Sidebar - Question Navigation */}
         <aside className="hidden lg:flex w-64 bg-card border-l flex-col h-[calc(100vh-56px)] sticky top-14">
-          <QuestionNavGrid />
+          <QuestionNavGrid 
+            answers={answers} 
+            currentQuestion={currentQuestion} 
+            onNavClick={handleNavClick} 
+          />
         </aside>
 
         {/* Mobile: Floating Navigation Button */}
@@ -218,7 +234,14 @@ const Exam = () => {
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-72 p-0 flex flex-col">
-              <QuestionNavGrid />
+              <VisuallyHidden>
+                <SheetTitle>Navigasi Soal</SheetTitle>
+              </VisuallyHidden>
+              <QuestionNavGrid 
+                answers={answers} 
+                currentQuestion={currentQuestion} 
+                onNavClick={handleNavClick} 
+              />
             </SheetContent>
           </Sheet>
         </div>
