@@ -1009,7 +1009,7 @@ export const questions: Question[] = [
   {
     id: 66,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Andi adalah seorang staf kecamatan di sebuah desa terpencil yang baru saja diberi tanggung jawab untuk mengelola program pembangunan desa. Beberapa tugas baru tersebut terasa asing bagi Andi, sehingga pekerjaannya menjadi kurang efisien. Menghadapi situasi tersebut, Andi meresponsnya dengan...',
     options: [
       { key: 'A', text: 'Meminta dipindahkan ke bagian yang lebih mudah karena merasa tidak mampu', score: 1 },
@@ -1023,7 +1023,7 @@ export const questions: Question[] = [
   {
     id: 67,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Anda adalah pegawai kantor yang mengelola data statistik. Anda menemukan anomali pada entri data terbaru dibandingkan tren sebelumnya. Dalam situasi tersebut, Anda akan…',
     options: [
       { key: 'A', text: 'Mengabaikan anomali karena tidak signifikan', score: 1 },
@@ -1037,7 +1037,7 @@ export const questions: Question[] = [
   {
     id: 68,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Di bagian humas, sebagai karyawan, Anda bertugas menulis tiga berita dalam waktu yang terbatas. Suatu ketika, tugas menulis berita harus diselesaikan bersamaan dengan jam kerja utama. Maka, seharusnya Anda...',
     options: [
       { key: 'A', text: 'Merencanakan tema berita dan mengumpulkan bahan dengan mengatur waktu secara efektif sesuai pedoman instansi', score: 5 },
@@ -1051,7 +1051,7 @@ export const questions: Question[] = [
   {
     id: 69,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Seorang pasien kritis mau pulang paksa. Keluarganya menolak bertanggung jawab jika terjadi risiko di luar rumah sakit. Jika bertugas menangani hal tersebut, saya akan…',
     options: [
       { key: 'A', text: 'Membujuk keluarga dengan janji pelayanan khusus di rumah', score: 4 },
@@ -1065,7 +1065,7 @@ export const questions: Question[] = [
   {
     id: 70,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Di lingkungan pedesaan, sebagai ketua RT, Anda bertanggung jawab menjaga keamanan dan kerukunan warga. Suatu ketika, terjadi perselisihan kecil antara warga yang mulai memanas. Maka, seharusnya Anda...',
     options: [
       { key: 'A', text: 'Mengabaikan perselisihan agar tidak mengganggu aktivitas pribadi', score: 1 },
@@ -1079,7 +1079,7 @@ export const questions: Question[] = [
   {
     id: 71,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Bekerja sebagai staf administrasi di kantor, Anda diberikan tugas untuk menyelesaikan laporan dalam waktu yang singkat. Atasan Anda menekankan pentingnya ketepatan waktu dan akurasi dalam laporan. Maka, Anda seharusnya…',
     options: [
       { key: 'A', text: 'Bekerja keras untuk memenuhi deadline dengan memastikan akurasi data', score: 5 },
@@ -1093,7 +1093,7 @@ export const questions: Question[] = [
   {
     id: 72,
     category: 'TKP',
-    code: 'Profesionalisme',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Anda adalah seorang pegawai yang baru saja dipromosikan menjadi supervisor. Tim Anda terdiri dari rekan-rekan yang sebelumnya setara dengan Anda. Beberapa dari mereka tampak tidak nyaman dengan perubahan ini. Sikap Anda adalah...',
     options: [
       { key: 'A', text: 'Mengabaikan ketidaknyamanan mereka dan fokus pada tugas', score: 2 },
@@ -1107,7 +1107,7 @@ export const questions: Question[] = [
   {
     id: 73,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Profesionalisme (Akuntabel, Loyal dan Kompeten)',
     text: 'Sebagai petugas pelayanan publik, Anda menerima keluhan dari warga yang merasa proses pengurusan dokumen terlalu lama. Warga tersebut tampak sangat frustrasi. Respons Anda adalah...',
     options: [
       { key: 'A', text: 'Menjelaskan bahwa prosedur memang membutuhkan waktu dan meminta pengertian', score: 3 },
@@ -1121,7 +1121,7 @@ export const questions: Question[] = [
   {
     id: 74,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Anda bekerja di bagian pelayanan kesehatan. Seorang pasien lansia kesulitan memahami prosedur administrasi yang rumit. Tindakan Anda adalah...',
     options: [
       { key: 'A', text: 'Memberikan formulir dan meminta pasien mengisi sendiri', score: 1 },
@@ -1135,7 +1135,7 @@ export const questions: Question[] = [
   {
     id: 75,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Sebagai petugas di kantor kecamatan, Anda diminta membantu warga yang ingin mengurus surat keterangan tidak mampu. Warga tersebut tidak membawa dokumen lengkap. Sikap Anda adalah...',
     options: [
       { key: 'A', text: 'Menolak melayani dan meminta warga melengkapi dokumen terlebih dahulu', score: 2 },
@@ -1149,7 +1149,7 @@ export const questions: Question[] = [
   {
     id: 76,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Anda adalah petugas pendaftaran di rumah sakit pemerintah. Seorang pasien lansia datang sendiri untuk berobat namun kartu BPJS Kesehatannya tertinggal di rumah dan ia tidak membawa identitas lainnya. Pasien tersebut tampak pucat dan mengeluhkan sakit dada yang cukup parah. Sebagai petugas pendaftaran, tindakan yang paling tepat Anda lakukan adalah...',
     options: [
       { key: 'A', text: 'Memberikan formulir pernyataan bahwa pasien adalah peserta BPJS untuk ditandatangani sebagai syarat pendaftaran', score: 2 },
@@ -1205,7 +1205,7 @@ export const questions: Question[] = [
   {
     id: 80,
     category: 'TKP',
-    code: 'Jejaring Kerja',
+    code: 'Jejaring Kerja (Kolaboratif dan Harmonis)',
     text: 'Di sekolah, Anda adalah guru yang bertugas membuat rencana pembelajaran. Namun, rekan guru yang bertugas mengumpulkan materi pendukung sedang cuti sehingga materi belum lengkap. Maka sikap Anda...',
     options: [
       { key: 'A', text: 'Segera mengambil alih tugas rekan guru tersebut dalam mengumpulkan materi pendukung', score: 4 },
@@ -1359,7 +1359,7 @@ export const questions: Question[] = [
   {
     id: 91,
     category: 'TKP',
-    code: 'Sosio Kultural',
+    code: 'Sosio Kultural (Harmonis)',
     text: 'Anda adalah guru di sekolah yang memiliki siswa dari berbagai latar belakang suku dan agama. Suatu hari, terjadi pertengkaran antar siswa yang dipicu oleh perbedaan kebiasaan budaya. Tindakan Anda adalah...',
     options: [
       { key: 'A', text: 'Memberikan hukuman kepada siswa yang memulai pertengkaran', score: 2 },
@@ -1541,7 +1541,7 @@ export const questions: Question[] = [
   {
     id: 104,
     category: 'TKP',
-    code: 'Anti Radikalisme',
+    code: 'Anti Radikalisme (Loyal dan Harmonis)',
     text: 'Sebagai ketua RT, dua kelompok warga berselisih tentang pembangunan gereja di rapat. Untuk mempromosikan dialog positif, tindakan yang seharusnya Anda lakukan adalah...',
     options: [
       { key: 'A', text: 'Mengadakan rapat terpisah untuk mendengar keluhan warga', score: 4 },
