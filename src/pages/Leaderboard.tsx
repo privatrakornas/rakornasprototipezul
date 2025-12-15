@@ -47,7 +47,13 @@ const Leaderboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto py-8 px-4">
+      {/* Centered Title Section */}
+      <div className="text-center py-8">
+        <h2 className="text-4xl font-extrabold uppercase tracking-wide text-foreground">RAKORNAS</h2>
+        <p className="text-xl capitalize text-muted-foreground mt-2">Rangking Topskor Nasional</p>
+      </div>
+
+      <main className="container mx-auto pb-8 px-4">
         <Card className="max-w-4xl mx-auto p-6">
           {data.length === 0 ? (
             <p className="text-center text-muted-foreground py-8">Belum ada data peserta</p>
