@@ -1163,7 +1163,7 @@ export const questions: Question[] = [
   {
     id: 77,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Reza adalah petugas di kantor Dinas Pendidikan yang melayani pendaftaran beasiswa untuk siswa tidak mampu. Kuota beasiswa sangat terbatas sementara jumlah pendaftar melebihi kapasitas yang tersedia. Tindakan Reza yang menunjukkan profesionalisme dalam pelayanan adalah...',
     options: [
       { key: 'A', text: 'Memberikan prioritas kepada pendaftar yang dikenalnya untuk memastikan kuota terisi', score: 1 },
@@ -1177,7 +1177,7 @@ export const questions: Question[] = [
   {
     id: 78,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Petugas apotek rumah sakit menerima resep obat untuk pasien gawat darurat, namun stok obat tersebut sedang kosong. Jika obat tidak segera diberikan, kondisi pasien dapat memburuk dan membahayakan jiwanya. Sikap Anda sebagai petugas apotek tersebut adalah...',
     options: [
       { key: 'A', text: 'Menghubungi dokter untuk alternatif obat dan mengecek ketersediaan di apotek sekitar', score: 5 },
@@ -1191,7 +1191,7 @@ export const questions: Question[] = [
   {
     id: 79,
     category: 'TKP',
-    code: 'Pelayanan Publik',
+    code: 'Pelayanan Publik (Berorientasi Pelayanan dan Adaptif)',
     text: 'Sebagai perangkat desa, Anda menemukan tren peningkatan migrasi pemuda ke kota menyebabkan kekurangan tenaga posyandu. Posyandu mulai kesulitan melayani lansia dan balita akibat kurang relawan. Jika Anda sebagai perangkat desa, tindakan yang diambil adalah...',
     options: [
       { key: 'A', text: 'Menggunakan aplikasi grup WhatsApp untuk koordinasi warga', score: 1 },
@@ -1233,7 +1233,7 @@ export const questions: Question[] = [
   {
     id: 82,
     category: 'TKP',
-    code: 'Jejaring Kerja',
+    code: 'Jejaring Kerja (Kolaboratif dan Harmonis)',
     text: 'Kepala Kejaksaan Negeri Kota Makmur menghadapi dilema. Jumlah kasus korupsi meningkat signifikan, sementara jaksa-jaksa senior yang berpengalaman menangani kasus korupsi baru saja dipindahtugaskan ke provinsi lain. Tim yang tersisa didominasi jaksa muda dengan pengalaman terbatas dan jaksa menengah yang belum pernah menangani kasus korupsi kompleks. Dengan keterbatasan sumber daya dan tekanan publik yang tinggi, Anda akan meresponsnya dengan...',
     options: [
       { key: 'A', text: 'Meminta bantuan jaksa khusus dari Kejaksaan Agung untuk menangani semua kasus korupsi kompleks', score: 4 },
