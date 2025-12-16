@@ -52,16 +52,16 @@ export const questions: Question[] = [
     id: 3,
     category: 'TWK',
     code: 'Pilar Negara',
-    text: 'Pasal 28I ayat 1 UUD NRI tahun 1945 menyatakan bahwa "hak untuk hidup, hak untuk tidak disiksa, hak kemerdekaan pikiran dan hati nurani, hak beragama, hak untuk tidak diperbudak, hak untuk diakui sebagai pribadi di hadapan hukum, dan hak untuk tidak dituntut atas dasar hukum yang berlaku surut adalah hak asasi manusia yang tidak dapat dikurangi dalam keadaan apa pun." Pentingnya pasal ini dalam melindungi hak asasi manusia adalah...',
+    text: 'Pasal 28I ayat 1 UUD NRI tahun 1945 menyatakan bahwa "Hak untuk hidup, hak untuk tidak disiksa, hak kemerdekaan pikiran dan hati nurani, hak beragama, hak untuk tidak diperbudak, hak untuk diakui sebagai pribadi di hadapan hukum, dan hak untuk tidak dituntut atas dasar hukum yang berlaku surut adalah hak asasi manusia yang tidak dapat dikurangi dalam keadaan apa pun." Pentingnya pasal ini dalam melindungi hak asasi manusia adalah...',
     options: [
-      { key: 'A', text: 'Menjamin bahwa hak-hak dasar manusia tidak dapat diabaikan oleh pemerintah dalam keadaan darurat sekalipun' },
-      { key: 'B', text: 'Mendorong perlindungan hak-hak minoritas yang sering kali diabaikan oleh sistem hukum' },
-      { key: 'C', text: 'Mengatur sanksi yang tegas bagi pelanggar hak asasi manusia di semua tingkat pemerintahan' },
-      { key: 'D', text: 'Menegaskan pentingnya edukasi tentang hak asasi manusia di seluruh jenjang pendidikan' },
-      { key: 'E', text: 'Menyediakan mekanisme kompensasi bagi korban pelanggaran hak asasi manusia' },
+      { key: 'A', text: 'Menjamin bahwa hak-hak dasar manusia tidak dapat diabaikan oleh pemerintah dalam keadaan darurat sekalipun.' },
+      { key: 'B', text: 'Mendorong perlindungan hak-hak minoritas yang sering kali diabaikan oleh sistem hukum.' },
+      { key: 'C', text: 'Mengatur sanksi yang tegas bagi pelanggar hak asasi manusia di semua tingkat pemerintahan.' },
+      { key: 'D', text: 'Menegaskan pentingnya edukasi tentang hak asasi manusia di seluruh jenjang pendidikan.' },
+      { key: 'E', text: 'Menyediakan mekanisme kompensasi bagi korban pelanggaran hak asasi manusia.' },
     ],
     correctAnswer: 'A',
-    explanation: 'Pasal ini menegaskan bahwa hak-hak dasar manusia tidak boleh dikurangi dalam keadaan apa pun.',
+    explanation: 'Pasal ini menegaskan bahwa hak-hak dasar manusia yang disebutkan tidak boleh dikurangi dalam keadaan apa pun, termasuk dalam keadaan darurat, sebagai bentuk perlindungan maksimal terhadap martabat dan hak asasi manusia.',
   },
   {
     id: 4,
@@ -69,14 +69,14 @@ export const questions: Question[] = [
     code: 'Pilar Negara',
     text: 'Pasal 27 ayat 2 UUD NRI tahun 1945 menyatakan bahwa "Tiap-tiap warga negara berhak atas pekerjaan dan penghidupan yang layak bagi kemanusiaan." Dalam konteks kebijakan ketenagakerjaan, arti penting dari pasal ini adalah...',
     options: [
-      { key: 'A', text: 'Mengatur kewajiban perusahaan untuk menyediakan jaminan sosial bagi semua karyawan' },
-      { key: 'B', text: 'Mendorong penciptaan lapangan kerja yang sesuai dengan perkembangan teknologi' },
-      { key: 'C', text: 'Menegaskan hak setiap warga negara untuk memperoleh pekerjaan yang layak dan sesuai dengan keahliannya' },
-      { key: 'D', text: 'Menjamin adanya upah minimum yang dapat memenuhi kebutuhan dasar pekerja' },
-      { key: 'E', text: 'Menyediakan program pelatihan kerja bagi angkatan kerja muda yang baru lulus' },
+      { key: 'A', text: 'Mengatur kewajiban perusahaan untuk menyediakan jaminan sosial bagi semua karyawan.' },
+      { key: 'B', text: 'Mendorong penciptaan lapangan kerja yang sesuai dengan perkembangan teknologi.' },
+      { key: 'C', text: 'Menegaskan hak setiap warga negara untuk memperoleh pekerjaan yang layak dan sesuai dengan keahliannya.' },
+      { key: 'D', text: 'Menjamin adanya upah minimum yang dapat memenuhi kebutuhan dasar pekerja.' },
+      { key: 'E', text: 'Menyediakan program pelatihan kerja bagi angkatan kerja muda yang baru lulus.' },
     ],
     correctAnswer: 'C',
-    explanation: 'Pasal ini menekankan bahwa setiap warga negara berhak atas pekerjaan yang layak.',
+    explanation: 'Pasal ini menekankan bahwa setiap warga negara berhak atas pekerjaan yang layak, yang dapat memberikan penghidupan yang layak bagi kemanusiaan, serta sesuai dengan keahliannya, sebagai upaya untuk mengurangi pengangguran dan meningkatkan kesejahteraan masyarakat.',
   },
   {
     id: 5,
@@ -114,29 +114,29 @@ export const questions: Question[] = [
     code: 'Pilar Negara',
     text: 'Dalam sistem pemerintahan Indonesia, Badan Pemeriksa Keuangan (BPK) memiliki wewenang untuk memeriksa pengelolaan dan tanggung jawab keuangan negara. Hasil pemeriksaan tersebut kemudian diserahkan kepada DPR, DPD, dan DPRD. Hal ini menunjukkan bahwa...',
     options: [
-      { key: 'A', text: 'BPK merupakan lembaga yang berada di bawah DPR' },
-      { key: 'B', text: 'Pengelolaan keuangan negara bersifat tertutup' },
-      { key: 'C', text: 'Ada mekanisme check and balance dalam pengelolaan keuangan negara' },
-      { key: 'D', text: 'DPR memiliki kewenangan untuk mengaudit keuangan negara' },
-      { key: 'E', text: 'Pemerintah tidak bertanggung jawab atas pengelolaan keuangan negara' },
+      { key: 'A', text: 'BPK merupakan lembaga yang berada di bawah DPR.' },
+      { key: 'B', text: 'Pengelolaan keuangan negara bersifat tertutup.' },
+      { key: 'C', text: 'Ada mekanisme check and balance dalam pengelolaan keuangan negara.' },
+      { key: 'D', text: 'DPR memiliki kewenangan untuk mengaudit keuangan negara.' },
+      { key: 'E', text: 'Pemerintah tidak bertanggung jawab atas pengelolaan keuangan negara.' },
     ],
     correctAnswer: 'C',
-    explanation: 'Wewenang BPK menunjukkan adanya mekanisme check and balance dalam pengelolaan keuangan negara.',
+    explanation: 'Wewenang BPK untuk memeriksa pengelolaan keuangan negara dan menyerahkan hasilnya kepada lembaga perwakilan rakyat menunjukkan adanya mekanisme check and balance dalam pengelolaan keuangan negara. Ini mencerminkan upaya untuk menjamin transparansi dan akuntabilitas dalam penggunaan dana publik.',
   },
   {
     id: 8,
     category: 'TWK',
     code: 'Pilar Negara',
-    text: 'Perhatikan wacana berikut! Indonesia sering kali menjadi tuan rumah pertemuan ASEAN untuk membahas isu-isu strategis, termasuk keamanan dan ekonomi. Dalam hal ini, Indonesia berusaha untuk menciptakan konsensus di antara negara-negara anggota. Seringnya pertemuan ASEAN diselenggarakan di Indonesia untuk...',
+    text: 'Perhatikan wacana berikut!\nIndonesia sering kali menjadi tuan rumah pertemuan ASEAN untuk membahas isu-isu strategis, termasuk keamanan dan ekonomi. Dalam hal ini, Indonesia berusaha untuk menciptakan konsensus di antara negara-negara anggota. Seringnya pertemuan ASEAN diselenggarakan di Indonesia untuk...',
     options: [
-      { key: 'A', text: 'Meningkatkan pengaruh politik di kawasan' },
-      { key: 'B', text: 'Menciptakan konsensus untuk stabilitas regional' },
-      { key: 'C', text: 'Mengurangi ketergantungan pada negara besar' },
-      { key: 'D', text: 'Memperkuat posisi militer Indonesia di ASEAN' },
-      { key: 'E', text: 'Menghindari konflik dengan negara-negara tetangga' },
+      { key: 'A', text: 'Meningkatkan pengaruh politik di kawasan.' },
+      { key: 'B', text: 'Menciptakan konsensus untuk stabilitas regional.' },
+      { key: 'C', text: 'Mengurangi ketergantungan pada negara besar.' },
+      { key: 'D', text: 'Memperkuat posisi militer Indonesia di ASEAN.' },
+      { key: 'E', text: 'Menghindari konflik dengan negara-negara tetangga.' },
     ],
     correctAnswer: 'B',
-    explanation: 'Pertemuan ASEAN bertujuan untuk mencapai kesepakatan bersama dalam menangani berbagai isu regional.',
+    explanation: 'Pertemuan ASEAN merupakan forum penting untuk membahas berbagai isu strategis kawasan dimana setiap negara anggota dapat menyampaikan pandangan dan mencari solusi bersama. Forum ini bertujuan untuk menciptakan stabilitas dan kesejahteraan regional melalui konsensus antar negara anggota.\nIndonesia sebagai salah satu negara pendiri ASEAN sering menjadi tuan rumah pertemuan-pertemuan penting untuk membahas isu-isu strategis seperti keamanan dan ekonomi. Peran Indonesia dalam memfasilitasi dialog dan mencari konsensus sangat penting untuk menjaga stabilitas kawasan.\nJawaban B benar - Hal ini sesuai dengan tujuan utama diadakannya pertemuan ASEAN yaitu untuk mencapai kesepakatan bersama dalam menangani berbagai isu regional. Konsensus yang dicapai melalui dialog akan menciptakan stabilitas kawasan yang berkelanjutan.',
   },
   {
     id: 9,
@@ -219,14 +219,14 @@ export const questions: Question[] = [
     code: 'Bela Negara',
     text: "Pada masa penjajahan Jepang, K.H. Hasyim Asy'ari menolak melakukan saikeirei (membungkuk ke arah Tokyo) dan tetap mempertahankan ajaran Islam. Ia rela dipenjara demi keyakinannya. Tindakan K.H. Hasyim Asy'ari ini mencerminkan bela negara karena...",
     options: [
-      { key: 'A', text: 'Menolak perintah yang bertentangan agama saat melawan penjajah Jepang' },
-      { key: 'B', text: 'Mempertahankan identitas keislaman bangsa Indonesia melawan penjajah Jepang' },
-      { key: 'C', text: 'Rela dipenjara demi mempertahankan prinsip agama melawan penjajah Jepang' },
-      { key: 'D', text: 'Menjadi teladan melawan penjajah Jepang' },
-      { key: 'E', text: 'Memperjuangkan kebebasan beragama di Indonesia melawan penjajah Jepang' },
+      { key: 'A', text: 'Menolak perintah yang bertentangan agama saat melawan penjajah Jepang.' },
+      { key: 'B', text: 'Mempertahankan identitas keislaman bangsa Indonesia melawan penjajah Jepang.' },
+      { key: 'C', text: 'Rela dipenjara demi mempertahankan prinsip agama melawan penjajah Jepang.' },
+      { key: 'D', text: 'Menjadi teladan melawan penjajah Jepang.' },
+      { key: 'E', text: 'Memperjuangkan kebebasan beragama di Indonesia melawan penjajah Jepang.' },
     ],
     correctAnswer: 'B',
-    explanation: "Tindakan K.H. Hasyim Asy'ari mencerminkan bela negara karena mempertahankan identitas keislaman bangsa.",
+    explanation: "Tindakan K.H. Hasyim Asy'ari mencerminkan bela negara karena ia mempertahankan identitas keislaman bangsa Indonesia melawan penjajah Jepang. Pilihan B paling tepat menggambarkan kontribusi K.H. Hasyim Asy'ari dalam mempertahankan identitas bangsa yang tidak terpisahkan dari nilai-nilai ketuhanan yang diamanatkan di dalam sila pertama.",
   },
   {
     id: 15,
@@ -234,14 +234,14 @@ export const questions: Question[] = [
     code: 'Bela Negara',
     text: 'Seorang pengajar di sekolah dasar mengadakan kelas tambahan secara sukarela untuk membantu murid-murid yang kesulitan memahami pelajaran. Ia juga mengajak para orang tua untuk lebih terlibat dalam pendidikan anak-anak mereka. Tindakan pengajar ini mencerminkan bela negara karena...',
     options: [
-      { key: 'A', text: 'Mengadakan kelas tambahan secara sukarela' },
-      { key: 'B', text: 'Membantu murid-murid memahami pelajaran dengan lebih baik' },
-      { key: 'C', text: 'Mengajak orang tua lebih terlibat dalam pendidikan anak-anak' },
-      { key: 'D', text: 'Mengabdikan diri untuk pendidikan generasi muda' },
-      { key: 'E', text: 'Meningkatkan kualitas pendidikan melalui keterlibatan semua pihak' },
+      { key: 'A', text: 'Mengadakan kelas tambahan secara sukarela.' },
+      { key: 'B', text: 'Membantu murid-murid memahami pelajaran dengan lebih baik.' },
+      { key: 'C', text: 'Mengajak orang tua lebih terlibat dalam pendidikan anak-anak.' },
+      { key: 'D', text: 'Mengabdikan diri untuk pendidikan generasi muda.' },
+      { key: 'E', text: 'Meningkatkan kualitas pendidikan melalui keterlibatan semua pihak.' },
     ],
     correctAnswer: 'E',
-    explanation: 'Meningkatkan kualitas pendidikan melalui keterlibatan semua pihak mencerminkan bela negara.',
+    explanation: 'Tindakan pengajar yang mengadakan kelas tambahan dan mengajak orang tua untuk lebih terlibat dalam pendidikan anak-anak mencerminkan bela negara karena berfokus pada peningkatan kualitas pendidikan melalui keterlibatan semua pihak. Dengan memberikan bantuan tambahan kepada murid-murid yang kesulitan dan mendorong keterlibatan orang tua, pengajar ini membantu menciptakan lingkungan belajar yang lebih baik dan suportif. Langkah ini penting untuk memastikan bahwa semua murid mendapatkan pendidikan yang optimal. Tindakan ini sejalan dengan nilai-nilai Pancasila, terutama sila kelima, Keadilan Sosial bagi Seluruh Rakyat Indonesia, karena mengedepankan keadilan dan kesejahteraan dalam pendidikan.',
   },
   {
     id: 16,
@@ -264,14 +264,14 @@ export const questions: Question[] = [
     code: 'Bela Negara',
     text: 'Seorang veteran perang mendirikan sebuah yayasan yang membantu para mantan pejuang yang mengalami kesulitan finansial. Yayasan ini memberikan bantuan berupa pelatihan keterampilan, modal usaha, dan bantuan kesehatan. Veteran ini berharap langkahnya dapat membantu meningkatkan kesejahteraan dan kualitas hidup para mantan pejuang. Tindakan veteran ini mencerminkan upaya bela negara karena...',
     options: [
-      { key: 'A', text: 'Menghargai jasa-jasa para pejuang kemerdekaan' },
-      { key: 'B', text: 'Meningkatkan kesejahteraan para mantan pejuang' },
-      { key: 'C', text: 'Memberikan pelatihan keterampilan untuk mantan pejuang' },
-      { key: 'D', text: 'Membantu mantan pejuang memulai usaha baru' },
-      { key: 'E', text: 'Menyediakan layanan kesehatan bagi mantan pejuang' },
+      { key: 'A', text: 'Menghargai jasa-jasa para pejuang kemerdekaan.' },
+      { key: 'B', text: 'Meningkatkan kesejahteraan para mantan pejuang.' },
+      { key: 'C', text: 'Memberikan pelatihan keterampilan untuk mantan pejuang.' },
+      { key: 'D', text: 'Membantu mantan pejuang memulai usaha baru.' },
+      { key: 'E', text: 'Menyediakan layanan kesehatan bagi mantan pejuang.' },
     ],
     correctAnswer: 'B',
-    explanation: 'Meningkatkan kesejahteraan para mantan pejuang mencerminkan upaya bela negara.',
+    explanation: 'Mendirikan yayasan yang membantu para mantan pejuang merupakan bentuk penghargaan dan perhatian terhadap mereka yang telah berjuang demi kemerdekaan negara. Tindakan ini mencerminkan upaya bela negara karena dengan meningkatkan kesejahteraan para mantan pejuang, kita menjaga semangat perjuangan dan mengakui pengorbanan mereka. Selain itu, langkah ini juga membantu mantan pejuang untuk hidup dengan lebih layak dan bermartabat. Tindakan ini sejalan dengan sila kedua Pancasila: Kemanusiaan yang Adil dan Beradab, karena memberikan perlakuan yang adil dan beradab kepada mereka yang telah berjasa bagi bangsa.',
   },
   {
     id: 18,
@@ -279,29 +279,29 @@ export const questions: Question[] = [
     code: 'Bela Negara',
     text: 'Membeli barang-barang produksi dalam negeri memiliki dampak positif yang luas terhadap perekonomian dan kestabilan negara, tidak hanya mendukung industri lokal tetapi juga berkontribusi pada kemandirian ekonomi nasional. Maka, Tindakan tersebut merupakan bentuk partisipasi dalam mempertahankan keutuhan NKRI karena...',
     options: [
-      { key: 'A', text: 'Meningkatkan daya saing produk lokal di pasar global' },
-      { key: 'B', text: 'Mengurangi pengeluaran pemerintah untuk subsidi impor' },
-      { key: 'C', text: 'Membantu menurunkan tingkat pengangguran di dalam negeri' },
-      { key: 'D', text: 'Memperkuat cadangan devisa negara' },
-      { key: 'E', text: 'Mengurangi ketergantungan pada barang-barang impor' },
+      { key: 'A', text: 'Meningkatkan daya saing produk lokal di pasar global.' },
+      { key: 'B', text: 'Mengurangi pengeluaran pemerintah untuk subsidi impor.' },
+      { key: 'C', text: 'Membantu menurunkan tingkat pengangguran di dalam negeri.' },
+      { key: 'D', text: 'Memperkuat cadangan devisa negara.' },
+      { key: 'E', text: 'Mengurangi ketergantungan pada barang-barang impor.' },
     ],
     correctAnswer: 'C',
-    explanation: 'Membeli produk dalam negeri membantu menurunkan tingkat pengangguran dengan menciptakan lapangan kerja.',
+    explanation: 'Membeli barang-barang produksi dalam negeri membantu menurunkan tingkat pengangguran dengan menciptakan lapangan kerja di industri lokal. Selain itu, langkah ini juga mendukung pertumbuhan ekonomi, mengurangi ketergantungan pada impor, dan meningkatkan daya saing produk lokal. Semua faktor ini berkontribusi pada kemandirian ekonomi dan stabilitas nasional, yang pada akhirnya memperkuat keutuhan NKRI.',
   },
   {
     id: 19,
     category: 'TWK',
     code: 'Integritas',
-    text: 'Meskipun ditawari kehidupan yang nyaman, Cut Nyak Dien memilih untuk terus bergerilya di hutan. Sikap Cut Nyak Dien yang patut dijadikan inspirasi adalah…',
+    text: 'Meskipun ditawari kehidupan yang nyaman, Cut Nyak Dien memilih untuk terus bergerilya di hutan. Sikap tersebut mencerminkan nilai integritas yang tinggi karena…',
     options: [
-      { key: 'A', text: 'Menolak tawaran kehidupan nyaman dari penjajah' },
-      { key: 'B', text: 'Tetap konsisten memperjuangkan kemerdekaan meski dalam kesulitan' },
-      { key: 'C', text: 'Memilih hidup sederhana di hutan daripada kemewahan' },
-      { key: 'D', text: 'Menunjukkan keteguhan dalam menghadapi tantangan' },
-      { key: 'E', text: 'Rela berkorban demi kepentingan bangsa' },
+      { key: 'A', text: 'Ia tidak tergoda oleh tawaran kehidupan yang lebih mudah.' },
+      { key: 'B', text: 'Ia menunjukkan kesetiaan pada perjuangan suaminya.' },
+      { key: 'C', text: 'Ia berjuang melawan penjajahan tanpa memikirkan kepentingan pribadi.' },
+      { key: 'D', text: 'Ia membangkitkan semangat juang rakyat Aceh untuk melawan penjajah.' },
+      { key: 'E', text: 'Ia mempertaruhkan nyawanya demi kemerdekaan Aceh.' },
     ],
-    correctAnswer: 'B',
-    explanation: 'Tetap konsisten memperjuangkan kemerdekaan meski dalam kesulitan adalah sikap yang patut dijadikan inspirasi.',
+    correctAnswer: 'A',
+    explanation: 'Pilihan A paling tepat karena menggambarkan keteguhan Cut Nyak Dien dalam mempertahankan prinsip dan perjuangannya, meskipun ditawari jalan yang lebih mudah. Ini menunjukkan integritas yang tinggi karena ia tidak mengompromikan nilai-nilai dan tujuan perjuangannya demi kenyamanan pribadi.',
   },
   {
     id: 20,
@@ -309,14 +309,14 @@ export const questions: Question[] = [
     code: 'Integritas',
     text: 'Jenderal Sudirman seorang pemimpin yang selalu berada di depan dengan menolak beristirahat dan tetap memimpin perang gerilya melawan Belanda meskipun ditandu dalam kondisi sakit parah. Sikap Jenderal Sudirman yang patut dijadikan inspirasi adalah…',
     options: [
-      { key: 'A', text: 'Memimpin perang gerilya melawan Belanda' },
-      { key: 'B', text: 'Tetap bertugas meskipun dalam kondisi sakit' },
-      { key: 'C', text: 'Menolak tawaran untuk beristirahat demi tugas' },
-      { key: 'D', text: 'Memberikan teladan kepemimpinan di garis depan' },
-      { key: 'E', text: 'Rela berkorban demi tugas dan tanggung jawab' },
+      { key: 'A', text: 'Memimpin perang gerilya melawan Belanda.' },
+      { key: 'B', text: 'Tetap bertugas meskipun dalam kondisi sakit.' },
+      { key: 'C', text: 'Menolak tawaran untuk beristirahat demi tugas.' },
+      { key: 'D', text: 'Memberikan teladan kepemimpinan di garis depan.' },
+      { key: 'E', text: 'Rela berkorban demi tugas dan tanggung jawab.' },
     ],
     correctAnswer: 'D',
-    explanation: 'Memberikan teladan kepemimpinan di garis depan adalah sikap yang paling patut dijadikan inspirasi.',
+    explanation: 'Sikap Jenderal Sudirman yang paling patut dijadikan inspirasi adalah tindakannya memberikan teladan kepemimpinan di garis depan. Dengan tetap memimpin pasukan meski dalam kondisi sakit parah, Sudirman menunjukkan bahwa seorang pemimpin harus berani mengambil risiko dan memberikan contoh langsung kepada bawahannya, bukan hanya memberi perintah dari tempat yang aman.',
   },
   {
     id: 21,
@@ -324,14 +324,14 @@ export const questions: Question[] = [
     code: 'Integritas',
     text: 'Sri Sultan Hamengku Buwono IX menolak tawaran Belanda untuk menjadikan Yogyakarta sebagai negara boneka yang terpisah dari Republik Indonesia. Sikap Sri Sultan Hamengku Buwono IX yang patut diteladani adalah…',
     options: [
-      { key: 'A', text: 'Menolak tawaran menguntungkan dari pihak kolonial' },
-      { key: 'B', text: 'Menyatakan dukungan pada Republik Indonesia yang baru berdiri' },
-      { key: 'C', text: 'Rela mengorbankan kepentingan daerah demi persatuan bangsa' },
-      { key: 'D', text: 'Konsisten mendukung perjuangan kemerdekaan Indonesia' },
-      { key: 'E', text: 'Menggunakan posisi sebagai pemimpin adat untuk kepentingan nasional' },
+      { key: 'A', text: 'Menolak tawaran menguntungkan dari pihak kolonial.' },
+      { key: 'B', text: 'Menyatakan dukungan pada Republik Indonesia yang baru berdiri.' },
+      { key: 'C', text: 'Rela mengorbankan kepentingan daerah demi persatuan bangsa.' },
+      { key: 'D', text: 'Konsisten mendukung perjuangan kemerdekaan Indonesia.' },
+      { key: 'E', text: 'Menggunakan posisi sebagai pemimpin adat untuk kepentingan nasional.' },
     ],
     correctAnswer: 'C',
-    explanation: 'Rela mengorbankan kepentingan daerah demi persatuan bangsa adalah sikap yang patut diteladani.',
+    explanation: 'Sikap Sri Sultan Hamengku Buwono IX yang paling patut diteladani adalah kerelaannya mengorbankan kepentingan daerah demi persatuan bangsa. Dengan menolak tawaran Belanda untuk menjadikan Yogyakarta sebagai negara terpisah, Sultan menunjukkan prioritasnya pada persatuan dan kesatuan Indonesia di atas kepentingan daerah atau pribadinya sebagai pemimpin adat.',
   },
   {
     id: 22,
@@ -473,7 +473,7 @@ export const questions: Question[] = [
   {
     id: 31,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Pingsan : ... = ... : Gunung gundul.',
     options: [
       { key: 'A', text: 'Lemah : Gersang' },
@@ -488,7 +488,7 @@ export const questions: Question[] = [
   {
     id: 32,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Jari : Tangan : Kaki = ... : ... : ...',
     options: [
       { key: 'A', text: 'Kayu : Lemari : Meja' },
@@ -503,7 +503,7 @@ export const questions: Question[] = [
   {
     id: 33,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Pilihlah jawaban yang mengandung pasangan kata yang memiliki pola hubungan yang paling sama dengan pasangan kata pada pokok soal!\n\nTeplok berhubungan dengan Minyak.\n\nPola hubungan antara objek-objek tersebut setara dengan...',
     options: [
       { key: 'A', text: 'Mobil berhubungan dengan Aki' },
@@ -518,7 +518,7 @@ export const questions: Question[] = [
   {
     id: 34,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Pilihlah jawaban yang mengandung pasangan kata yang memiliki pola hubungan yang paling sama dengan pasangan kata pada pokok soal!\n\nPola hubungan pada kalimat: "Ani menulis dan menggambar di buku" setara dengan....',
     options: [
       { key: 'A', text: 'Budi berlari dan berenang di kolam' },
@@ -533,7 +533,7 @@ export const questions: Question[] = [
   {
     id: 35,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Pola hubungan pada kalimat: "Adikku sakit dua hari lalu." sepola dengan kalimat...',
     options: [
       { key: 'A', text: 'Malam hari Vito bermain game' },
@@ -548,7 +548,7 @@ export const questions: Question[] = [
   {
     id: 36,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analogi',
     text: 'Pola hubungan pada kalimat: "Kucing itu tidur nyenyak di atap rumah." sepola dengan kalimat...',
     options: [
       { key: 'A', text: 'Teman-teman sekelas merayakan kelulusan dengan pawai keliling sekolah' },
@@ -563,7 +563,7 @@ export const questions: Question[] = [
   {
     id: 37,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Deret Angka',
     text: '2, 6, 1, 6, -4, ... , -51, -612.',
     options: [
       { key: 'A', text: '36.' },
@@ -578,7 +578,7 @@ export const questions: Question[] = [
   {
     id: 38,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Deret Angka',
     text: '10, 10, 3, 9, 1, ... , -4, -28.',
     options: [
       { key: 'A', text: '-5.' },
@@ -593,7 +593,7 @@ export const questions: Question[] = [
   {
     id: 39,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Deret Angka',
     text: '144, 288, 72, 144, 36, 72, 18, ... , ...',
     options: [
       { key: 'A', text: '36, 72.' },
@@ -608,7 +608,7 @@ export const questions: Question[] = [
   {
     id: 40,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Deret Angka',
     text: '17, 17, 34, 20, 20, 31, 23, ... , ...',
     options: [
       { key: 'A', text: '23, 33.' },
@@ -623,7 +623,7 @@ export const questions: Question[] = [
   {
     id: 41,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Silogisme',
     text: 'Tidak ada langit malam kecuali berwarna hitam dan biru. Dewi melihat langit bukan hitam, bukan biru. Simpulan yang tepat tentang langit yang dilihat Dewi adalah...',
     options: [
       { key: 'A', text: 'Langit malam berwarna biru' },
@@ -638,7 +638,7 @@ export const questions: Question[] = [
   {
     id: 42,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Silogisme',
     text: 'Rani dan Rano selalu bermain bersama-sama. Mereka berdua selalu mendukung satu sama lain. Rani tidak mau bermain dengan orang yang kasar. Rani memiliki banyak teman, namun dia suka bermain dengan Rano. Simpulan yang paling tepat adalah sebagai berikut...',
     options: [
       { key: 'A', text: 'Rani dan Rano adalah sahabat kompak.' },
@@ -653,7 +653,7 @@ export const questions: Question[] = [
   {
     id: 43,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Silogisme',
     text: 'Sejak tahun 2020, semua universitas di Indonesia mulai menjalankan program Merdeka belajar Kurikulum Merdeka (MBKM). Program ini dapat diikuti oleh mahasiswa dengan kualifikasi tertentu untuk magang atau melakukan penelitian di perusahaan tertentu selama 6 bulan. Waktu tunggu bekerja untuk para lulusan Universitas yang mengikuti program MBKM rata-rata satu bulan lebih cepat dibandingkan dengan lulusan yang tidak mengikutinya. Dida baru saja selesai menjalani program MBKM dengan melakukan magang. Maka pernyataan kesimpulan yang tepat adalah...',
     options: [
       { key: 'A', text: 'Dida tidak akan melakukan magang lagi di perusahaan.' },
@@ -668,7 +668,7 @@ export const questions: Question[] = [
   {
     id: 44,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Silogisme',
     text: 'Tiket bioskop XX hanya dapat dibeli di internet. Tiket konser GG dapat dibeli di internet. Sasa masih bisa mengakses kedua jenis tiket tersebut. Berdasarkan situasi di atas, maka pernyataan yang sesuai adalah...',
     options: [
       { key: 'A', text: 'Sasa memiliki akses internet yang cepat.' },
@@ -683,7 +683,7 @@ export const questions: Question[] = [
   {
     id: 45,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Berhitung',
     text: '2¾ + 1½ × 2 - ¼ = ...',
     options: [
       { key: 'A', text: '5' },
@@ -698,7 +698,7 @@ export const questions: Question[] = [
   {
     id: 46,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Berhitung',
     text: '3¾ ÷ 2,5 + 2 × 2¼ = ...',
     options: [
       { key: 'A', text: '1.250' },
@@ -713,7 +713,7 @@ export const questions: Question[] = [
   {
     id: 47,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Berhitung',
     text: '8⅕ + 7⅙ ÷ 4,5 + 3,5 × ⅛ - ⅔ = ...',
     options: [
       { key: 'A', text: '10 61/135' },
@@ -728,7 +728,7 @@ export const questions: Question[] = [
   {
     id: 48,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Berhitung',
     text: 'Hasil operasi dari (48 × 176 - 126 × 48) ÷ (25 × 4) = ...',
     options: [
       { key: 'A', text: '–14' },
@@ -743,7 +743,7 @@ export const questions: Question[] = [
   {
     id: 49,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Perbandingan Kuantitatif',
     text: 'Perhatikan kolom berikut!\n\nR: ⅜ + ½ – 3/10\nS: ⅜ + ½ – 5/10\n\nManakah hubungan yang benar antara kuantitas R dan S berikut...',
     options: [
       { key: 'A', text: 'R = S' },
@@ -759,7 +759,7 @@ export const questions: Question[] = [
   {
     id: 50,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Perbandingan Kuantitatif',
     text: 'Perhatikan tabel berikut!\n\nP: ⅕x − 7y\nQ: ⅗x − 3y\n\nJika x = 5 dan y = 1, maka...',
     options: [
       { key: 'A', text: 'P > Q' },
@@ -775,7 +775,7 @@ export const questions: Question[] = [
   {
     id: 51,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Perbandingan Kuantitatif',
     text: 'Budi membawa uang Rp. 100.000 untuk membeli meja belajar seharga Rp. 50.000/lusin\n\nA: Uang kembalian yang diterima Budi\nB: Harga 12 meja belajar dengan pembelian selusin\n\nManakah hubungan yang benar antara kuantitas A dan B berikut...',
     options: [
       { key: 'A', text: '4A = B' },
@@ -791,7 +791,7 @@ export const questions: Question[] = [
   {
     id: 52,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Perbandingan Kuantitatif',
     text: 'Tabel Survei Kepuasan Pelanggan (Cabang X, Y, Z dengan kategori K, L, M, N).\n\nApabila memuaskan bernilai 10 dan tidak memuaskan bernilai -5. Cabang perusahaan mana yang mendapatkan total nilai tertinggi dan terendah?',
     options: [
       { key: 'A', text: 'L dan K' },
@@ -807,7 +807,7 @@ export const questions: Question[] = [
   {
     id: 53,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Soal Cerita',
     text: 'Seseorang mengendarai sepeda motor ke tempat kerjanya selama 45 menit dengan jarak 30 km. Jika dia terlambat berangkat 15 menit, kecepatan yang harus digunakan agar sampai ke kantor adalah…',
     options: [
       { key: 'A', text: '90 km/jam' },
@@ -822,7 +822,7 @@ export const questions: Question[] = [
   {
     id: 54,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Soal Cerita',
     text: 'Sebuah fly over diperkirakan mampu bertahan selama 63 tahun jika dilalui kendaraan seberat 20.000 ton/harinya. Ternyata setelah fly over beroperasi, berat kendaraan yang melewatinya lebih besar 40% per harinya dari yang diperkirakan. Maka fly over akan bertahan selama?',
     options: [
       { key: 'A', text: '84 tahun lebih cepat' },
@@ -837,7 +837,7 @@ export const questions: Question[] = [
   {
     id: 55,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Soal Cerita',
     text: 'Seorang penjahit memerlukan 10 m kain untuk membuat 8 potong baju. Berapa meter kain yang dibutuhkan penjahit untuk membuat 24 potong baju?',
     options: [
       { key: 'A', text: '12 m' },
@@ -852,7 +852,7 @@ export const questions: Question[] = [
   {
     id: 56,
     category: 'TIU',
-    code: 'Kemampuan Numerik',
+    code: 'Kemampuan Numerik Soal Cerita',
     text: 'Seorang arsitek akan membangun sebuah taman hiburan dalam waktu 60 hari dengan 28 pekerja. Setelah berlangsung 2 minggu, pekerjaan tersebut harus terhenti selama 23 hari. Banyak pekerja tambahan yang diperlukan agar pekerjaan tersebut tetap selesai tepat waktu adalah...',
     options: [
       { key: 'A', text: '28 orang' },
@@ -867,52 +867,52 @@ export const questions: Question[] = [
   {
     id: 57,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analitis',
     text: 'Perusahaan X memiliki enam manajer yang lulus program magister pada tahun kelulusan yang berurutan. Nino dan Popi lulus di tahun yang bersamaan, yakni tepat di tahun setelah Lala lulus. Mimi menjadi lulus magister terbaik dan lulus di tahun yang paling awal sebelum lima rekan lainnya. Otong lulus di tahun sebelum Lala dan Kika lulus. Siapakah yang meraih gelar magister paling terakhir?',
     options: [
-      { key: 'A', text: 'Lala' },
-      { key: 'B', text: 'Otong' },
-      { key: 'C', text: 'Kika' },
-      { key: 'D', text: 'Mimi' },
-      { key: 'E', text: 'Nino' },
+      { key: 'A', text: 'Lala.' },
+      { key: 'B', text: 'Otong.' },
+      { key: 'C', text: 'Kika.' },
+      { key: 'D', text: 'Mimi.' },
+      { key: 'E', text: 'Nino.' },
     ],
     correctAnswer: 'C',
-    explanation: 'Urutan: Mimi, Otong, Lala, Nino dan Popi, Kika.',
+    explanation: 'Persyaratannya:\n• Nino dan Popi lulus di tahun yang bersamaan, yakni tepat di tahun setelah Lala lulus.\n1) Lala\n2) Nino dan Popi\n• Mimi menjadi lulus magister terbaik dan lulus di tahun yang paling awal sebelum lima rekan lainnya.\n1) Mimi\n2) Lala\n3) Nino dan Popi\n• Otong lulus di tahun sebelum Lala dan Kika lulus.\n1) Mimi\n2) Otong\n3) Lala\n4) Nino dan Popi\n5) Kika\nSehingga, Kika yang meraih gelar magister paling terakhir.',
   },
   {
     id: 58,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analitis',
     text: 'Didik, Nova, Priska, Bonar dan Mika adalah lima sahabat yang menyukai olahraga. Didik menyukai olahraga voli dan basket. Nova menyukai olahraga basket dan tenis. Mika menyukai tenis dan badminton. Priska menyukai olahraga tanpa bola, sementara Bonar menyukai semua olahraga dengan raket. Dengan demikian, mereka yang menyukai badminton adalah...',
     options: [
-      { key: 'A', text: 'Priska dan Didik' },
-      { key: 'B', text: 'Nova dan Mika' },
-      { key: 'C', text: 'Bonar dan Priska' },
-      { key: 'D', text: 'Mika dan Bonar' },
-      { key: 'E', text: 'Didik dan Bonar' },
+      { key: 'A', text: 'Priska dan Didik.' },
+      { key: 'B', text: 'Nova dan Mika.' },
+      { key: 'C', text: 'Bonar dan Priska.' },
+      { key: 'D', text: 'Mika dan Bonar.' },
+      { key: 'E', text: 'Didik dan Bonar.' },
     ],
     correctAnswer: 'D',
-    explanation: 'Mika menyukai badminton dan Bonar menyukai semua olahraga dengan raket (termasuk badminton).',
+    explanation: 'Didik = voli dan basket.\nNova = basket dan tennis.\nPriska = olahraga tanpa bola.\nBonar = semua olahraga menggunakan raket (tenis dan badminton)\nMika = tenis dan badminton\nSehingga, mereka yang menyukai badminton adalah Mika dan Bonar.',
   },
   {
     id: 59,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
-    text: 'Delapan orang pengurus RT sedang mengadakan rapat dan duduk melingkar di pos kamling RT. Pak Hadi selaku ketua RT berada di antara sekretaris dan bendahara, yaitu pak Malik dan Pak Adi. Pak Udin duduk berhadapan dengan pak Hadi dan bersebelahan dengan pak Dodi. Posisi pak Sena berada di antara Pak Jaka dan Pak Adi, sedangkan Pak Rama duduk di depan Pak Sena. Siapakah yang duduk berseberangan dengan Pak Malik?',
+    code: 'Kemampuan Verbal Analitis',
+    text: 'Delapan orang pengurus RT sedang mengadakan rapat dan duduk melingkar di pos kamling RT. Pak Hadi selaku ketua RT berada di antara sekretaris dan bendahara, yaitu pak Malik dan Pak Adi. Pak Udin duduk berhadapan dengan pak Hadi dan bersebelahan dengan pak Dodi. Posisi pak Sena berada di antara Pak Jaka dan Pak Adi, sedangkan Pak Rama duduk di depan Pak Seno. Siapakah yang duduk berseberangan dengan Pak Malik?',
     options: [
-      { key: 'A', text: 'Pak Jaka' },
-      { key: 'B', text: 'Pak Dodi' },
-      { key: 'C', text: 'Pak Rama' },
-      { key: 'D', text: 'Pak Sena' },
-      { key: 'E', text: 'Pak Adi' },
+      { key: 'A', text: 'Pak Jaka.' },
+      { key: 'B', text: 'Pak Udin.' },
+      { key: 'C', text: 'Pak Adi.' },
+      { key: 'D', text: 'Pak Rama.' },
+      { key: 'E', text: 'Pak Dodi.' },
     ],
     correctAnswer: 'A',
-    explanation: 'Berdasarkan posisi duduk melingkar, Pak Jaka duduk berseberangan dengan Pak Malik.',
+    explanation: 'Posisi ke delapan orang pengurus RT yang sedang mengadakan rapat di pos kamling dapat dijelaskan pada gambar berikut:\nTips dan Trik!\nSesuai kalimat kedua, tetapkan posisi Pak hadi di antara pak Malik dan Pak Adi dan selanjutnya ikuti petunjuk soal sehingga terbentuk posisi pada gambar di atas. Jadi yang duduk berhadapan dengan pak Malik adalah Pak Jaka.',
   },
   {
     id: 60,
     category: 'TIU',
-    code: 'Kemampuan Verbal',
+    code: 'Kemampuan Verbal Analitis',
     text: 'Manurung ingin mengadakan sosialisasi di kota Z. Ia berangkat dari kota A menggunakan sepeda motor. Terdapat jalan alternatif yang menghubungkan kota A ke kota Z. Namun, ada alternatif jalur yang bisa digunakan Manurung untuk menyusul timnya di kota mereka masing-masing. Dari kota A bisa melalui kota F atau J. Dari kota F bisa melalui kota M atau P. Sedangkan dari kota J bisa melalui kota P atau bisa langsung menuju ke kota Z. Dari kota M bisa melalui kota J, sedangkan dari kota P bisa melalui kota Z. Berapa alternatif jalur yang bisa ditempuh Manurung agar tiba di kota Z?',
     options: [
       { key: 'A', text: '2 jalur.' },
@@ -927,7 +927,7 @@ export const questions: Question[] = [
   {
     id: 61,
     category: 'TIU',
-    code: 'Kemampuan Figural',
+    code: 'Kemampuan Figural Serial',
     text: 'Perhatikan gambar berikut ini. Pilihlah salah satu gambar lanjutannya...',
     options: [
       { key: 'A', text: 'Gambar A' },
@@ -943,7 +943,7 @@ export const questions: Question[] = [
   {
     id: 62,
     category: 'TIU',
-    code: 'Kemampuan Figural',
+    code: 'Kemampuan Figural Ketidaksamaan',
     text: 'Carilah gambar yang berbeda!',
     options: [
       { key: 'A', text: 'Gambar A' },
@@ -959,7 +959,7 @@ export const questions: Question[] = [
   {
     id: 63,
     category: 'TIU',
-    code: 'Kemampuan Figural',
+    code: 'Kemampuan Figural Analogi',
     text: 'Gambar ? yang tepat untuk mengisi kotak kosong adalah...',
     options: [
       { key: 'A', text: 'Gambar A' },
@@ -975,7 +975,7 @@ export const questions: Question[] = [
   {
     id: 64,
     category: 'TIU',
-    code: 'Kemampuan Figural',
+    code: 'Kemampuan Figural Analogi',
     text: 'Perhatikan gambar berikut ini! Gambar yang tepat untuk mengisi kotak kosong adalah...',
     options: [
       { key: 'A', text: 'Gambar A' },
@@ -991,7 +991,7 @@ export const questions: Question[] = [
   {
     id: 65,
     category: 'TIU',
-    code: 'Kemampuan Figural',
+    code: 'Kemampuan Figural Analogi',
     text: 'Perhatikan gambar berikut ini! Gambar yang tepat untuk mengisi kotak kosong adalah...',
     options: [
       { key: 'A', text: 'Gambar A' },
