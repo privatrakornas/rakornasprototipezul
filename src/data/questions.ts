@@ -937,7 +937,7 @@ export const questions: Question[] = [
       { key: 'E', text: 'Gambar E' },
     ],
     correctAnswer: 'C',
-    explanation: 'Bentuk love berputar 90˚ berlawanan arah putaran jarum jam dan bergerak 1 langkah searah jarum jam.',
+    explanation: 'Bentuk love berputar 90˚ berlawanan arah putaran jarum jam dan bergerak 1 langkah searah jarum jam pula. Adapun tanda panah bergerak secara diagonal.',
     hasImage: true,
   },
   {
@@ -969,7 +969,7 @@ export const questions: Question[] = [
       { key: 'E', text: 'Gambar E' },
     ],
     correctAnswer: 'E',
-    explanation: 'Pada gambar terjadi reposisi dan penambahan bentuk lingkaran hitam.',
+    explanation: 'Pada dua gambar di bawah, tampak pada gambar di sebelah kiri terdapat reposisi gambar U-turn (bentuk putaran balik) dan right-turn (bentuk belok kanan) serta penambahan bentuk lingkaran hitam dari $\\frac{1}{2}$ lingkaran menjadi $\\frac{3}{4}$ lingkaran bila dibandingkan dengan gambar sebelah kiri. Dengan demikian, pada dua gambar di atas pun terjadi perubahan gambar yang sama dengan dua gambar di bawahnya.',
     hasImage: true,
   },
   {
@@ -985,7 +985,7 @@ export const questions: Question[] = [
       { key: 'E', text: 'Gambar E' },
     ],
     correctAnswer: 'C',
-    explanation: 'Susunan gambar berpindah posisi secara berurutan dengan perubahan warna.',
+    explanation: 'Susunan gambar terdiri dari gambar pertama yang berada di paling luar, gambar kedua berada di tengah-tengah di dalam gambar pertama dan gambar ketiga berada di paling dalam dari seluruh gambar. Setiap gambar akan berpindah posisi secara berurutan, gambar pertama dan ketiga akan berubah warna saat pindah posisi, sementara gambar kedua tidak berubah warna saat pindah posisi.',
     hasImage: true,
   },
   {
