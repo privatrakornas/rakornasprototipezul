@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { questions, calculateTWKScore, calculateTIUScore, calculateTKPScore, getPassingStatus } from '@/data/questions';
 import { Trophy, BookOpen, CheckCircle, XCircle } from 'lucide-react';
+import MaterialAnalysis from '@/components/MaterialAnalysis';
 
 const Results = () => {
   const navigate = useNavigate();
@@ -68,6 +69,11 @@ const Results = () => {
               <p className="text-xs md:text-sm opacity-80">Total</p>
               <p className="text-xl md:text-2xl font-bold">{totalScore}</p>
             </div>
+          </div>
+
+          {/* Material Analysis Section */}
+          <div className="mb-6 md:mb-8">
+            <MaterialAnalysis answers={answers} />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center">
