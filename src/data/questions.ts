@@ -785,7 +785,7 @@ export const questions: Question[] = [
       { key: 'E', text: '5A = 2B' },
     ],
     correctAnswer: 'B',
-    explanation: 'A = Rp. 50.000, B = Rp. 50.000. Maka 4A = 200.000 > 50.000.',
+    explanation: 'A =\nUang kembaliannya = Rp. 100.000 − Rp. 50.000 = Rp. 50.000\n\nB =\n1 lusin = 12 buah, sehingga 12 meja belajar sama artinya dengan selusin meja belajar seharga Rp. 50.000\n\nMaka, diperoleh hubungan 4A > B.',
     hasTable: true,
   },
   {
@@ -801,7 +801,7 @@ export const questions: Question[] = [
       { key: 'E', text: 'M dan N' },
     ],
     correctAnswer: 'E',
-    explanation: 'Cabang M mendapatkan nilai tertinggi dan N mendapatkan nilai terendah.',
+    explanation: 'Analisis tabel tersebut bisa dilakukan tanpa harus melakukan perhitungan berdasarkan persyaratan yang diberikan. Cukup melihat banyaknya perolehan di masing-masing daerah. Terlihat cabang perusahaan M memperoleh nilai tertinggi dan N memperoleh nilai terendah dengan rincian cabang M mendapatkan perolehan kepuasan paling banyak yaitu 28, 28 dan 29 namun perolehan tidak memuaskannya paling sedikit yaitu 22, 21 dan 22, sementara cabang N mendapatkan perolehan kepuasan paling sedikit yaitu 25, 24 dan 27 namun perolehan tidak memuaskannya paling banyak yaitu 25, 26 dan 23.',
     hasTable: true,
   },
   {
@@ -862,7 +862,7 @@ export const questions: Question[] = [
       { key: 'E', text: '80 orang' },
     ],
     correctAnswer: 'A',
-    explanation: 'Tambahan pekerja = 28 orang.',
+    explanation: 'W menyatakan lama waktu yang dibutuhkan (bulan)\nP menyatakan banyak pekerja\nTP menyatakan tambahan pekerja\nDiketahui : 2 minggu = 14 hari\nTarget = 60 x 28\nYang sudah terjadi = 14 x 28\nPeristiwa yang terjadi 23 x 0\nSisa pekerjaan = (60 − 14 − 23) x (28 + TP)\nDitanya : Tambahan Pekerja?\nDijawab : Karena lama waktu dan banyak pekerja merupakan perbandingan berbalik nilai, maka perkalian kedua besaran akan menghasilkan nilai yang konstan. Sehingga,\nTarget = yang sudah dikerjakan + peristiwa yang terjadi + sisa pekerjaan→ 60 x 28 = 14 x 28 + 23 x 0 + 23 (28 + TP)\n→ 60 x 28 = 14 x 28 + 23 x 28 + 23 x TP\n→ 60 x 28 − 14 x 28 − 23 x 28 = 23TP\n→ 28(60 – 14 – 23) = 23TP\n→ 28 x 23 = 23TP\n→ Tambahan Pekerja = 28 orang.',
   },
   {
     id: 57,
