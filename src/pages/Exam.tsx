@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/s
 import { questions } from '@/data/questions';
 import { Clock, ChevronLeft, ChevronRight, Grid3X3 } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import LatexText from '@/components/LatexText';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
 
@@ -170,7 +171,9 @@ const Exam = () => {
               </div>
             </div>
 
-            <p className="text-sm md:text-lg leading-relaxed mb-4 md:mb-6 whitespace-pre-line">{question.text}</p>
+            <div className="text-sm md:text-lg leading-relaxed mb-4 md:mb-6 whitespace-pre-line">
+              <LatexText>{question.text}</LatexText>
+            </div>
 
             {question.hasImage && (
               <p className="text-muted-foreground italic mb-4 text-sm">[Soal bergambar - Gambar ditampilkan di sini]</p>
@@ -188,7 +191,7 @@ const Exam = () => {
                   <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs md:text-sm">
                     {opt.key}
                   </span>
-                  <span className="text-sm md:text-base">{opt.text}</span>
+                  <span className="text-sm md:text-base"><LatexText>{opt.text}</LatexText></span>
                 </button>
               ))}
             </div>

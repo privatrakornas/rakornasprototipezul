@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { questions, calculateTWKScore, calculateTIUScore, calculateTKPScore, getPassingStatus } from '@/data/questions';
 import { Trophy, BookOpen, CheckCircle, XCircle } from 'lucide-react';
 import MaterialAnalysis from '@/components/MaterialAnalysis';
+import LatexText from '@/components/LatexText';
 
 const Results = () => {
   const navigate = useNavigate();
@@ -112,7 +113,9 @@ const Results = () => {
                   <div className="px-2 py-1 md:py-1.5 bg-accent/10 text-accent rounded text-[10px] md:text-xs font-medium leading-relaxed mb-2">
                     {q.category} - {q.code}
                   </div>
-                  <p className="text-xs md:text-sm mb-2">{q.text.substring(0, 150)}...</p>
+                  <div className="text-xs md:text-sm mb-2">
+                    <LatexText>{`${q.text.substring(0, 150)}...`}</LatexText>
+                  </div>
                   <p className="text-xs md:text-sm">
                     <strong>Jawaban Anda:</strong> {userAnswer || '-'} | 
                     <strong> Kunci:</strong> {q.correctAnswer || 'Skor bertingkat'}
@@ -139,7 +142,9 @@ const Results = () => {
                     </div>
                   )}
                   
-                  <p className="text-[10px] md:text-xs text-muted-foreground mt-1">{q.explanation}</p>
+                  <div className="text-[10px] md:text-xs text-muted-foreground mt-1">
+                    <LatexText>{q.explanation}</LatexText>
+                  </div>
                 </div>
               );
             })}
