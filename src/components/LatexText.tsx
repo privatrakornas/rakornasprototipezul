@@ -9,12 +9,48 @@ interface LatexTextProps {
 }
 
 /**
- * Renders text with LaTeX math formulas.
+ * Renders text with LaTeX math formulas and HTML content.
  * Supports both inline ($...$) and block ($$...$$) LaTeX notation.
- * Also supports \frac, \sqrt, etc. wrapped in $ signs.
+ * Also supports HTML tags like <table>, <div>, etc.
  */
 const LatexText = ({ children, className = '', block = false }: LatexTextProps) => {
   if (!children) return null;
+
+  // Check if content contains HTML tags
+  const hasHtml = /<[a-z][\s\S]*>/i.test(children);
+
+  if (hasHtml) {
+    // For HTML content, we need to handle LaTeX within HTML
+    // First, process LaTeX parts and replace with spans
+    let processedHtml = children;
+    
+    // Process block math: $$...$$
+    processedHtml = processedHtml.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+      try {
+        const katex = require('katex');
+        return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+      } catch {
+        return match;
+      }
+    });
+    
+    // Process inline math: $...$
+    processedHtml = processedHtml.replace(/\$([^$\n]+?)\$/g, (match, math) => {
+      try {
+        const katex = require('katex');
+        return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
+      } catch {
+        return match;
+      }
+    });
+
+    return (
+      <span 
+        className={className}
+        dangerouslySetInnerHTML={{ __html: processedHtml }}
+      />
+    );
+  }
 
   // Pattern to match LaTeX: $$...$$ for block, $...$ for inline
   // Also matches \(...\) for inline and \[...\] for block
