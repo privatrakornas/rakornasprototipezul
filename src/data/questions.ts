@@ -744,7 +744,7 @@ export const questions: Question[] = [
     id: 49,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Perhatikan kolom berikut!</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Rumus</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">R</td><td class="border border-gray-300 px-4 py-2">3 + $\\frac{1}{8}$ – $\\frac{3}{2}$ =</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">S</td><td class="border border-gray-300 px-4 py-2">3 + $\\frac{1}{10}$ – $\\frac{5}{2}$ =</td></tr></tbody></table></div><p>Manakah hubungan yang benar antara kuantitas R dan S berikut....</p>',
+    text: '<p>Perhatikan tabel berikut:</p><div class="overflow-x-auto"><table class="w-full max-w-md border-collapse border border-gray-300 text-center"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 w-1/2">R</th><th class="border border-gray-300 px-4 py-2 w-1/2">S</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-4 text-lg">3 + <sup>1</sup>&frasl;<sub>8</sub> - <sup>3</sup>&frasl;<sub>2</sub></td><td class="border border-gray-300 px-4 py-4 text-lg">3 + <sup>1</sup>&frasl;<sub>10</sub> - <sup>5</sup>&frasl;<sub>2</sub></td></tr></tbody></table></div><p class="mt-2">Manakah hubungan yang benar antara kuantitas R dan S berikut berdasarkan informasi yang diberikan?</p>',
     options: [
       { key: 'A', text: 'R = S.' },
       { key: 'B', text: 'R < S.' },
@@ -760,7 +760,7 @@ export const questions: Question[] = [
     id: 50,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Perhatikan tabel berikut!</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Rumus</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">P</td><td class="border border-gray-300 px-4 py-2">$\\frac{1}{5}$X – 7Y =</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">Q</td><td class="border border-gray-300 px-4 py-2">$\\frac{3}{5}$X – 3Y =</td></tr></tbody></table></div><p>Jika X = 5 dan Y = 1, maka...</p>',
+    text: '<p>Diketahui x = <sup>1</sup>&frasl;<sub>4</sub> y. Perhatikan tabel berikut:</p><div class="overflow-x-auto"><table class="w-full max-w-md border-collapse border border-gray-300 text-center"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 w-1/2">P</th><th class="border border-gray-300 px-4 py-2 w-1/2">Q</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-4 text-lg"><sup>1</sup>&frasl;<sub>5</sub>X - 7Y</td><td class="border border-gray-300 px-4 py-4 text-lg"><sup>3</sup>&frasl;<sub>5</sub>X - 3Y</td></tr></tbody></table></div><p class="mt-2">Manakah hubungan yang benar antara kuantitas P dan Q berikut berdasarkan informasi yang diberikan?</p>',
     options: [
       { key: 'A', text: 'P > Q.' },
       { key: 'B', text: '2P = 3Q.' },
@@ -776,7 +776,7 @@ export const questions: Question[] = [
     id: 51,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Budi membawa uang Rp. 100.000 untuk membeli meja belajar seharga Rp. 50.000/lusin</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Keterangan</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">A</td><td class="border border-gray-300 px-4 py-2">Uang kembalian yang diterima Budi</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">B</td><td class="border border-gray-300 px-4 py-2">Harga 12 meja belajar dengan pembelian selusin</td></tr></tbody></table></div><p>Manakah hubungan yang benar antara kuantitas A dan B berikut...</p>',
+    text: '<p>Budi membeli 1 lusin meja seharga Rp. 360.000,00 dengan diskon 10%. Perhatikan tabel berikut:</p><div class="overflow-x-auto"><table class="w-full max-w-md border-collapse border border-gray-300 text-center"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 w-1/2">A</th><th class="border border-gray-300 px-4 py-2 w-1/2">B</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-4 align-top">Uang kembalian yang diterima Budi jika ia membayar dengan uang Rp. 400.000,00</td><td class="border border-gray-300 px-4 py-4 align-top">Harga 12 meja belajar dengan pembelian selusin</td></tr></tbody></table></div><p class="mt-2">Manakah hubungan yang benar antara kuantitas A dan B berikut berdasarkan informasi yang diberikan?</p>',
     options: [
       { key: 'A', text: '4A = B' },
       { key: 'B', text: '4A > B' },
