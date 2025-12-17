@@ -7,11 +7,19 @@ export interface Question {
     key: string;
     text: string;
     score?: number; // For TKP questions
+    imageUrl?: string; // For figural question options
   }[];
   correctAnswer?: string; // For TWK and TIU
   explanation: string;
   hasImage?: boolean;
-  imageUrl?: string;
+  imageUrl?: string; // URL gambar soal
+  optionImageUrls?: { // URL gambar untuk setiap pilihan (A-E)
+    A?: string;
+    B?: string;
+    C?: string;
+    D?: string;
+    E?: string;
+  };
   hasTable?: boolean;
   tableData?: any;
 }
@@ -939,6 +947,8 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Bentuk love berputar 90˚ berlawanan arah putaran jarum jam dan bergerak 1 langkah searah jarum jam pula. Adapun tanda panah bergerak secara diagonal.',
     hasImage: true,
+    imageUrl: '', // TODO: Isi URL gambar soal
+    optionImageUrls: { A: '', B: '', C: '', D: '', E: '' }, // TODO: Isi URL gambar pilihan
   },
   {
     id: 62,
@@ -955,6 +965,8 @@ export const questions: Question[] = [
     correctAnswer: 'D',
     explanation: 'Hanya pilihan D yang memiliki lingkaran hitam di sebelah kanan.',
     hasImage: true,
+    imageUrl: '', // TODO: Isi URL gambar soal
+    optionImageUrls: { A: '', B: '', C: '', D: '', E: '' }, // TODO: Isi URL gambar pilihan
   },
   {
     id: 63,
@@ -971,6 +983,8 @@ export const questions: Question[] = [
     correctAnswer: 'E',
     explanation: 'Pada dua gambar di bawah, tampak pada gambar di sebelah kiri terdapat reposisi gambar U-turn (bentuk putaran balik) dan right-turn (bentuk belok kanan) serta penambahan bentuk lingkaran hitam dari $\\frac{1}{2}$ lingkaran menjadi $\\frac{3}{4}$ lingkaran bila dibandingkan dengan gambar sebelah kiri. Dengan demikian, pada dua gambar di atas pun terjadi perubahan gambar yang sama dengan dua gambar di bawahnya.',
     hasImage: true,
+    imageUrl: '', // TODO: Isi URL gambar soal
+    optionImageUrls: { A: '', B: '', C: '', D: '', E: '' }, // TODO: Isi URL gambar pilihan
   },
   {
     id: 64,
@@ -987,6 +1001,8 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Susunan gambar terdiri dari gambar pertama yang berada di paling luar, gambar kedua berada di tengah-tengah di dalam gambar pertama dan gambar ketiga berada di paling dalam dari seluruh gambar. Setiap gambar akan berpindah posisi secara berurutan, gambar pertama dan ketiga akan berubah warna saat pindah posisi, sementara gambar kedua tidak berubah warna saat pindah posisi.',
     hasImage: true,
+    imageUrl: '', // TODO: Isi URL gambar soal
+    optionImageUrls: { A: '', B: '', C: '', D: '', E: '' }, // TODO: Isi URL gambar pilihan
   },
   {
     id: 65,
@@ -1003,6 +1019,8 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Setiap gambar berotasi searah jarum jam.',
     hasImage: true,
+    imageUrl: '', // TODO: Isi URL gambar soal
+    optionImageUrls: { A: '', B: '', C: '', D: '', E: '' }, // TODO: Isi URL gambar pilihan
   },
 
   // TKP Questions (66-110) - with tiered scoring

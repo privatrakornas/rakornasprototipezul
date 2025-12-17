@@ -175,26 +175,76 @@ const Exam = () => {
               <LatexText>{question.text}</LatexText>
             </div>
 
-            {question.hasImage && (
-              <p className="text-muted-foreground italic mb-4 text-sm">[Soal bergambar - Gambar ditampilkan di sini]</p>
+            {/* Gambar Soal */}
+            {question.imageUrl && (
+              <div className="mb-4 md:mb-6">
+                <img 
+                  src={question.imageUrl} 
+                  alt={`Gambar soal ${question.id}`}
+                  className="max-w-full h-auto rounded-lg border shadow-sm"
+                />
+              </div>
+            )}
+            
+            {question.hasImage && !question.imageUrl && (
+              <p className="text-muted-foreground italic mb-4 text-sm bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                [Soal bergambar - Upload gambar di database untuk soal ini]
+              </p>
             )}
 
-            <div className="space-y-2 md:space-y-3">
-              {question.options.map((opt) => (
-                <button
-                  key={opt.key}
-                  onClick={() => handleAnswer(opt.key)}
-                  className={`answer-option w-full text-left flex gap-2 md:gap-3 p-3 md:p-4 ${
-                    answers[question.id] === opt.key ? 'answer-option-selected' : ''
-                  }`}
-                >
-                  <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs md:text-sm">
-                    {opt.key}
-                  </span>
-                  <span className="text-sm md:text-base"><LatexText>{opt.text}</LatexText></span>
-                </button>
-              ))}
-            </div>
+            {/* Pilihan Jawaban */}
+            {question.optionImageUrls ? (
+              // Grid layout untuk pilihan jawaban bergambar (figural)
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
+                {question.options.map((opt) => {
+                  const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => handleAnswer(opt.key)}
+                      className={`relative flex flex-col items-center p-2 md:p-3 rounded-lg border-2 transition-all ${
+                        answers[question.id] === opt.key 
+                          ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
+                          : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                      }`}
+                    >
+                      <span className="absolute top-1 left-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-secondary flex items-center justify-center font-semibold text-[10px] md:text-xs">
+                        {opt.key}
+                      </span>
+                      {optionImage ? (
+                        <img 
+                          src={optionImage} 
+                          alt={`Pilihan ${opt.key}`}
+                          className="w-full h-auto rounded mt-4"
+                        />
+                      ) : (
+                        <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-4">
+                          <span className="text-muted-foreground text-xs">Gambar {opt.key}</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              // Layout standar untuk pilihan jawaban teks
+              <div className="space-y-2 md:space-y-3">
+                {question.options.map((opt) => (
+                  <button
+                    key={opt.key}
+                    onClick={() => handleAnswer(opt.key)}
+                    className={`answer-option w-full text-left flex gap-2 md:gap-3 p-3 md:p-4 ${
+                      answers[question.id] === opt.key ? 'answer-option-selected' : ''
+                    }`}
+                  >
+                    <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs md:text-sm">
+                      {opt.key}
+                    </span>
+                    <span className="text-sm md:text-base"><LatexText>{opt.text}</LatexText></span>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Navigation Buttons - Stack on mobile */}
             <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6 md:mt-8">
