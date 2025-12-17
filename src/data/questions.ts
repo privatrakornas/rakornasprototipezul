@@ -744,7 +744,7 @@ export const questions: Question[] = [
     id: 49,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: 'Perhatikan kolom berikut!\n\nR: 3 + $\\frac{1}{8}$ – $\\frac{3}{2}$ =\nS: 3 + $\\frac{1}{10}$ – $\\frac{5}{2}$ =\n\nManakah hubungan yang benar antara kuantitas R dan S berikut....',
+    text: '<p>Perhatikan kolom berikut!</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Rumus</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">R</td><td class="border border-gray-300 px-4 py-2">3 + $\\frac{1}{8}$ – $\\frac{3}{2}$ =</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">S</td><td class="border border-gray-300 px-4 py-2">3 + $\\frac{1}{10}$ – $\\frac{5}{2}$ =</td></tr></tbody></table></div><p>Manakah hubungan yang benar antara kuantitas R dan S berikut....</p>',
     options: [
       { key: 'A', text: 'R = S.' },
       { key: 'B', text: 'R < S.' },
@@ -760,7 +760,7 @@ export const questions: Question[] = [
     id: 50,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: 'Perhatikan tabel berikut!\n\nP: $\\frac{1}{5}$X – 7Y =\nQ: $\\frac{3}{5}$X – 3Y =\n\nJika X = 5 dan Y = 1, maka...',
+    text: '<p>Perhatikan tabel berikut!</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Rumus</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">P</td><td class="border border-gray-300 px-4 py-2">$\\frac{1}{5}$X – 7Y =</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">Q</td><td class="border border-gray-300 px-4 py-2">$\\frac{3}{5}$X – 3Y =</td></tr></tbody></table></div><p>Jika X = 5 dan Y = 1, maka...</p>',
     options: [
       { key: 'A', text: 'P > Q.' },
       { key: 'B', text: '2P = 3Q.' },
@@ -776,7 +776,7 @@ export const questions: Question[] = [
     id: 51,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: 'Budi membawa uang Rp. 100.000 untuk membeli meja belajar seharga Rp. 50.000/lusin\n\nA: Uang kembalian yang diterima Budi\nB: Harga 12 meja belajar dengan pembelian selusin\n\nManakah hubungan yang benar antara kuantitas A dan B berikut...',
+    text: '<p>Budi membawa uang Rp. 100.000 untuk membeli meja belajar seharga Rp. 50.000/lusin</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-4 py-2 text-left">Kuantitas</th><th class="border border-gray-300 px-4 py-2 text-left">Keterangan</th></tr></thead><tbody><tr><td class="border border-gray-300 px-4 py-2 font-semibold">A</td><td class="border border-gray-300 px-4 py-2">Uang kembalian yang diterima Budi</td></tr><tr><td class="border border-gray-300 px-4 py-2 font-semibold">B</td><td class="border border-gray-300 px-4 py-2">Harga 12 meja belajar dengan pembelian selusin</td></tr></tbody></table></div><p>Manakah hubungan yang benar antara kuantitas A dan B berikut...</p>',
     options: [
       { key: 'A', text: '4A = B' },
       { key: 'B', text: '4A > B' },
@@ -792,7 +792,7 @@ export const questions: Question[] = [
     id: 52,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: 'Tabel Survei Kepuasan Pelanggan (Cabang X, Y, Z dengan kategori K, L, M, N).\n\nApabila memuaskan bernilai 10 dan tidak memuaskan bernilai -5. Cabang perusahaan mana yang mendapatkan total nilai tertinggi dan terendah?',
+    text: '<p>Perhatikan Tabel Survei Kepuasan Pelanggan berikut:</p><div class="overflow-x-auto my-3"><table class="min-w-full border-collapse border border-gray-300 text-sm"><thead><tr class="bg-gray-100"><th class="border border-gray-300 px-3 py-2" rowspan="2">Cabang</th><th class="border border-gray-300 px-3 py-2 text-center" colspan="2">K</th><th class="border border-gray-300 px-3 py-2 text-center" colspan="2">L</th><th class="border border-gray-300 px-3 py-2 text-center" colspan="2">M</th><th class="border border-gray-300 px-3 py-2 text-center" colspan="2">N</th></tr><tr class="bg-gray-50"><th class="border border-gray-300 px-2 py-1 text-xs">Puas</th><th class="border border-gray-300 px-2 py-1 text-xs">Tidak</th><th class="border border-gray-300 px-2 py-1 text-xs">Puas</th><th class="border border-gray-300 px-2 py-1 text-xs">Tidak</th><th class="border border-gray-300 px-2 py-1 text-xs">Puas</th><th class="border border-gray-300 px-2 py-1 text-xs">Tidak</th><th class="border border-gray-300 px-2 py-1 text-xs">Puas</th><th class="border border-gray-300 px-2 py-1 text-xs">Tidak</th></tr></thead><tbody><tr><td class="border border-gray-300 px-3 py-2 font-semibold">X</td><td class="border border-gray-300 px-3 py-2 text-center">27</td><td class="border border-gray-300 px-3 py-2 text-center">23</td><td class="border border-gray-300 px-3 py-2 text-center">26</td><td class="border border-gray-300 px-3 py-2 text-center">24</td><td class="border border-gray-300 px-3 py-2 text-center">28</td><td class="border border-gray-300 px-3 py-2 text-center">22</td><td class="border border-gray-300 px-3 py-2 text-center">25</td><td class="border border-gray-300 px-3 py-2 text-center">25</td></tr><tr><td class="border border-gray-300 px-3 py-2 font-semibold">Y</td><td class="border border-gray-300 px-3 py-2 text-center">26</td><td class="border border-gray-300 px-3 py-2 text-center">24</td><td class="border border-gray-300 px-3 py-2 text-center">27</td><td class="border border-gray-300 px-3 py-2 text-center">23</td><td class="border border-gray-300 px-3 py-2 text-center">28</td><td class="border border-gray-300 px-3 py-2 text-center">21</td><td class="border border-gray-300 px-3 py-2 text-center">24</td><td class="border border-gray-300 px-3 py-2 text-center">26</td></tr><tr><td class="border border-gray-300 px-3 py-2 font-semibold">Z</td><td class="border border-gray-300 px-3 py-2 text-center">28</td><td class="border border-gray-300 px-3 py-2 text-center">22</td><td class="border border-gray-300 px-3 py-2 text-center">25</td><td class="border border-gray-300 px-3 py-2 text-center">25</td><td class="border border-gray-300 px-3 py-2 text-center">29</td><td class="border border-gray-300 px-3 py-2 text-center">22</td><td class="border border-gray-300 px-3 py-2 text-center">27</td><td class="border border-gray-300 px-3 py-2 text-center">23</td></tr></tbody></table></div><p>Apabila memuaskan bernilai 10 dan tidak memuaskan bernilai -5. Cabang perusahaan mana yang mendapatkan total nilai tertinggi dan terendah?</p>',
     options: [
       { key: 'A', text: 'L dan K' },
       { key: 'B', text: 'M dan K' },
