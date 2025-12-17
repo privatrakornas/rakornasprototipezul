@@ -1,6 +1,7 @@
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 import { Fragment } from 'react';
+import DOMPurify from 'dompurify';
 
 interface LatexTextProps {
   children: string;
@@ -8,10 +9,27 @@ interface LatexTextProps {
   block?: boolean;
 }
 
+// Configure DOMPurify to allow safe HTML tags and KaTeX output
+const ALLOWED_TAGS = [
+  'table', 'thead', 'tbody', 'tr', 'th', 'td', 'div', 'span', 'p', 'br', 'strong', 'b', 'em', 'i', 'u',
+  'sup', 'sub', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+  // KaTeX specific tags
+  'math', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub', 'mfrac', 'mover', 'munder',
+  'annotation', 'svg', 'path', 'line', 'rect', 'g', 'use'
+];
+
+const ALLOWED_ATTR = [
+  'class', 'style', 'colspan', 'rowspan', 'scope',
+  // KaTeX/SVG specific attributes  
+  'xmlns', 'width', 'height', 'viewBox', 'd', 'fill', 'stroke', 'transform',
+  'x', 'y', 'x1', 'y1', 'x2', 'y2', 'href', 'xlink:href'
+];
+
 /**
  * Renders text with LaTeX math formulas and HTML content.
  * Supports both inline ($...$) and block ($$...$$) LaTeX notation.
  * Also supports HTML tags like <table>, <div>, etc.
+ * Uses DOMPurify to sanitize HTML and prevent XSS attacks.
  */
 const LatexText = ({ children, className = '', block = false }: LatexTextProps) => {
   if (!children) return null;
@@ -44,10 +62,17 @@ const LatexText = ({ children, className = '', block = false }: LatexTextProps) 
       }
     });
 
+    // Sanitize HTML to prevent XSS attacks
+    const sanitizedHtml = DOMPurify.sanitize(processedHtml, {
+      ALLOWED_TAGS,
+      ALLOWED_ATTR,
+      ADD_ATTR: ['target'],
+    });
+
     return (
       <span 
         className={className}
-        dangerouslySetInnerHTML={{ __html: processedHtml }}
+        dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       />
     );
   }
