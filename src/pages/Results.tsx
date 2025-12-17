@@ -116,6 +116,56 @@ const Results = () => {
                   <div className="text-xs md:text-sm mb-2">
                     <LatexText>{`${q.text.substring(0, 150)}...`}</LatexText>
                   </div>
+                  
+                  {/* Gambar Soal untuk soal figural */}
+                  {q.imageUrl && (
+                    <div className="mb-3">
+                      <img 
+                        src={q.imageUrl} 
+                        alt={`Gambar soal ${q.id}`}
+                        className="max-w-full md:max-w-md h-auto rounded-lg border shadow-sm"
+                      />
+                    </div>
+                  )}
+                  
+                  {/* Gambar Pilihan untuk soal figural */}
+                  {q.optionImageUrls && (
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-3">
+                      {q.options.map((opt) => {
+                        const optionImage = q.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
+                        const isUserAnswer = userAnswer === opt.key;
+                        const isCorrectAnswer = q.correctAnswer === opt.key;
+                        return (
+                          <div
+                            key={opt.key}
+                            className={`relative p-1.5 md:p-2 rounded-lg border-2 ${
+                              isCorrectAnswer 
+                                ? 'border-success bg-success/10' 
+                                : isUserAnswer 
+                                ? 'border-destructive bg-destructive/10' 
+                                : 'border-border'
+                            }`}
+                          >
+                            <span className="absolute top-0.5 left-0.5 w-4 h-4 md:w-5 md:h-5 rounded-full bg-secondary flex items-center justify-center font-semibold text-[8px] md:text-[10px]">
+                              {opt.key}
+                            </span>
+                            {optionImage ? (
+                              <img 
+                                src={optionImage} 
+                                alt={`Pilihan ${opt.key}`}
+                                className="w-full h-auto rounded mt-3"
+                              />
+                            ) : (
+                              <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-3">
+                                <span className="text-muted-foreground text-[8px] md:text-[10px]">{opt.key}</span>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  
                   <p className="text-xs md:text-sm">
                     <strong>Jawaban Anda:</strong> {userAnswer || '-'} | 
                     <strong> Kunci:</strong> {q.correctAnswer || 'Skor bertingkat'}
