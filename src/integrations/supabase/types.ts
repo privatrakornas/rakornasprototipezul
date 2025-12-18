@@ -14,7 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      exam_results: {
+        Row: {
+          created_at: string
+          device_fingerprint: string | null
+          id: string
+          ip_address: string | null
+          name: string
+          tiu_score: number
+          tkp_score: number
+          total_score: number
+          twk_score: number
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          name: string
+          tiu_score?: number
+          tkp_score?: number
+          total_score?: number
+          twk_score?: number
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string | null
+          id?: string
+          ip_address?: string | null
+          name?: string
+          tiu_score?: number
+          tkp_score?: number
+          total_score?: number
+          twk_score?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

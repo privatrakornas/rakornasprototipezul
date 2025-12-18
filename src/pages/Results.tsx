@@ -3,13 +3,43 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { questions, calculateTWKScore, calculateTIUScore, calculateTKPScore, getPassingStatus } from '@/data/questions';
-import { Trophy, BookOpen, CheckCircle, XCircle } from 'lucide-react';
+import { Trophy, BookOpen, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import MaterialAnalysis from '@/components/MaterialAnalysis';
 import LatexText from '@/components/LatexText';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// Generate or get device fingerprint from localStorage
+const getDeviceFingerprint = (): string => {
+  const storedFingerprint = localStorage.getItem('device_fingerprint');
+  if (storedFingerprint) {
+    return storedFingerprint;
+  }
+  // Generate new UUID
+  const newFingerprint = crypto.randomUUID();
+  localStorage.setItem('device_fingerprint', newFingerprint);
+  return newFingerprint;
+};
+
+// Get client IP address via edge function
+const getClientIp = async (): Promise<string> => {
+  try {
+    const { data, error } = await supabase.functions.invoke('get-ip');
+    if (error) {
+      console.error('Error getting IP:', error);
+      return 'unknown';
+    }
+    return data?.ip || 'unknown';
+  } catch (error) {
+    console.error('Error calling get-ip function:', error);
+    return 'unknown';
+  }
+};
 
 const Results = () => {
   const navigate = useNavigate();
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
   const userName = localStorage.getItem('userName') || 'Peserta';
 
   useEffect(() => {
@@ -25,11 +55,43 @@ const Results = () => {
   const totalScore = twkScore + tiuScore + tkpScore;
   const status = getPassingStatus(twkScore, tiuScore, tkpScore);
 
-  const saveToLeaderboard = () => {
-    const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-    leaderboard.push({ name: userName, twk: twkScore, tiu: tiuScore, tkp: tkpScore, total: totalScore, date: new Date().toISOString() });
-    localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
-    navigate('/leaderboard');
+  const saveToLeaderboard = async () => {
+    setIsSaving(true);
+    try {
+      // Get device fingerprint and IP address
+      const deviceFingerprint = getDeviceFingerprint();
+      const ipAddress = await getClientIp();
+
+      // Save to Supabase
+      const { error } = await supabase.from('exam_results').insert({
+        name: userName,
+        twk_score: twkScore,
+        tiu_score: tiuScore,
+        tkp_score: tkpScore,
+        total_score: totalScore,
+        ip_address: ipAddress,
+        device_fingerprint: deviceFingerprint,
+      });
+
+      if (error) {
+        console.error('Error saving to leaderboard:', error);
+        toast.error('Gagal menyimpan ke leaderboard');
+        // Fallback to localStorage
+        const leaderboard = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+        leaderboard.push({ name: userName, twk: twkScore, tiu: tiuScore, tkp: tkpScore, total: totalScore, date: new Date().toISOString() });
+        localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+      } else {
+        toast.success('Hasil berhasil disimpan ke leaderboard');
+      }
+
+      navigate('/leaderboard');
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Terjadi kesalahan');
+      navigate('/leaderboard');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -78,8 +140,16 @@ const Results = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center">
-            <Button onClick={saveToLeaderboard} className="w-full sm:w-auto text-sm">
-              <Trophy className="w-4 h-4 mr-2" /> Lihat Leaderboard
+            <Button onClick={saveToLeaderboard} disabled={isSaving} className="w-full sm:w-auto text-sm">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Trophy className="w-4 h-4 mr-2" /> Lihat Leaderboard
+                </>
+              )}
             </Button>
             <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto text-sm">
               Kembali
