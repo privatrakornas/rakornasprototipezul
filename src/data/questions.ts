@@ -947,7 +947,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Bentuk love berputar 90˚ berlawanan arah putaran jarum jam dan bergerak 1 langkah searah jarum jam pula. Adapun tanda panah bergerak secara diagonal.',
     hasImage: true,
-    imageUrl: 'https://i.postimg.cc/050h6Ljv/soal61.png',
+    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal61.png',
   },
   {
     id: 62,
