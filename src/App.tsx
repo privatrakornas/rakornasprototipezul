@@ -9,6 +9,7 @@ import Exam from "./pages/Exam";
 import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 import { useContentProtection } from "./hooks/useContentProtection";
 
 const queryClient = new QueryClient();
@@ -23,9 +24,9 @@ const AppContent = () => {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/rules" element={<Rules />} />
-          <Route path="/exam" element={<Exam />} />
-          <Route path="/results" element={<Results />} />
+          <Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
+          <Route path="/exam" element={<ProtectedRoute><Exam /></ProtectedRoute>} />
+          <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

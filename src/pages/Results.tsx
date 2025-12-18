@@ -8,6 +8,18 @@ import MaterialAnalysis from '@/components/MaterialAnalysis';
 import LatexText from '@/components/LatexText';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { z } from 'zod';
+
+// Validation schema for exam results
+const examResultSchema = z.object({
+  name: z.string().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter'),
+  twk_score: z.number().int().min(0).max(150), // Max: 30 questions * 5 points = 150
+  tiu_score: z.number().int().min(0).max(175), // Max: 35 questions * 5 points = 175
+  tkp_score: z.number().int().min(0).max(225), // Max: 45 questions * 5 points = 225
+  total_score: z.number().int().min(0).max(550),
+  ip_address: z.string().max(45).optional(),
+  device_fingerprint: z.string().uuid().optional(),
+});
 
 // Generate or get device fingerprint from localStorage
 const getDeviceFingerprint = (): string => {
@@ -62,15 +74,33 @@ const Results = () => {
       const deviceFingerprint = getDeviceFingerprint();
       const ipAddress = await getClientIp();
 
-      // Save to Supabase
-      const { error } = await supabase.from('exam_results').insert({
+      // Validate data before submission
+      const validatedData = examResultSchema.safeParse({
         name: userName,
         twk_score: twkScore,
         tiu_score: tiuScore,
         tkp_score: tkpScore,
         total_score: totalScore,
-        ip_address: ipAddress,
+        ip_address: ipAddress !== 'unknown' ? ipAddress : undefined,
         device_fingerprint: deviceFingerprint,
+      });
+
+      if (!validatedData.success) {
+        const errorMsg = validatedData.error.errors[0]?.message || 'Data tidak valid';
+        toast.error(errorMsg);
+        setIsSaving(false);
+        return;
+      }
+
+      // Save to Supabase with validated data
+      const { error } = await supabase.from('exam_results').insert({
+        name: validatedData.data.name,
+        twk_score: validatedData.data.twk_score,
+        tiu_score: validatedData.data.tiu_score,
+        tkp_score: validatedData.data.tkp_score,
+        total_score: validatedData.data.total_score,
+        ip_address: validatedData.data.ip_address || null,
+        device_fingerprint: validatedData.data.device_fingerprint || null,
       });
 
       if (error) {
