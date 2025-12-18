@@ -981,7 +981,7 @@ export const questions: Question[] = [
     correctAnswer: 'E',
     explanation: 'Pada dua gambar di bawah, tampak pada gambar di sebelah kiri terdapat reposisi gambar U-turn (bentuk putaran balik) dan right-turn (bentuk belok kanan) serta penambahan bentuk lingkaran hitam dari $\\frac{1}{2}$ lingkaran menjadi $\\frac{3}{4}$ lingkaran bila dibandingkan dengan gambar sebelah kiri. Dengan demikian, pada dua gambar di atas pun terjadi perubahan gambar yang sama dengan dua gambar di bawahnya.',
     hasImage: true,
-    imageUrl: 'https://i.postimg.cc/qMBS2j66/soal63.png',
+    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal63.png',
   },
   {
     id: 64,
