@@ -1015,7 +1015,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Setiap gambar berotasi searah jarum jam.',
     hasImage: true,
-    imageUrl: 'https://i.postimg.cc/D06NtbDC/soal65.png',
+    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal65.png',
   },
 
   // TKP Questions (66-110) - with tiered scoring
