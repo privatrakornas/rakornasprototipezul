@@ -998,7 +998,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Susunan gambar terdiri dari gambar pertama yang berada di paling luar, gambar kedua berada di tengah-tengah di dalam gambar pertama dan gambar ketiga berada di paling dalam dari seluruh gambar. Setiap gambar akan berpindah posisi secara berurutan, gambar pertama dan ketiga akan berubah warna saat pindah posisi, sementara gambar kedua tidak berubah warna saat pindah posisi.',
     hasImage: true,
-    imageUrl: 'https://i.postimg.cc/5N9T8nQC/soal64.png',
+    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal64.png',
   },
   {
     id: 65,
