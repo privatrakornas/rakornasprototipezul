@@ -768,7 +768,7 @@ export const questions: Question[] = [
     id: 50,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Perhatikan tabel berikut!</p><table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;"><thead><tr style="background-color: #f2f2f2;"><th>No</th><th>X</th><th>Y</th></tr></thead><tbody><tr><td>1</td><td>4/7 dari 84</td><td>33 1/3 % dari 144</td></tr><tr><td>2</td><td>0,25</td><td>0,333...</td></tr><tr><td>3</td><td>66 2/3 %</td><td>2/3</td></tr><tr><td>4</td><td>(0,5 x 0,5) : (0,5 + 0,5)</td><td>(0,25 x 0,25) + 0,25</td></tr></tbody></table><p>Manakah hubungan yang benar antara kuantitas X dan Y berikut berdasarkan tabel di atas?</p>',
+    text: '<p>Perhatikan tabel berikut!</p><table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse: collapse; text-align: center; border: 1px solid #ddd;"><thead><tr style="background-color: #800000; color: white;"><th style="width: 50%;">P</th><th style="width: 50%;">Q</th></tr></thead><tbody><tr><td style="padding: 15px; font-size: 1.1em;"><sup>1</sup>&frasl;<sub>5</sub> X – 7Y =</td><td style="padding: 15px; font-size: 1.1em;"><sup>3</sup>&frasl;<sub>5</sub> X – 3Y =</td></tr></tbody></table><p style="margin-top: 15px;">Jika X = 5 dan Y = 1, maka...</p>',
     options: [
       { key: 'A', text: 'P > Q.' },
       { key: 'B', text: '2P = 3Q.' },
@@ -784,7 +784,7 @@ export const questions: Question[] = [
     id: 51,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Perhatikan tabel berikut!</p><table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse;"><thead><tr style="background-color: #f2f2f2;"><th>P</th><th>Q</th></tr></thead><tbody><tr><td>Jumlah bilangan genap antara 1 sampai dengan 30</td><td>Jumlah bilangan ganjil antara 1 sampai dengan 30</td></tr></tbody></table><p>Manakah hubungan yang benar antara kuantitas P dan Q berikut berdasarkan tabel di atas?</p>',
+    text: '<p>Budi membawa uang Rp. 100.000 untuk membeli meja belajar seharga Rp. 50.000/lusin.</p><table border="1" cellpadding="8" cellspacing="0" style="width:100%; border-collapse: collapse; text-align: center; border: 1px solid #ddd;"><thead><tr style="background-color: #800000; color: white;"><th style="width: 50%;">A</th><th style="width: 50%;">B</th></tr></thead><tbody><tr><td style="vertical-align: middle;">Uang kembalian yang diterima Budi dengan pembelian selusin</td><td style="vertical-align: middle;">Harga 12 meja belajar</td></tr></tbody></table><p style="margin-top: 15px;">Manakah hubungan yang benar antara kuantitas A dan B berikut...</p>',
     options: [
       { key: 'A', text: '4A = B' },
       { key: 'B', text: '4A > B' },
@@ -800,7 +800,7 @@ export const questions: Question[] = [
     id: 52,
     category: 'TIU',
     code: 'Kemampuan Numerik Perbandingan Kuantitatif',
-    text: '<p>Berikut adalah data pengunjung perpustakaan daerah dalam 5 hari kerja:</p><table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; text-align: center;"><thead><tr style="background-color: #f2f2f2;"><th>Hari</th><th>Jumlah Pengunjung</th></tr></thead><tbody><tr><td>Senin</td><td>120</td></tr><tr><td>Selasa</td><td>90</td></tr><tr><td>Rabu</td><td>110</td></tr><tr><td>Kamis</td><td>130</td></tr><tr><td>Jumat</td><td>X</td></tr></tbody></table><p>Jika rata-rata pengunjung selama 5 hari adalah 115 orang, maka jumlah pengunjung pada hari Jumat adalah...</p>',
+    text: '<p><strong>Tabel Survei Kepuasan Pelanggan</strong></p><div style="overflow-x: auto;"><table border="1" cellpadding="5" cellspacing="0" style="width:100%; border-collapse: collapse; text-align: center; font-size: 0.9em; border: 1px solid #333;"><thead><tr style="background-color: #800000; color: white;"><th rowspan="2" style="vertical-align: middle;">Cabang Perusahaan</th><th colspan="3" style="vertical-align: middle;">Daerah</th></tr><tr style="background-color: #800000; color: white;"><th>X</th><th>Y</th><th>Z</th></tr></thead><tbody><tr><td rowspan="2" style="vertical-align: middle; font-weight: bold;">K</td><td>Memuaskan</td><td>26</td><td>28</td><td>28</td></tr><tr><td>Tidak Memuaskan</td><td>24</td><td>22</td><td>22</td></tr><tr style="background-color: #f9f9f9;"><td rowspan="2" style="vertical-align: middle; font-weight: bold;">L</td><td>Memuaskan</td><td>28</td><td>27</td><td>27</td></tr><tr style="background-color: #f9f9f9;"><td>Tidak Memuaskan</td><td>22</td><td>23</td><td>23</td></tr><tr><td rowspan="2" style="vertical-align: middle; font-weight: bold;">M</td><td>Memuaskan</td><td>28</td><td>28</td><td>29</td></tr><tr><td>Tidak Memuaskan</td><td>22</td><td>21</td><td>22</td></tr><tr style="background-color: #f9f9f9;"><td rowspan="2" style="vertical-align: middle; font-weight: bold;">N</td><td>Memuaskan</td><td>25</td><td>24</td><td>27</td></tr><tr style="background-color: #f9f9f9;"><td>Tidak Memuaskan</td><td>25</td><td>26</td><td>23</td></tr></tbody></table></div><p style="margin-top: 15px;">Persentase kepuasan pelanggan tertinggi terjadi di daerah...</p>',
     options: [
       { key: 'A', text: 'L dan K' },
       { key: 'B', text: 'M dan K' },
