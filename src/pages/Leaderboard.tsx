@@ -3,32 +3,105 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy, Medal, Award } from 'lucide-react';
+import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeaderboardEntry {
+  id: string;
   name: string;
-  twk: number;
-  tiu: number;
-  tkp: number;
-  total: number;
-  date: string;
+  twk_score: number;
+  tiu_score: number;
+  tkp_score: number;
+  total_score: number;
+  ip_address: string | null;
+  device_fingerprint: string | null;
 }
 
 const Leaderboard = () => {
   const navigate = useNavigate();
   const [data, setData] = useState<LeaderboardEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    fetchLeaderboard();
+  }, []);
+
+  const fetchLeaderboard = async () => {
+    try {
+      // Fetch all results sorted by score
+      const { data: results, error } = await supabase
+        .from('exam_results')
+        .select('*')
+        .order('total_score', { ascending: false })
+        .order('tkp_score', { ascending: false })
+        .order('tiu_score', { ascending: false })
+        .order('twk_score', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching leaderboard:', error);
+        // Fallback to localStorage
+        loadFromLocalStorage();
+        return;
+      }
+
+      if (results && results.length > 0) {
+        // Filter to show only one entry per unique IP or device fingerprint
+        // Keep the best score (first occurrence since already sorted)
+        const seenIps = new Set<string>();
+        const seenDevices = new Set<string>();
+        const uniqueResults: LeaderboardEntry[] = [];
+
+        for (const entry of results) {
+          const ip = entry.ip_address || '';
+          const device = entry.device_fingerprint || '';
+          
+          // Skip if we've already seen this IP or device
+          if ((ip && seenIps.has(ip)) || (device && seenDevices.has(device))) {
+            continue;
+          }
+
+          // Mark IP and device as seen
+          if (ip) seenIps.add(ip);
+          if (device) seenDevices.add(device);
+          
+          uniqueResults.push(entry);
+        }
+
+        setData(uniqueResults);
+      } else {
+        // No data in database, try localStorage
+        loadFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadFromLocalStorage = () => {
     const saved = JSON.parse(localStorage.getItem('leaderboard') || '[]');
+    // Convert localStorage format to database format
+    const converted = saved.map((entry: any, idx: number) => ({
+      id: `local-${idx}`,
+      name: entry.name,
+      twk_score: entry.twk,
+      tiu_score: entry.tiu,
+      tkp_score: entry.tkp,
+      total_score: entry.total,
+      ip_address: null,
+      device_fingerprint: null,
+    }));
     // Sort by total, then TKP, then TIU, then TWK
-    const sorted = saved.sort((a: LeaderboardEntry, b: LeaderboardEntry) => {
-      if (b.total !== a.total) return b.total - a.total;
-      if (b.tkp !== a.tkp) return b.tkp - a.tkp;
-      if (b.tiu !== a.tiu) return b.tiu - a.tiu;
-      return b.twk - a.twk;
+    const sorted = converted.sort((a: LeaderboardEntry, b: LeaderboardEntry) => {
+      if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+      if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
+      if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
+      return b.twk_score - a.twk_score;
     });
     setData(sorted);
-  }, []);
+  };
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-500" />;
@@ -55,7 +128,12 @@ const Leaderboard = () => {
 
       <main className="container mx-auto pb-6 md:pb-8 px-3 md:px-4">
         <Card className="max-w-4xl mx-auto p-3 md:p-6">
-          {data.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              <span className="ml-2 text-muted-foreground">Memuat data...</span>
+            </div>
+          ) : data.length === 0 ? (
             <p className="text-center text-muted-foreground py-6 md:py-8 text-sm md:text-base">Belum ada data peserta</p>
           ) : (
             <div className="overflow-x-auto -mx-3 md:mx-0">
@@ -80,15 +158,15 @@ const Leaderboard = () => {
                       rowClass = 'bg-slate-100/70 dark:bg-slate-800/30';
                     }
                     return (
-                      <TableRow key={idx} className={rowClass}>
+                      <TableRow key={entry.id} className={rowClass}>
                         <TableCell className="flex items-center justify-center py-2 md:py-4">
                           {getRankIcon(rank)}
                         </TableCell>
                         <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">{entry.name}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.twk}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tiu}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tkp}</TableCell>
-                        <TableCell className="text-center font-bold text-xs md:text-sm py-2 md:py-4">{entry.total}</TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.twk_score}</TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tiu_score}</TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tkp_score}</TableCell>
+                        <TableCell className="text-center font-bold text-xs md:text-sm py-2 md:py-4">{entry.total_score}</TableCell>
                       </TableRow>
                     );
                   })}

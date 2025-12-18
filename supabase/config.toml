@@ -1,1 +1,4 @@
 project_id = "wwbywxaferinpovrlpzq"
+
+[functions.get-ip]
+verify_jwt = false
