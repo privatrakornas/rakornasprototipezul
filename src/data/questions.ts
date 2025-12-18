@@ -964,7 +964,7 @@ export const questions: Question[] = [
     correctAnswer: 'D',
     explanation: 'Hanya pilihan D yang memiliki lingkaran hitam di sebelah kanan.',
     hasImage: true,
-    imageUrl: 'https://i.postimg.cc/DyfH1B4k/soal62.png',
+    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal62.png',
   },
   {
     id: 63,
