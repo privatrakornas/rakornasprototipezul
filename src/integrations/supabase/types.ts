@@ -55,6 +55,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_existing_submission: {
+        Args: { p_device_fingerprint?: string; p_ip_address?: string }
+        Returns: boolean
+      }
       get_leaderboard: {
         Args: { page_limit?: number; page_offset?: number }
         Returns: {
