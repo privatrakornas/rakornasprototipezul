@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Loader2 } from 'lucide-react';
 import logoRakornas from '@/assets/logo-rakornas.jpg';
-import { supabase } from '@/integrations/supabase/client';
+
+// Hardcoded PIN for public access (client-side)
+const EXAM_PIN = '123456';
 
 const Index = () => {
   const [name, setName] = useState('');
@@ -14,57 +16,47 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (!name.trim()) {
+
+    const normalizedName = name.trim();
+    const normalizedPin = pin.trim();
+
+    if (!normalizedName) {
       setError('Nama lengkap harus diisi');
       return;
     }
-    
-    if (name.trim().length < 2) {
+
+    if (normalizedName.length < 2) {
       setError('Nama minimal 2 karakter');
       return;
     }
-    
-    if (!pin) {
+
+    if (!normalizedPin) {
       setError('PIN harus diisi');
       return;
     }
 
     setIsLoading(true);
-    
-    try {
-      // Verify PIN via edge function (server-side)
-      const { data, error: fnError } = await supabase.functions.invoke('verify-pin', {
-        body: { pin, name: name.trim() }
-      });
 
-      if (fnError) {
-        console.error('Edge function error:', fnError);
-        setError('Terjadi kesalahan, silakan coba lagi');
-        setIsLoading(false);
-        return;
-      }
-
-      if (!data?.authorized) {
-        setError(data?.error || 'PIN tidak valid');
-        setIsLoading(false);
-        return;
-      }
-
-      // Store session token (not just the name)
-      sessionStorage.setItem('examSession', data.session);
-      sessionStorage.setItem('userName', data.name);
-      
-      navigate('/rules');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Terjadi kesalahan, silakan coba lagi');
-    } finally {
+    // Client-side PIN validation (no backend call)
+    if (normalizedPin !== EXAM_PIN) {
+      setError('PIN tidak valid');
       setIsLoading(false);
+      return;
     }
+
+    // Store lightweight session for route protection
+    const sessionId =
+      globalThis.crypto?.randomUUID?.() ??
+      `sess-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    sessionStorage.setItem('examSession', sessionId);
+    sessionStorage.setItem('userName', normalizedName.slice(0, 100));
+
+    setIsLoading(false);
+    navigate('/rules');
   };
 
   return (

@@ -51,8 +51,10 @@ const getDeviceFingerprint = (): string => {
   if (storedFingerprint) {
     return storedFingerprint;
   }
-  // Generate new UUID
-  const newFingerprint = crypto.randomUUID();
+  // Generate new UUID (with fallback for older browsers)
+  const newFingerprint =
+    globalThis.crypto?.randomUUID?.() ??
+    `fp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   localStorage.setItem('device_fingerprint', newFingerprint);
   return newFingerprint;
 };
