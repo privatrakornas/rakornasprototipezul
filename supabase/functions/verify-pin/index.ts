@@ -8,10 +8,17 @@ const allowedOrigins = [
   'https://id.lovable.app',
 ].filter(Boolean);
 
+// Check if origin matches allowed patterns (including lovableproject.com subdomains)
+function isAllowedOrigin(origin: string | null): boolean {
+  if (!origin) return false;
+  if (allowedOrigins.includes(origin)) return true;
+  // Allow all lovableproject.com subdomains
+  if (origin.endsWith('.lovableproject.com')) return true;
+  return false;
+}
+
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = origin && allowedOrigins.some(allowed => 
-    origin === allowed || origin.startsWith(allowed.replace(/\/$/, ''))
-  ) ? origin : allowedOrigins[0] || '';
+  const allowedOrigin = isAllowedOrigin(origin) ? origin! : allowedOrigins[0] || '*';
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
