@@ -98,6 +98,29 @@ const Results = () => {
       const deviceFingerprint = getDeviceFingerprint();
       const ipAddress = await getClientIp();
 
+      // Check if this device/IP has already submitted (First Attempt Only)
+      const { data: alreadySubmitted, error: checkError } = await supabase.rpc(
+        'check_existing_submission',
+        {
+          p_device_fingerprint: deviceFingerprint,
+          p_ip_address: ipAddress !== 'unknown' ? ipAddress : null,
+        }
+      );
+
+      if (checkError) {
+        console.error('Error checking existing submission:', checkError);
+      }
+
+      // If already submitted, just navigate to leaderboard without saving
+      if (alreadySubmitted === true) {
+        toast.info('Skor percobaan pertama Anda sudah tersimpan di leaderboard', {
+          description: 'Hanya hasil pengerjaan pertama yang ditampilkan',
+          duration: 5000,
+        });
+        navigate('/leaderboard');
+        return;
+      }
+
       // Validate data before submission
       const validatedData = examResultSchema.safeParse({
         name: userName,
@@ -116,7 +139,7 @@ const Results = () => {
         return;
       }
 
-      // Save to Supabase with validated data
+      // Save to Supabase with validated data (First Attempt)
       const { error } = await supabase.from('exam_results').insert({
         name: validatedData.data.name,
         twk_score: validatedData.data.twk_score,
@@ -135,7 +158,7 @@ const Results = () => {
         leaderboard.push({ name: userName, twk: twkScore, tiu: tiuScore, tkp: tkpScore, total: totalScore, date: new Date().toISOString() });
         localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
       } else {
-        toast.success('Hasil berhasil disimpan ke leaderboard');
+        toast.success('Hasil percobaan pertama berhasil disimpan ke leaderboard');
       }
 
       navigate('/leaderboard');
