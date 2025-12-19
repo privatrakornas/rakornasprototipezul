@@ -1,9 +1,46 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { create, verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Allowed origins for CORS - restrict to legitimate sources
+const allowedOrigins = [
+  Deno.env.get('SITE_URL') || '',
+  'https://lovable.dev',
+  'https://id.lovable.app',
+].filter(Boolean);
+
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowedOrigin = origin && allowedOrigins.some(allowed => 
+    origin === allowed || origin.startsWith(allowed.replace(/\/$/, ''))
+  ) ? origin : allowedOrigins[0] || '';
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  };
+}
+
+// Rate limiting for PIN brute-force protection
+const requestCounts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 5; // 5 PIN attempts per minute per IP
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const record = requestCounts.get(ip);
+
+  if (!record || now > record.resetAt) {
+    requestCounts.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+
+  if (record.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+
+  record.count++;
+  return true;
+}
 
 // Sanitize name by removing dangerous characters
 function sanitizeName(name: string): string {
@@ -21,31 +58,67 @@ function sanitizeName(name: string): string {
   return cleaned.trim().slice(0, 100);
 }
 
-// Generate a simple session token with expiry
-function generateSessionToken(name: string): string {
-  const payload = {
-    name: sanitizeName(name),
-    exp: Date.now() + (2 * 60 * 60 * 1000), // 2 hours expiry
-    iat: Date.now(),
-  };
-  // Simple base64 encoding - in production, use proper JWT signing
-  return btoa(JSON.stringify(payload));
+// Get or create the HMAC key for JWT signing
+async function getJwtKey(): Promise<CryptoKey> {
+  const secret = Deno.env.get('JWT_SECRET');
+  if (!secret) {
+    throw new Error('JWT_SECRET not configured');
+  }
+  
+  return await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign', 'verify']
+  );
 }
 
-// Validate session token
-function validateSessionToken(token: string): { valid: boolean; name?: string } {
+// Generate a cryptographically signed JWT session token
+async function generateSessionToken(name: string): Promise<string> {
+  const key = await getJwtKey();
+  
+  const payload = {
+    sub: sanitizeName(name),
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + (2 * 60 * 60), // 2 hours expiry
+    iss: 'rakornas-exam',
+    aud: 'exam-participants'
+  };
+  
+  return await create(
+    { alg: 'HS256', typ: 'JWT' },
+    payload,
+    key
+  );
+}
+
+// Validate JWT session token with signature verification
+async function validateSessionToken(token: string): Promise<{ valid: boolean; name?: string }> {
   try {
-    const payload = JSON.parse(atob(token));
-    if (payload.exp && payload.exp > Date.now()) {
-      return { valid: true, name: payload.name };
+    const key = await getJwtKey();
+    const payload = await verify(token, key);
+    
+    // Additional validation for issuer and audience
+    if (payload.iss !== 'rakornas-exam' || payload.aud !== 'exam-participants') {
+      console.log('JWT validation failed: invalid issuer or audience');
+      return { valid: false };
     }
-    return { valid: false };
-  } catch {
+    
+    return { 
+      valid: true, 
+      name: payload.sub as string 
+    };
+  } catch (error) {
+    console.error('JWT verification failed:', error);
     return { valid: false };
   }
 }
 
 serve(async (req) => {
+  const origin = req.headers.get('origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -63,7 +136,7 @@ serve(async (req) => {
       );
     }
 
-    // Validate existing session
+    // Validate existing session (no rate limiting for validation)
     if (action === 'validate') {
       if (!token) {
         return new Response(
@@ -71,11 +144,25 @@ serve(async (req) => {
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      const result = validateSessionToken(token);
+      const result = await validateSessionToken(token);
       console.log('Session validation:', result.valid ? 'valid' : 'invalid');
       return new Response(
         JSON.stringify(result),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Rate limiting for PIN verification attempts
+    const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    
+    if (!checkRateLimit(clientIp)) {
+      console.log('Rate limit exceeded for IP:', clientIp);
+      return new Response(
+        JSON.stringify({ authorized: false, error: 'Terlalu banyak percobaan. Silakan tunggu 1 menit.' }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } 
+        }
       );
     }
 
@@ -88,16 +175,16 @@ serve(async (req) => {
     }
 
     if (!pin || pin !== VALID_PIN) {
-      console.log('Invalid PIN attempt for name:', sanitizeName(name));
+      console.log('Invalid PIN attempt for name:', sanitizeName(name), 'from IP:', clientIp);
       return new Response(
         JSON.stringify({ authorized: false, error: 'PIN tidak valid' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Generate session token
+    // Generate signed JWT session token
     const sanitizedName = sanitizeName(name);
-    const sessionToken = generateSessionToken(sanitizedName);
+    const sessionToken = await generateSessionToken(sanitizedName);
     
     console.log('Login successful for:', sanitizedName);
     
