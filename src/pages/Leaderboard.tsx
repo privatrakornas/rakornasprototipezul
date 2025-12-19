@@ -178,7 +178,13 @@ const Leaderboard = () => {
             <p className="text-center text-muted-foreground py-6 md:py-8 text-sm md:text-base">Belum ada data peserta</p>
           ) : (
             <div className="overflow-x-auto -mx-3 md:mx-0">
-              <Table className="min-w-[480px]">
+              {/* Legend */}
+              <div className="flex justify-end mb-2 px-2 md:px-0">
+                <span className="text-xs text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                  Keterangan: <span className="text-green-600 dark:text-green-400 font-medium">L</span> = Lulus, <span className="text-red-600 dark:text-red-400 font-medium">TL</span> = Tidak Lulus
+                </span>
+              </div>
+              <Table className="min-w-[520px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12 md:w-16 text-xs md:text-sm">Rank</TableHead>
@@ -187,7 +193,7 @@ const Leaderboard = () => {
                     <TableHead className="text-center text-xs md:text-sm">TIU</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">TKP</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Total</TableHead>
-                    <TableHead className="text-center text-xs md:text-sm">Status</TableHead>
+                    <TableHead className="text-center text-xs md:text-sm">Keterangan</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -219,12 +225,12 @@ const Leaderboard = () => {
                         </TableCell>
                         <TableCell className="text-center font-bold text-xs md:text-sm py-2 md:py-4">{entry.total_score}</TableCell>
                         <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             lulus 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 
-                              : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                              ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
+                              : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
                           }`}>
-                            {lulus ? 'LULUS' : 'TIDAK LULUS'}
+                            {lulus ? 'Lulus' : 'Tidak Lulus'}
                           </span>
                         </TableCell>
                       </TableRow>
