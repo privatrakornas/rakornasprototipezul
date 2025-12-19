@@ -6,6 +6,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Passing grade constants
+const PASSING_GRADE = {
+  TWK: 65,
+  TIU: 80,
+  TKP: 166,
+};
+
 interface LeaderboardEntry {
   id: string;
   name: string;
@@ -16,6 +23,43 @@ interface LeaderboardEntry {
   ip_address: string | null;
   device_fingerprint: string | null;
 }
+
+// Check if a participant passes all subjects
+const isLulus = (entry: LeaderboardEntry): boolean => {
+  return (
+    entry.twk_score >= PASSING_GRADE.TWK &&
+    entry.tiu_score >= PASSING_GRADE.TIU &&
+    entry.tkp_score >= PASSING_GRADE.TKP
+  );
+};
+
+// 5-level sorting comparator
+const sortByPriority = (a: LeaderboardEntry, b: LeaderboardEntry): number => {
+  // Priority 1: Pass status (LULUS first)
+  const aLulus = isLulus(a);
+  const bLulus = isLulus(b);
+  if (aLulus !== bLulus) {
+    return aLulus ? -1 : 1;
+  }
+
+  // Priority 2: Total score (highest first)
+  if (b.total_score !== a.total_score) {
+    return b.total_score - a.total_score;
+  }
+
+  // Priority 3: TKP score (highest first)
+  if (b.tkp_score !== a.tkp_score) {
+    return b.tkp_score - a.tkp_score;
+  }
+
+  // Priority 4: TIU score (highest first)
+  if (b.tiu_score !== a.tiu_score) {
+    return b.tiu_score - a.tiu_score;
+  }
+
+  // Priority 5: TWK score (highest first)
+  return b.twk_score - a.twk_score;
+};
 
 const Leaderboard = () => {
   const navigate = useNavigate();
@@ -28,39 +72,34 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // Fetch all results sorted by score
+      // Fetch all results - we'll sort them client-side with our custom logic
       const { data: results, error } = await supabase
         .from('exam_results')
-        .select('*')
-        .order('total_score', { ascending: false })
-        .order('tkp_score', { ascending: false })
-        .order('tiu_score', { ascending: false })
-        .order('twk_score', { ascending: false });
+        .select('*');
 
       if (error) {
         console.error('Error fetching leaderboard:', error);
-        // Fallback to localStorage
         loadFromLocalStorage();
         return;
       }
 
       if (results && results.length > 0) {
         // Filter to show only one entry per unique IP or device fingerprint
-        // Keep the best score (first occurrence since already sorted)
         const seenIps = new Set<string>();
         const seenDevices = new Set<string>();
         const uniqueResults: LeaderboardEntry[] = [];
 
-        for (const entry of results) {
+        // First, sort by the 5-level priority
+        const sortedResults = [...results].sort(sortByPriority);
+
+        for (const entry of sortedResults) {
           const ip = entry.ip_address || '';
           const device = entry.device_fingerprint || '';
           
-          // Skip if we've already seen this IP or device
           if ((ip && seenIps.has(ip)) || (device && seenDevices.has(device))) {
             continue;
           }
 
-          // Mark IP and device as seen
           if (ip) seenIps.add(ip);
           if (device) seenDevices.add(device);
           
@@ -69,7 +108,6 @@ const Leaderboard = () => {
 
         setData(uniqueResults);
       } else {
-        // No data in database, try localStorage
         loadFromLocalStorage();
       }
     } catch (error) {
@@ -82,7 +120,6 @@ const Leaderboard = () => {
 
   const loadFromLocalStorage = () => {
     const saved = JSON.parse(localStorage.getItem('leaderboard') || '[]');
-    // Convert localStorage format to database format
     const converted = saved.map((entry: any, idx: number) => ({
       id: `local-${idx}`,
       name: entry.name,
@@ -93,13 +130,8 @@ const Leaderboard = () => {
       ip_address: null,
       device_fingerprint: null,
     }));
-    // Sort by total, then TKP, then TIU, then TWK
-    const sorted = converted.sort((a: LeaderboardEntry, b: LeaderboardEntry) => {
-      if (b.total_score !== a.total_score) return b.total_score - a.total_score;
-      if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
-      if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
-      return b.twk_score - a.twk_score;
-    });
+    // Sort using the 5-level priority
+    const sorted = converted.sort(sortByPriority);
     setData(sorted);
   };
 
@@ -108,6 +140,15 @@ const Leaderboard = () => {
     if (rank === 2) return <Medal className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />;
     if (rank === 3) return <Award className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />;
     return <span className="w-4 md:w-5 text-center text-sm">{rank}</span>;
+  };
+
+  // Get score cell class based on passing grade
+  const getScoreClass = (score: number, type: 'TWK' | 'TIU' | 'TKP'): string => {
+    const passingGrade = PASSING_GRADE[type];
+    if (score < passingGrade) {
+      return 'text-red-600 dark:text-red-500 font-semibold';
+    }
+    return '';
   };
 
   return (
@@ -146,16 +187,20 @@ const Leaderboard = () => {
                     <TableHead className="text-center text-xs md:text-sm">TIU</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">TKP</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Total</TableHead>
+                    <TableHead className="text-center text-xs md:text-sm">Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {data.map((entry, idx) => {
                     const rank = idx + 1;
+                    const lulus = isLulus(entry);
                     let rowClass = '';
-                    if (rank <= 3) {
+                    if (rank <= 3 && lulus) {
                       rowClass = 'bg-yellow-100/70 dark:bg-yellow-900/30';
-                    } else if (rank <= 10) {
+                    } else if (rank <= 10 && lulus) {
                       rowClass = 'bg-slate-100/70 dark:bg-slate-800/30';
+                    } else if (!lulus) {
+                      rowClass = 'bg-red-50/50 dark:bg-red-950/20';
                     }
                     return (
                       <TableRow key={entry.id} className={rowClass}>
@@ -163,10 +208,25 @@ const Leaderboard = () => {
                           {getRankIcon(rank)}
                         </TableCell>
                         <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">{entry.name}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.twk_score}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tiu_score}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">{entry.tkp_score}</TableCell>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.twk_score, 'TWK')}`}>
+                          {entry.twk_score}
+                        </TableCell>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.tiu_score, 'TIU')}`}>
+                          {entry.tiu_score}
+                        </TableCell>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.tkp_score, 'TKP')}`}>
+                          {entry.tkp_score}
+                        </TableCell>
                         <TableCell className="text-center font-bold text-xs md:text-sm py-2 md:py-4">{entry.total_score}</TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            lulus 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' 
+                              : 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                          }`}>
+                            {lulus ? 'LULUS' : 'TIDAK LULUS'}
+                          </span>
+                        </TableCell>
                       </TableRow>
                     );
                   })}
