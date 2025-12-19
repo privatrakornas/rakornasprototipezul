@@ -3,26 +3,68 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
 import logoRakornas from '@/assets/logo-rakornas.jpg';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [name, setName] = useState('');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
     if (!name.trim()) {
       setError('Nama lengkap harus diisi');
       return;
     }
-    if (pin !== '123456') {
-      setError('PIN tidak valid');
+    
+    if (name.trim().length < 2) {
+      setError('Nama minimal 2 karakter');
       return;
     }
-    localStorage.setItem('userName', name);
-    navigate('/rules');
+    
+    if (!pin) {
+      setError('PIN harus diisi');
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      // Verify PIN via edge function (server-side)
+      const { data, error: fnError } = await supabase.functions.invoke('verify-pin', {
+        body: { pin, name: name.trim() }
+      });
+
+      if (fnError) {
+        console.error('Edge function error:', fnError);
+        setError('Terjadi kesalahan, silakan coba lagi');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data?.authorized) {
+        setError(data?.error || 'PIN tidak valid');
+        setIsLoading(false);
+        return;
+      }
+
+      // Store session token (not just the name)
+      sessionStorage.setItem('examSession', data.session);
+      sessionStorage.setItem('userName', data.name);
+      
+      navigate('/rules');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Terjadi kesalahan, silakan coba lagi');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -54,6 +96,8 @@ const Index = () => {
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Masukkan nama lengkap"
                 className="w-full"
+                disabled={isLoading}
+                maxLength={100}
               />
             </div>
             
@@ -65,13 +109,26 @@ const Index = () => {
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="Masukkan PIN"
                 className="w-full"
+                disabled={isLoading}
+                maxLength={20}
               />
             </div>
 
             {error && <p className="text-destructive text-sm">{error}</p>}
 
-            <Button type="submit" className="w-full bg-primary hover:bg-primary/90">
-              Masuk
+            <Button 
+              type="submit" 
+              className="w-full bg-primary hover:bg-primary/90"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memverifikasi...
+                </>
+              ) : (
+                'Masuk'
+              )}
             </Button>
           </form>
 

@@ -72,14 +72,15 @@ const Exam = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
   const [navOpen, setNavOpen] = useState(false);
-  const userName = localStorage.getItem('userName') || 'Peserta';
+  const userName = sessionStorage.getItem('userName') || 'Peserta';
 
   // Anti-cheat: detect tab switch
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         alert('Anda terdeteksi meninggalkan halaman ujian!');
-        localStorage.removeItem('userName');
+        sessionStorage.removeItem('examSession');
+        sessionStorage.removeItem('userName');
         navigate('/');
       }
     };
