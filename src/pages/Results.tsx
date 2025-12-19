@@ -10,9 +10,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-// Validation schema for exam results
+// Sanitize name by removing dangerous Unicode characters
+const sanitizeName = (name: string): string => {
+  let cleaned = name;
+  // Remove control characters
+  cleaned = cleaned.replace(/[\x00-\x1F\x7F-\x9F]/g, '');
+  // Remove zero-width characters
+  cleaned = cleaned.replace(/[\u200B-\u200D\uFEFF]/g, '');
+  // Remove right-to-left and left-to-right marks (prevent display manipulation)
+  cleaned = cleaned.replace(/[\u202A-\u202E\u2066-\u2069]/g, '');
+  // Normalize unicode (prevent homograph attacks)
+  cleaned = cleaned.normalize('NFKC');
+  // Remove excessive whitespace
+  cleaned = cleaned.replace(/\s{3,}/g, ' ');
+  // Trim and limit length
+  return cleaned.trim().slice(0, 100);
+};
+
+// Validation schema for exam results with enhanced security
 const examResultSchema = z.object({
-  name: z.string().min(2, 'Nama minimal 2 karakter').max(100, 'Nama maksimal 100 karakter'),
+  name: z.string()
+    .min(2, 'Nama minimal 2 karakter')
+    .max(100, 'Nama maksimal 100 karakter')
+    // Only allow letters (any script), numbers, spaces, and basic punctuation
+    .regex(/^[\p{L}\p{N}\s\p{P}]+$/u, 'Nama mengandung karakter tidak valid')
+    .refine(val => !/[\u200B-\u200D\uFEFF]/.test(val), 'Nama mengandung karakter tersembunyi')
+    .refine(val => !/\s{3,}/.test(val), 'Nama mengandung terlalu banyak spasi')
+    .transform(sanitizeName),
   twk_score: z.number().int().min(0).max(150), // Max: 30 questions * 5 points = 150
   tiu_score: z.number().int().min(0).max(175), // Max: 35 questions * 5 points = 175
   tkp_score: z.number().int().min(0).max(225), // Max: 45 questions * 5 points = 225
