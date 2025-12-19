@@ -20,8 +20,7 @@ interface LeaderboardEntry {
   tiu_score: number;
   tkp_score: number;
   total_score: number;
-  ip_address: string | null;
-  device_fingerprint: string | null;
+  created_at?: string;
 }
 
 // Check if a participant passes all subjects
@@ -72,10 +71,9 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      // Fetch all results - we'll sort them client-side with our custom logic
+      // Use secure RPC function that hides sensitive data and handles deduplication
       const { data: results, error } = await supabase
-        .from('exam_results')
-        .select('*');
+        .rpc('get_leaderboard');
 
       if (error) {
         console.error('Error fetching leaderboard:', error);
@@ -84,29 +82,8 @@ const Leaderboard = () => {
       }
 
       if (results && results.length > 0) {
-        // Filter to show only one entry per unique IP or device fingerprint
-        const seenIps = new Set<string>();
-        const seenDevices = new Set<string>();
-        const uniqueResults: LeaderboardEntry[] = [];
-
-        // First, sort by the 5-level priority
-        const sortedResults = [...results].sort(sortByPriority);
-
-        for (const entry of sortedResults) {
-          const ip = entry.ip_address || '';
-          const device = entry.device_fingerprint || '';
-          
-          if ((ip && seenIps.has(ip)) || (device && seenDevices.has(device))) {
-            continue;
-          }
-
-          if (ip) seenIps.add(ip);
-          if (device) seenDevices.add(device);
-          
-          uniqueResults.push(entry);
-        }
-
-        setData(uniqueResults);
+        // Data is already sorted and deduplicated by the secure function
+        setData(results);
       } else {
         loadFromLocalStorage();
       }
