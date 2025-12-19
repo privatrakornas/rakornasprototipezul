@@ -56,7 +56,7 @@ export type Database = {
     }
     Functions: {
       get_leaderboard: {
-        Args: never
+        Args: { page_limit?: number; page_offset?: number }
         Returns: {
           created_at: string
           id: string
