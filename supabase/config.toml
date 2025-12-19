@@ -2,3 +2,6 @@ project_id = "wwbywxaferinpovrlpzq"
 
 [functions.get-ip]
 verify_jwt = false
+
+[functions.verify-pin]
+verify_jwt = false

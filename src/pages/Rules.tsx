@@ -5,7 +5,7 @@ import { CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 
 const Rules = () => {
   const navigate = useNavigate();
-  const userName = localStorage.getItem('userName') || 'Peserta';
+  const userName = sessionStorage.getItem('userName') || 'Peserta';
 
   return (
     <div className="min-h-screen bg-background">
