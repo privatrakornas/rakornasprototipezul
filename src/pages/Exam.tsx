@@ -183,6 +183,14 @@ const Exam = () => {
                   src={question.imageUrl} 
                   alt={`Gambar soal ${question.id}`}
                   className="max-w-full h-auto rounded-lg border shadow-sm"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = 'none';
+                    const fallback = document.createElement('div');
+                    fallback.className = 'bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800 text-sm';
+                    fallback.innerHTML = `<p class="text-red-600 dark:text-red-400 font-medium mb-1">⚠️ Gambar gagal dimuat</p><p class="text-muted-foreground text-xs break-all">URL: <a href="${question.imageUrl}" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary">${question.imageUrl}</a></p>`;
+                    target.parentNode?.appendChild(fallback);
+                  }}
                 />
               </div>
             )}
@@ -217,6 +225,14 @@ const Exam = () => {
                           src={optionImage} 
                           alt={`Pilihan ${opt.key}`}
                           className="w-full h-auto rounded mt-4"
+                          onError={(e) => {
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = document.createElement('div');
+                            fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-4 p-2';
+                            fallback.innerHTML = `<span class="text-red-500 text-[10px] text-center">Gagal memuat</span>`;
+                            target.parentNode?.appendChild(fallback);
+                          }}
                         />
                       ) : (
                         <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-4">

@@ -273,6 +273,14 @@ const Results = () => {
                         src={q.imageUrl} 
                         alt={`Gambar soal ${q.id}`}
                         className="max-w-full md:max-w-md h-auto rounded-lg border shadow-sm"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          target.style.display = 'none';
+                          const fallback = document.createElement('div');
+                          fallback.className = 'bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800 text-xs';
+                          fallback.innerHTML = `<p class="text-red-600 dark:text-red-400 font-medium">⚠️ Gambar gagal dimuat</p><p class="text-muted-foreground text-[10px] break-all mt-1">URL: <a href="${q.imageUrl}" target="_blank" rel="noopener noreferrer" class="underline">${q.imageUrl}</a></p>`;
+                          target.parentNode?.appendChild(fallback);
+                        }}
                       />
                     </div>
                   )}
@@ -303,6 +311,14 @@ const Results = () => {
                                 src={optionImage} 
                                 alt={`Pilihan ${opt.key}`}
                                 className="w-full h-auto rounded mt-3"
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-3';
+                                  fallback.innerHTML = `<span class="text-red-500 text-[8px]">Gagal</span>`;
+                                  target.parentNode?.appendChild(fallback);
+                                }}
                               />
                             ) : (
                               <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-3">
