@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
+import { Trophy, Medal, Award, Loader2, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 // Passing grade constants
 const PASSING_GRADE = {
@@ -112,6 +113,23 @@ const Leaderboard = () => {
     setData(sorted);
   };
 
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`Yakin hapus data "${name}"?`)) return;
+    
+    const { error } = await supabase
+      .from('exam_results')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({ title: 'Gagal menghapus', description: error.message, variant: 'destructive' });
+      return;
+    }
+
+    toast({ title: 'Berhasil dihapus', description: `Data ${name} telah dihapus.` });
+    fetchLeaderboard();
+  };
+
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-500" />;
     if (rank === 2) return <Medal className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />;
@@ -171,6 +189,7 @@ const Leaderboard = () => {
                     <TableHead className="text-center text-xs md:text-sm">TKP</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Total</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Keterangan</TableHead>
+                    <TableHead className="w-10"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -209,6 +228,15 @@ const Leaderboard = () => {
                           }`}>
                             {lulus ? 'Lulus' : 'Tidak Lulus'}
                           </span>
+                        </TableCell>
+                        <TableCell className="py-2 md:py-4">
+                          <button
+                            onClick={() => handleDelete(entry.id, entry.name)}
+                            className="text-red-500 hover:text-red-700 p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
+                            title="Hapus data"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
                         </TableCell>
                       </TableRow>
                     );
