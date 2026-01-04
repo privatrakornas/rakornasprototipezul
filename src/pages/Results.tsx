@@ -278,7 +278,25 @@ const Results = () => {
                           target.style.display = 'none';
                           const fallback = document.createElement('div');
                           fallback.className = 'bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800 text-xs';
-                          fallback.innerHTML = `<p class="text-red-600 dark:text-red-400 font-medium">⚠️ Gambar gagal dimuat</p><p class="text-muted-foreground text-[10px] break-all mt-1">URL: <a href="${q.imageUrl}" target="_blank" rel="noopener noreferrer" class="underline">${q.imageUrl}</a></p>`;
+                          
+                          const errorText = document.createElement('p');
+                          errorText.className = 'text-red-600 dark:text-red-400 font-medium';
+                          errorText.textContent = '⚠️ Gambar gagal dimuat';
+                          
+                          const urlText = document.createElement('p');
+                          urlText.className = 'text-muted-foreground text-[10px] break-all mt-1';
+                          urlText.textContent = 'URL: ';
+                          
+                          const link = document.createElement('a');
+                          link.href = q.imageUrl || '';
+                          link.textContent = q.imageUrl || '';
+                          link.target = '_blank';
+                          link.rel = 'noopener noreferrer';
+                          link.className = 'underline';
+                          
+                          urlText.appendChild(link);
+                          fallback.appendChild(errorText);
+                          fallback.appendChild(urlText);
                           target.parentNode?.appendChild(fallback);
                         }}
                       />
@@ -316,7 +334,10 @@ const Results = () => {
                                   target.style.display = 'none';
                                   const fallback = document.createElement('div');
                                   fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-3';
-                                  fallback.innerHTML = `<span class="text-red-500 text-[8px]">Gagal</span>`;
+                                  const errorSpan = document.createElement('span');
+                                  errorSpan.className = 'text-red-500 text-[8px]';
+                                  errorSpan.textContent = 'Gagal';
+                                  fallback.appendChild(errorSpan);
                                   target.parentNode?.appendChild(fallback);
                                 }}
                               />
