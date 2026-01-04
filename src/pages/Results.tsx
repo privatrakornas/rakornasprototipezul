@@ -113,11 +113,11 @@ const Results = () => {
         console.error('Error checking existing submission:', checkError);
       }
 
-      // If already submitted, just navigate to leaderboard without saving
+      // If already submitted, show practice mode notification and navigate
       if (alreadySubmitted === true) {
-        toast.info('Skor percobaan pertama Anda sudah tersimpan di leaderboard', {
-          description: 'Hanya hasil pengerjaan pertama yang ditampilkan',
-          duration: 5000,
+        toast.warning('Skor Anda tercatat sebagai latihan!', {
+          description: 'IP Address/Perangkat Anda sudah pernah mengerjakan sebelumnya. Skor ini tidak akan mengubah posisi Anda di Leaderboard.',
+          duration: 8000,
         });
         navigate('/leaderboard');
         return;
