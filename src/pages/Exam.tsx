@@ -188,7 +188,25 @@ const Exam = () => {
                     target.style.display = 'none';
                     const fallback = document.createElement('div');
                     fallback.className = 'bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800 text-sm';
-                    fallback.innerHTML = `<p class="text-red-600 dark:text-red-400 font-medium mb-1">⚠️ Gambar gagal dimuat</p><p class="text-muted-foreground text-xs break-all">URL: <a href="${question.imageUrl}" target="_blank" rel="noopener noreferrer" class="underline hover:text-primary">${question.imageUrl}</a></p>`;
+                    
+                    const errorText = document.createElement('p');
+                    errorText.className = 'text-red-600 dark:text-red-400 font-medium mb-1';
+                    errorText.textContent = '⚠️ Gambar gagal dimuat';
+                    
+                    const urlText = document.createElement('p');
+                    urlText.className = 'text-muted-foreground text-xs break-all';
+                    urlText.textContent = 'URL: ';
+                    
+                    const link = document.createElement('a');
+                    link.href = question.imageUrl || '';
+                    link.textContent = question.imageUrl || '';
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.className = 'underline hover:text-primary';
+                    
+                    urlText.appendChild(link);
+                    fallback.appendChild(errorText);
+                    fallback.appendChild(urlText);
                     target.parentNode?.appendChild(fallback);
                   }}
                 />
@@ -230,7 +248,10 @@ const Exam = () => {
                             target.style.display = 'none';
                             const fallback = document.createElement('div');
                             fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-4 p-2';
-                            fallback.innerHTML = `<span class="text-red-500 text-[10px] text-center">Gagal memuat</span>`;
+                            const errorSpan = document.createElement('span');
+                            errorSpan.className = 'text-red-500 text-[10px] text-center';
+                            errorSpan.textContent = 'Gagal memuat';
+                            fallback.appendChild(errorSpan);
                             target.parentNode?.appendChild(fallback);
                           }}
                         />
