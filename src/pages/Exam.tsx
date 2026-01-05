@@ -119,7 +119,10 @@ const Exam = () => {
       alert(`Seluruh soal harus dijawab terlebih dahulu. Masih ada ${unanswered} soal belum dijawab.`);
       return;
     }
+    // Calculate duration in minutes (100 minutes total - remaining time)
+    const durationMinutes = Math.ceil((EXAM_TIME - timeLeft) / 60);
     localStorage.setItem('examAnswers', JSON.stringify(answers));
+    localStorage.setItem('examDuration', String(durationMinutes));
     navigate('/results');
   }, [answers, navigate, timeLeft]);
 
