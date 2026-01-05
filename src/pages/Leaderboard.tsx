@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Trophy, Medal, Award, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 // Passing grade constants
 const PASSING_GRADE = {
@@ -14,6 +15,9 @@ const PASSING_GRADE = {
   TKP: 166,
 };
 
+// Total exam time in minutes
+const TOTAL_EXAM_TIME = 100;
+
 interface LeaderboardEntry {
   id: string;
   name: string;
@@ -21,6 +25,7 @@ interface LeaderboardEntry {
   tiu_score: number;
   tkp_score: number;
   total_score: number;
+  duration_minutes?: number | null;
   created_at?: string;
 }
 
@@ -167,16 +172,18 @@ const Leaderboard = () => {
                   Keterangan: <span className="text-green-600 dark:text-green-400 font-medium">L</span> = Lulus, <span className="text-red-600 dark:text-red-400 font-medium">TL</span> = Tidak Lulus
                 </span>
               </div>
-              <Table className="min-w-[520px]">
+              <Table className="min-w-[700px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12 md:w-16 text-xs md:text-sm">Rank</TableHead>
                     <TableHead className="text-xs md:text-sm">Nama</TableHead>
+                    <TableHead className="text-center text-xs md:text-sm">Durasi</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">TWK</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">TIU</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">TKP</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Total</TableHead>
                     <TableHead className="text-center text-xs md:text-sm">Keterangan</TableHead>
+                    <TableHead className="text-center text-xs md:text-sm">Tanggal</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -197,6 +204,11 @@ const Leaderboard = () => {
                           {getRankIcon(rank)}
                         </TableCell>
                         <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">{entry.name}</TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4 text-muted-foreground">
+                          {entry.duration_minutes != null 
+                            ? `${entry.duration_minutes} / ${TOTAL_EXAM_TIME} menit` 
+                            : `- / ${TOTAL_EXAM_TIME} menit`}
+                        </TableCell>
                         <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.twk_score, 'TWK')}`}>
                           {entry.twk_score}
                         </TableCell>
@@ -215,6 +227,11 @@ const Leaderboard = () => {
                           }`}>
                             {lulus ? 'Lulus' : 'Tidak Lulus'}
                           </span>
+                        </TableCell>
+                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4 text-muted-foreground whitespace-nowrap">
+                          {entry.created_at 
+                            ? format(new Date(entry.created_at), 'dd-MM-yyyy') 
+                            : '-'}
                         </TableCell>
                       </TableRow>
                     );

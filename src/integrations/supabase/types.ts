@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           device_fingerprint: string | null
+          duration_minutes: number | null
           id: string
           ip_address: string | null
           name: string
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           created_at?: string
           device_fingerprint?: string | null
+          duration_minutes?: number | null
           id?: string
           ip_address?: string | null
           name: string
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           created_at?: string
           device_fingerprint?: string | null
+          duration_minutes?: number | null
           id?: string
           ip_address?: string | null
           name?: string
@@ -63,6 +66,7 @@ export type Database = {
         Args: { page_limit?: number; page_offset?: number }
         Returns: {
           created_at: string
+          duration_minutes: number
           id: string
           name: string
           tiu_score: number
