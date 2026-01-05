@@ -206,7 +206,7 @@ const Leaderboard = () => {
                         <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">{entry.name}</TableCell>
                         <TableCell className="text-center text-xs md:text-sm py-2 md:py-4 text-muted-foreground">
                           {entry.duration_minutes != null 
-                            ? `${entry.duration_minutes} / ${TOTAL_EXAM_TIME} menit` 
+                            ? `${entry.duration_minutes} menit / ${TOTAL_EXAM_TIME} menit` 
                             : `- / ${TOTAL_EXAM_TIME} menit`}
                         </TableCell>
                         <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.twk_score, 'TWK')}`}>
