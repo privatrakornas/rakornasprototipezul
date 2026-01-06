@@ -140,23 +140,24 @@ const Leaderboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-3 md:py-4">
         <div className="container mx-auto text-center px-4">
           <h1 className="text-lg md:text-2xl font-bold text-white flex items-center justify-center gap-2">
-            <Trophy className="w-5 h-5 md:w-6 md:h-6" /> LEADERBOARD
+            <Trophy className="w-5 h-5 md:w-6 md:h-6 text-accent" /> LEADERBOARD
           </h1>
+          <p className="text-white/80 text-xs md:text-sm">Simulasi CAT SKD - RAKORNAS</p>
         </div>
       </header>
 
       {/* Centered Title Section */}
       <div className="text-center py-4 md:py-8 px-4">
-        <h2 className="text-2xl md:text-4xl font-extrabold uppercase tracking-wide text-foreground">RAKORNAS</h2>
+        <h2 className="text-2xl md:text-4xl font-extrabold uppercase tracking-wide text-primary">RAKORNAS</h2>
         <p className="text-sm md:text-xl capitalize text-muted-foreground mt-1 md:mt-2">Rangking Topskor Nasional</p>
       </div>
 
       <main className="container mx-auto pb-6 md:pb-8 px-3 md:px-4">
-        <Card className="max-w-4xl mx-auto p-3 md:p-6">
+        <Card className="max-w-4xl mx-auto p-3 md:p-6 shadow-xl card-gold-border">
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -242,12 +243,13 @@ const Leaderboard = () => {
           )}
 
           <div className="mt-4 md:mt-6 flex flex-col sm:flex-row justify-center gap-2 md:gap-3">
-            <Button onClick={() => navigate('/')} className="w-full sm:w-auto text-sm">
+            <Button onClick={() => navigate('/')} className="w-full sm:w-auto text-sm bg-primary hover:bg-primary/90">
               Kembali ke Beranda
             </Button>
             <Button 
               onClick={() => navigate('/results')} 
-              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white text-sm"
+              variant="outline"
+              className="w-full sm:w-auto border-primary text-primary hover:bg-primary/10 text-sm"
             >
               Kembali ke Hasil Ujian
             </Button>

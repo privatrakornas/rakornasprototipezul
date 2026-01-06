@@ -60,57 +60,57 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="metallic-maroon py-4 md:py-8">
+    <div className="min-h-screen flex flex-col bg-maroon-full">
+      {/* Header with Logo */}
+      <header className="py-6 md:py-10">
         <div className="container mx-auto px-4 flex flex-col items-center">
-          <div className="logo-frame w-20 h-20 md:w-32 md:h-32 mb-2 md:mb-4">
+          <div className="logo-frame w-24 h-24 md:w-36 md:h-36 mb-3 md:mb-5">
             <img src={logoRakornas} alt="Logo RAKORNAS" className="w-full h-full object-cover" />
           </div>
-          <h1 className="text-xl md:text-3xl font-bold text-white tracking-wider">RAKORNAS</h1>
-          <p className="text-white/80 text-xs md:text-sm mt-1">By Zulkarnain Sinaga</p>
+          <h1 className="text-2xl md:text-4xl font-bold text-white tracking-wider">RAKORNAS</h1>
+          <p className="text-white/70 text-sm md:text-base mt-1">By Zulkarnain Sinaga</p>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4 md:p-6 bg-gradient-to-b from-secondary to-background">
-        <Card className="w-full max-w-md p-4 md:p-8 shadow-2xl">
-          <h2 className="text-xl md:text-2xl font-bold text-center text-foreground mb-4 md:mb-6">
+      <main className="flex-1 flex items-center justify-center p-4 md:p-6">
+        <Card className="w-full max-w-md p-5 md:p-8 shadow-2xl bg-white">
+          <h2 className="text-xl md:text-2xl font-bold text-center text-foreground mb-5 md:mb-7">
             Simulasi CAT SKD
           </h2>
           
-          <form onSubmit={handleLogin} className="space-y-3 md:space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1.5 md:mb-2">Nama Lengkap</label>
+              <label className="block text-sm font-medium mb-2 text-foreground">Nama Lengkap</label>
               <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Masukkan nama lengkap"
-                className="w-full"
+                className="w-full border-muted focus:border-primary focus:ring-primary"
                 disabled={isLoading}
                 maxLength={100}
               />
             </div>
             
             <div>
-              <label className="block text-sm font-medium mb-1.5 md:mb-2">PIN</label>
+              <label className="block text-sm font-medium mb-2 text-foreground">PIN</label>
               <Input
                 type="password"
                 value={pin}
                 onChange={(e) => setPin(e.target.value)}
                 placeholder="Masukkan PIN"
-                className="w-full"
+                className="w-full border-muted focus:border-primary focus:ring-primary"
                 disabled={isLoading}
                 maxLength={20}
               />
             </div>
 
-            {error && <p className="text-destructive text-sm">{error}</p>}
+            {error && <p className="text-destructive text-sm font-medium">{error}</p>}
 
             <Button 
               type="submit" 
-              className="w-full bg-primary hover:bg-primary/90"
+              className="w-full btn-gold text-base py-3"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -124,7 +124,7 @@ const Index = () => {
             </Button>
           </form>
 
-          <div className="mt-4 md:mt-6 p-3 md:p-4 bg-destructive/10 rounded-lg border border-destructive/30">
+          <div className="mt-5 md:mt-6 p-3 md:p-4 bg-destructive/10 rounded-lg border border-destructive/30">
             <p className="text-destructive text-[10px] md:text-xs leading-relaxed">
               <strong>PERINGATAN:</strong> Seluruh soal ini hasil jerih payah Privat RAKORNAS. 
               Hak Cipta Materi ini dilindungi Undang-Undang, tidak boleh diunduh atau digandakan 

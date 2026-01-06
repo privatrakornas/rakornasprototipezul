@@ -160,7 +160,7 @@ const Exam = () => {
   const question = questions[currentQuestion];
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col">
       {/* Fixed Header */}
       <header className="metallic-maroon py-2 md:py-3 sticky top-0 z-50">
         <div className="container mx-auto flex justify-between items-center px-3 md:px-4">
@@ -172,15 +172,14 @@ const Exam = () => {
           
           {/* Right: Timer & Submit Button */}
           <div className="flex items-center gap-2 md:gap-4 flex-shrink-0">
-            <div className={`flex items-center gap-1 md:gap-2 text-white font-mono text-base md:text-xl ${timeLeft < 300 ? 'timer-danger' : timeLeft < 600 ? 'timer-warning' : ''}`}>
+            <div className={`flex items-center gap-1 md:gap-2 font-mono text-base md:text-xl font-bold ${timeLeft < 300 ? 'text-red-300 timer-danger' : timeLeft < 600 ? 'text-yellow-300 timer-warning' : 'text-white'}`}>
               <Clock className="w-4 h-4 md:w-5 md:h-5" />
               {formatTime(timeLeft)}
             </div>
             <Button 
               onClick={handleSubmit} 
-              variant="destructive" 
               size="sm" 
-              className="bg-red-600 hover:bg-red-700 text-xs md:text-sm px-2 md:px-4"
+              className="bg-primary hover:bg-primary/90 text-white text-xs md:text-sm px-3 md:px-5 font-semibold"
             >
               <span className="hidden sm:inline">Selesai & </span>Submit
             </Button>
@@ -319,13 +318,13 @@ const Exam = () => {
                 variant="outline"
                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
                 disabled={currentQuestion === 0}
-                className="w-full sm:w-auto order-2 sm:order-1 py-3 md:py-2"
+                className="w-full sm:w-auto order-2 sm:order-1 py-3 md:py-2 border-primary text-primary hover:bg-primary/10"
               >
                 <ChevronLeft className="w-4 h-4 mr-2" /> Sebelumnya
               </Button>
               <Button
                 onClick={() => setCurrentQuestion(currentQuestion === 109 ? 0 : currentQuestion + 1)}
-                className="w-full sm:w-auto order-1 sm:order-2 py-3 md:py-2"
+                className="w-full sm:w-auto order-1 sm:order-2 py-3 md:py-2 bg-primary hover:bg-primary/90"
               >
                 Selanjutnya <ChevronRight className="w-4 h-4 ml-2" />
               </Button>

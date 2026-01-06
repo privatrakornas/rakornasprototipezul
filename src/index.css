@@ -2,100 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @layer base {
   :root {
-    /* CAT BKN Professional Color Scheme */
-    --background: 0 0% 96%;
-    --foreground: 220 20% 15%;
+    /* RAKORNAS Luxury Maroon & Gold Theme */
+    --background: 210 20% 98%;
+    --foreground: 350 30% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 20% 15%;
+    --card-foreground: 350 30% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 20% 15%;
+    --popover-foreground: 350 30% 15%;
 
-    /* Maroon Primary - Government Official */
-    --primary: 0 60% 30%;
+    /* Primary - Deep Maroon #5C0A0F */
+    --primary: 355 82% 21%;
     --primary-foreground: 0 0% 100%;
 
     /* Secondary - Light Gray */
-    --secondary: 220 15% 90%;
-    --secondary-foreground: 220 20% 15%;
+    --secondary: 210 15% 96%;
+    --secondary-foreground: 350 30% 15%;
 
     /* Muted */
-    --muted: 220 15% 94%;
-    --muted-foreground: 220 10% 45%;
+    --muted: 210 15% 94%;
+    --muted-foreground: 210 10% 45%;
 
-    /* Accent - Cyan Blue from Logo */
-    --accent: 195 90% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent - Gold #D4AF37 */
+    --accent: 43 65% 52%;
+    --accent-foreground: 350 30% 15%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 15% 85%;
-    --input: 220 15% 85%;
-    --ring: 0 60% 30%;
+    --border: 210 15% 88%;
+    --input: 210 15% 88%;
+    --ring: 355 82% 21%;
 
     --radius: 0.5rem;
 
-    /* Custom Colors */
-    --maroon: 0 60% 30%;
-    --maroon-dark: 0 65% 22%;
-    --maroon-light: 0 55% 40%;
-    --cyan: 195 90% 50%;
-    --cyan-dark: 195 85% 40%;
-    --gold: 45 90% 55%;
+    /* RAKORNAS Custom Colors */
+    --maroon: 355 82% 21%;
+    --maroon-dark: 355 85% 16%;
+    --maroon-light: 355 70% 35%;
+    --gold: 43 65% 52%;
+    --gold-light: 43 70% 60%;
+    --gold-dark: 43 60% 42%;
     --success: 145 65% 40%;
     --warning: 40 95% 50%;
     --info: 205 80% 55%;
 
     /* Exam specific */
-    --answered: 145 65% 45%;
-    --unanswered: 220 15% 80%;
-    --current: 195 90% 50%;
+    --answered: 355 82% 21%;
+    --unanswered: 210 15% 85%;
+    --current: 43 65% 52%;
     --flagged: 40 95% 55%;
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary: 355 82% 21%;
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 43 65% 52%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 210 13% 91%;
+    --sidebar-ring: 355 82% 21%;
   }
 
   .dark {
-    --background: 220 20% 10%;
+    --background: 350 20% 8%;
     --foreground: 0 0% 95%;
 
-    --card: 220 20% 13%;
+    --card: 350 20% 12%;
     --card-foreground: 0 0% 95%;
 
-    --popover: 220 20% 13%;
+    --popover: 350 20% 12%;
     --popover-foreground: 0 0% 95%;
 
-    --primary: 0 55% 45%;
+    --primary: 355 70% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 20% 20%;
+    --secondary: 350 20% 18%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 220 20% 18%;
-    --muted-foreground: 220 10% 60%;
+    --muted: 350 20% 16%;
+    --muted-foreground: 210 10% 60%;
 
-    --accent: 195 85% 55%;
-    --accent-foreground: 0 0% 100%;
+    --accent: 43 70% 55%;
+    --accent-foreground: 350 30% 15%;
 
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 20% 22%;
-    --input: 220 20% 22%;
-    --ring: 0 55% 45%;
+    --border: 350 20% 22%;
+    --input: 350 20% 22%;
+    --ring: 355 70% 35%;
   }
 }
 
@@ -106,12 +106,12 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer components {
-  /* Maroon gradient header */
+  /* RAKORNAS Maroon gradient header */
   .header-gradient {
     background: linear-gradient(135deg, 
       hsl(var(--maroon-dark)) 0%, 
@@ -120,45 +120,75 @@
     );
   }
 
-  /* Metallic maroon effect */
+  /* Metallic maroon effect - Deep luxurious maroon */
   .metallic-maroon {
     background: linear-gradient(145deg,
-      hsl(0 65% 32%) 0%,
-      hsl(0 60% 25%) 25%,
-      hsl(0 70% 35%) 50%,
-      hsl(0 60% 25%) 75%,
-      hsl(0 65% 30%) 100%
+      hsl(355 80% 24%) 0%,
+      hsl(355 85% 18%) 25%,
+      hsl(355 75% 28%) 50%,
+      hsl(355 85% 18%) 75%,
+      hsl(355 80% 22%) 100%
     );
     box-shadow: 
-      inset 0 1px 0 hsl(0 50% 45%),
-      inset 0 -1px 0 hsl(0 65% 18%),
-      0 8px 24px -4px hsl(0 60% 15% / 0.5);
+      inset 0 1px 0 hsl(355 60% 35%),
+      inset 0 -1px 0 hsl(355 85% 12%),
+      0 8px 24px -4px hsl(355 80% 10% / 0.6);
+  }
+
+  /* Full maroon background for login */
+  .bg-maroon-full {
+    background: linear-gradient(160deg,
+      hsl(355 85% 16%) 0%,
+      hsl(355 82% 21%) 50%,
+      hsl(355 85% 18%) 100%
+    );
+  }
+
+  /* Gold button styling */
+  .btn-gold {
+    @apply bg-accent text-foreground font-bold rounded-lg transition-all duration-200;
+    background: linear-gradient(145deg, 
+      hsl(43 70% 58%) 0%, 
+      hsl(43 65% 52%) 50%, 
+      hsl(43 60% 45%) 100%
+    );
+    box-shadow: 0 4px 12px hsl(43 65% 40% / 0.3);
+  }
+
+  .btn-gold:hover {
+    background: linear-gradient(145deg, 
+      hsl(43 75% 62%) 0%, 
+      hsl(43 70% 56%) 50%, 
+      hsl(43 65% 48%) 100%
+    );
+    box-shadow: 0 6px 16px hsl(43 65% 40% / 0.4);
+    transform: translateY(-1px);
   }
 
   /* Question navigation button states */
   .nav-btn-answered {
-    @apply bg-[hsl(var(--answered))] text-white border-[hsl(var(--answered))];
+    @apply bg-primary text-white border-primary;
   }
 
   .nav-btn-unanswered {
-    @apply bg-white text-foreground border-border hover:border-primary;
+    @apply bg-white text-foreground border-border hover:border-primary hover:border-2;
   }
 
   .nav-btn-current {
-    @apply bg-[hsl(var(--cyan))] text-white border-[hsl(var(--cyan))] ring-2 ring-offset-2 ring-[hsl(var(--cyan))];
+    @apply bg-accent text-foreground border-accent ring-2 ring-offset-2 ring-accent font-bold;
   }
 
   .nav-btn-flagged {
-    @apply bg-[hsl(var(--flagged))] text-white border-[hsl(var(--flagged))];
+    @apply bg-warning text-foreground border-warning;
   }
 
   /* Timer styles */
   .timer-warning {
-    @apply text-[hsl(var(--warning))] animate-pulse;
+    @apply text-warning animate-pulse;
   }
 
   .timer-danger {
-    @apply text-destructive animate-pulse;
+    @apply text-destructive animate-pulse font-bold;
   }
 
   /* Answer option styling */
@@ -177,9 +207,35 @@
   /* Logo circle frame with gold border */
   .logo-frame {
     @apply rounded-full border-4 shadow-2xl overflow-hidden;
-    border-color: #FFD700;
+    border-color: hsl(43 65% 52%);
     background: linear-gradient(145deg, hsl(0 0% 100% / 0.1), hsl(0 0% 0% / 0.1));
-    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 0 25px hsl(43 65% 52% / 0.5), 0 25px 50px -12px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Gold top border for cards */
+  .card-gold-border {
+    @apply border-t-4;
+    border-top-color: hsl(43 65% 52%);
+  }
+
+  /* Result card styling */
+  .result-correct {
+    @apply bg-green-50 dark:bg-green-900/20 border-l-4 border-l-green-500;
+  }
+
+  .result-incorrect {
+    @apply bg-red-50 dark:bg-red-900/20 border-l-4 border-l-red-500;
+  }
+
+  /* Score card with gold gradient */
+  .score-card-gold {
+    background: linear-gradient(145deg, 
+      hsl(43 70% 58%) 0%, 
+      hsl(43 65% 52%) 50%, 
+      hsl(43 55% 45%) 100%
+    );
+    @apply text-foreground shadow-xl;
+    box-shadow: 0 8px 24px hsl(43 65% 40% / 0.4);
   }
 
   /* Exam card */
@@ -193,7 +249,7 @@
   }
 
   .score-pass {
-    @apply bg-[hsl(var(--success))]/20 text-[hsl(var(--success))];
+    @apply bg-success/20 text-success;
   }
 
   .score-fail {
