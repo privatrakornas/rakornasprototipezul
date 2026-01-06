@@ -182,42 +182,45 @@ const Results = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-3 md:py-4">
         <div className="container mx-auto text-center px-4">
           <h1 className="text-lg md:text-2xl font-bold text-white">HASIL UJIAN</h1>
+          <p className="text-white/80 text-xs md:text-sm">Simulasi CAT SKD - RAKORNAS</p>
         </div>
       </header>
 
       <main className="container mx-auto py-4 md:py-8 px-3 md:px-4">
-        <Card className="max-w-2xl mx-auto p-4 md:p-8">
+        <Card className="max-w-2xl mx-auto p-4 md:p-8 shadow-xl card-gold-border">
           <div className="text-center mb-6 md:mb-8">
-            <Trophy className={`w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 ${status.passed ? 'text-success' : 'text-muted-foreground'}`} />
-            <h2 className="text-xl md:text-2xl font-bold">{userName}</h2>
+            <Trophy className={`w-12 h-12 md:w-16 md:h-16 mx-auto mb-3 md:mb-4 ${status.passed ? 'text-accent' : 'text-muted-foreground'}`} />
+            <h2 className="text-xl md:text-2xl font-bold text-primary">{userName}</h2>
             <p className={`mt-2 font-semibold text-sm md:text-base ${status.passed ? 'text-success' : 'text-destructive'}`}>
               {status.message}
             </p>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-6 md:mb-8">
-            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg">
-              <p className="text-xs md:text-sm text-muted-foreground">TWK</p>
-              <p className="text-xl md:text-2xl font-bold">{twkScore}</p>
+          {/* Total Score Card - Gold Gradient */}
+          <div className="mb-6 md:mb-8 rounded-xl p-4 md:p-6 score-card-gold text-center">
+            <p className="text-sm md:text-base font-medium opacity-90">Skor Total</p>
+            <p className="text-4xl md:text-5xl font-bold mt-1">{totalScore}</p>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 md:gap-4 mb-6 md:mb-8">
+            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg border border-border">
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">TWK</p>
+              <p className={`text-xl md:text-2xl font-bold ${twkScore >= 65 ? 'text-success' : 'text-destructive'}`}>{twkScore}</p>
               <p className="text-[10px] md:text-xs text-muted-foreground">PG: 65</p>
             </div>
-            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg">
-              <p className="text-xs md:text-sm text-muted-foreground">TIU</p>
-              <p className="text-xl md:text-2xl font-bold">{tiuScore}</p>
+            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg border border-border">
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">TIU</p>
+              <p className={`text-xl md:text-2xl font-bold ${tiuScore >= 80 ? 'text-success' : 'text-destructive'}`}>{tiuScore}</p>
               <p className="text-[10px] md:text-xs text-muted-foreground">PG: 80</p>
             </div>
-            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg">
-              <p className="text-xs md:text-sm text-muted-foreground">TKP</p>
-              <p className="text-xl md:text-2xl font-bold">{tkpScore}</p>
+            <div className="text-center p-3 md:p-4 bg-secondary rounded-lg border border-border">
+              <p className="text-xs md:text-sm text-muted-foreground font-medium">TKP</p>
+              <p className={`text-xl md:text-2xl font-bold ${tkpScore >= 166 ? 'text-success' : 'text-destructive'}`}>{tkpScore}</p>
               <p className="text-[10px] md:text-xs text-muted-foreground">PG: 166</p>
-            </div>
-            <div className="text-center p-3 md:p-4 bg-primary text-primary-foreground rounded-lg">
-              <p className="text-xs md:text-sm opacity-80">Total</p>
-              <p className="text-xl md:text-2xl font-bold">{totalScore}</p>
             </div>
           </div>
 
@@ -245,8 +248,8 @@ const Results = () => {
         </Card>
 
         {/* Answer Key Section */}
-        <Card className="max-w-4xl mx-auto mt-6 md:mt-8 p-4 md:p-6">
-          <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2">
+        <Card className="max-w-4xl mx-auto mt-6 md:mt-8 p-4 md:p-6 shadow-lg">
+          <h3 className="text-lg md:text-xl font-bold mb-3 md:mb-4 flex items-center gap-2 text-primary">
             <BookOpen className="w-4 h-4 md:w-5 md:h-5" /> Kunci Jawaban & Pembahasan
           </h3>
           <div className="space-y-3 md:space-y-4 max-h-[500px] md:max-h-[600px] overflow-y-auto">
