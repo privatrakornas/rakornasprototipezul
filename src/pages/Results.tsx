@@ -80,8 +80,10 @@ const Results = () => {
   const [isSaving, setIsSaving] = useState(false);
   const userName = sessionStorage.getItem('userName') || 'Peserta';
 
-  // Get exam duration from localStorage (stored by Exam.tsx on submit)
+  // Get exam timing data from localStorage (stored by Exam.tsx on submit)
   const examDuration = parseInt(localStorage.getItem('examDuration') || '0', 10);
+  const examStartedAt = localStorage.getItem('examStartedAt') || null;
+  const examFinishedAt = localStorage.getItem('examFinishedAt') || null;
 
   useEffect(() => {
     const saved = localStorage.getItem('examAnswers');
@@ -154,6 +156,8 @@ const Results = () => {
         ip_address: validatedData.data.ip_address || null,
         device_fingerprint: validatedData.data.device_fingerprint || null,
         duration_minutes: examDuration > 0 ? examDuration : null,
+        started_at: examStartedAt,
+        finished_at: examFinishedAt,
       });
 
       if (error) {

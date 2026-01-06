@@ -19,9 +19,11 @@ export type Database = {
           created_at: string
           device_fingerprint: string | null
           duration_minutes: number | null
+          finished_at: string | null
           id: string
           ip_address: string | null
           name: string
+          started_at: string | null
           tiu_score: number
           tkp_score: number
           total_score: number
@@ -31,9 +33,11 @@ export type Database = {
           created_at?: string
           device_fingerprint?: string | null
           duration_minutes?: number | null
+          finished_at?: string | null
           id?: string
           ip_address?: string | null
           name: string
+          started_at?: string | null
           tiu_score?: number
           tkp_score?: number
           total_score?: number
@@ -43,9 +47,11 @@ export type Database = {
           created_at?: string
           device_fingerprint?: string | null
           duration_minutes?: number | null
+          finished_at?: string | null
           id?: string
           ip_address?: string | null
           name?: string
+          started_at?: string | null
           tiu_score?: number
           tkp_score?: number
           total_score?: number
@@ -67,8 +73,10 @@ export type Database = {
         Returns: {
           created_at: string
           duration_minutes: number
+          finished_at: string
           id: string
           name: string
+          started_at: string
           tiu_score: number
           tkp_score: number
           total_score: number

@@ -9,6 +9,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
+const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
 
 // Memoized Question Navigation Grid - prevents re-renders from timer
 interface QuestionNavGridProps {
@@ -72,6 +73,16 @@ const Exam = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
   const [navOpen, setNavOpen] = useState(false);
+  const [examStartedAt] = useState<string>(() => {
+    // Get or set the exam start time
+    const storedStartTime = sessionStorage.getItem('examStartedAt');
+    if (storedStartTime) {
+      return storedStartTime;
+    }
+    const startTime = new Date().toISOString();
+    sessionStorage.setItem('examStartedAt', startTime);
+    return startTime;
+  });
   const userName = sessionStorage.getItem('userName') || 'Peserta';
 
   // Anti-cheat: detect tab switch
@@ -119,12 +130,27 @@ const Exam = () => {
       alert(`Seluruh soal harus dijawab terlebih dahulu. Masih ada ${unanswered} soal belum dijawab.`);
       return;
     }
-    // Calculate duration in minutes (100 minutes total - remaining time)
-    const durationMinutes = Math.ceil((EXAM_TIME - timeLeft) / 60);
+    
+    // Calculate real duration based on started_at and current time
+    const finishedAt = new Date().toISOString();
+    const startTime = new Date(examStartedAt).getTime();
+    const endTime = new Date(finishedAt).getTime();
+    const realDurationMs = endTime - startTime;
+    
+    // Convert to minutes and cap at MAX_DURATION_MINUTES (100 min) to handle timeout/lag
+    let durationMinutes = Math.ceil(realDurationMs / (1000 * 60));
+    if (durationMinutes > MAX_DURATION_MINUTES) {
+      durationMinutes = MAX_DURATION_MINUTES;
+    }
+    
+    // Store all timing data
     localStorage.setItem('examAnswers', JSON.stringify(answers));
     localStorage.setItem('examDuration', String(durationMinutes));
+    localStorage.setItem('examStartedAt', examStartedAt);
+    localStorage.setItem('examFinishedAt', finishedAt);
+    
     navigate('/results');
-  }, [answers, navigate, timeLeft]);
+  }, [answers, navigate, timeLeft, examStartedAt]);
 
   const handleNavClick = useCallback((idx: number) => {
     setCurrentQuestion(idx);
