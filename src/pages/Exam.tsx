@@ -22,46 +22,45 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
   const isAnswered = (id: number) => answers[id] !== undefined;
 
   return (
-    <>
-      <div className="p-3 md:p-4 border-b">
+    <div className="flex flex-col h-full">
+      <div className="p-2 border-b flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-xs md:text-sm">Navigasi Soal</h3>
-          <div className="flex items-center gap-2 md:gap-3 text-[10px] md:text-xs">
+          <h3 className="font-semibold text-xs">Navigasi Soal</h3>
+          <div className="flex items-center gap-2 text-[10px]">
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--answered))]" />
+              <div className="w-2 h-2 rounded bg-[hsl(var(--answered))]" />
               <span>{Object.keys(answers).length}</span>
             </div>
             <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded bg-[hsl(var(--unanswered))] border" />
+              <div className="w-2 h-2 rounded bg-[hsl(var(--unanswered))] border" />
               <span>{110 - Object.keys(answers).length}</span>
             </div>
           </div>
         </div>
       </div>
       
-      <div className="flex-1 overflow-y-auto overscroll-contain p-3 md:p-4 scrollbar-thin">
-        <div className="grid grid-cols-5 gap-1.5 md:gap-2">
+      {/* Dense grid - 11 columns x 10 rows = 110 buttons, no scroll */}
+      <div className="flex-1 p-2 overflow-hidden">
+        <div className="grid grid-cols-10 lg:grid-cols-11 gap-0.5">
           {questions.map((q, idx) => (
             <button
               key={q.id}
               onClick={() => onNavClick(idx)}
-              className={`w-8 h-8 md:w-10 md:h-10 rounded text-[10px] md:text-xs font-medium border transition-all flex flex-col items-center justify-center ${
+              className={`w-6 h-6 lg:w-5 lg:h-5 rounded text-[9px] font-medium border transition-all flex items-center justify-center ${
                 currentQuestion === idx
                   ? 'nav-btn-current'
                   : isAnswered(q.id)
                   ? 'nav-btn-answered'
                   : 'nav-btn-unanswered'
               }`}
+              title={answers[q.id] ? `Soal ${q.id}: ${answers[q.id]}` : `Soal ${q.id}`}
             >
-              <span className="leading-none">{q.id}</span>
-              {answers[q.id] && (
-                <span className="text-[8px] md:text-[10px] font-bold leading-none mt-0.5">{answers[q.id]}</span>
-              )}
+              {q.id}
             </button>
           ))}
         </div>
       </div>
-    </>
+    </div>
   );
 });
 
@@ -158,11 +157,14 @@ const Exam = () => {
   }, []);
 
   const question = questions[currentQuestion];
+  
+  // Soal 61-65 adalah soal bacaan panjang, izinkan scroll
+  const isLongQuestion = question.id >= 61 && question.id <= 65;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-secondary flex flex-col">
+    <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
       {/* Fixed Header */}
-      <header className="metallic-maroon py-2 md:py-3 sticky top-0 z-50">
+      <header className="metallic-maroon py-2 flex-shrink-0">
         <div className="container mx-auto flex justify-between items-center px-3 md:px-4">
           {/* Left: Title & Username */}
           <div className="text-left min-w-0 flex-1">
@@ -187,54 +189,41 @@ const Exam = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Main Question Panel */}
-        <main className="flex-1 p-3 md:p-6 overflow-y-auto pb-20 lg:pb-6">
-          <Card className="p-4 md:p-6 animate-fade-in">
-            <div className="flex flex-col gap-2 mb-3 md:mb-4">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <span className="text-muted-foreground text-xs md:text-sm whitespace-nowrap">Soal {question.id} / 110</span>
-              </div>
-              <div className="px-2 md:px-3 py-1.5 md:py-2 bg-accent/20 text-accent rounded-lg text-xs md:text-sm font-medium leading-relaxed">
+        <main className={`flex-1 p-2 md:p-4 pb-16 lg:pb-4 ${isLongQuestion ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+          <Card className={`p-3 md:p-4 animate-fade-in h-full flex flex-col ${isLongQuestion ? '' : 'overflow-hidden'}`}>
+            {/* Question Header - Compact */}
+            <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
+              <span className="text-muted-foreground text-xs">Soal {question.id}/110</span>
+              <span className="px-2 py-1 bg-accent/20 text-accent rounded text-xs font-medium">
                 {question.category} - {question.code}
-              </div>
+              </span>
             </div>
 
-            <div className="text-sm md:text-lg leading-relaxed mb-4 md:mb-6 whitespace-pre-line">
+            {/* Question Text */}
+            <div className={`text-sm md:text-base leading-relaxed mb-3 whitespace-pre-line ${isLongQuestion ? '' : 'flex-shrink-0'}`}>
               <LatexText>{question.text}</LatexText>
             </div>
 
             {/* Gambar Soal */}
             {question.imageUrl && (
-              <div className="mb-4 md:mb-6">
+              <div className="mb-3 flex-shrink-0">
                 <img 
                   src={question.imageUrl} 
                   alt={`Gambar soal ${question.id}`}
-                  className="max-w-full h-auto rounded-lg border shadow-sm"
+                  className="max-w-full max-h-32 md:max-h-40 h-auto rounded-lg border shadow-sm object-contain"
                   onError={(e) => {
                     const target = e.currentTarget;
                     target.style.display = 'none';
                     const fallback = document.createElement('div');
-                    fallback.className = 'bg-red-50 dark:bg-red-900/20 p-3 rounded-lg border border-red-200 dark:border-red-800 text-sm';
+                    fallback.className = 'bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800 text-xs';
                     
                     const errorText = document.createElement('p');
-                    errorText.className = 'text-red-600 dark:text-red-400 font-medium mb-1';
+                    errorText.className = 'text-red-600 dark:text-red-400 font-medium';
                     errorText.textContent = '⚠️ Gambar gagal dimuat';
                     
-                    const urlText = document.createElement('p');
-                    urlText.className = 'text-muted-foreground text-xs break-all';
-                    urlText.textContent = 'URL: ';
-                    
-                    const link = document.createElement('a');
-                    link.href = question.imageUrl || '';
-                    link.textContent = question.imageUrl || '';
-                    link.target = '_blank';
-                    link.rel = 'noopener noreferrer';
-                    link.className = 'underline hover:text-primary';
-                    
-                    urlText.appendChild(link);
                     fallback.appendChild(errorText);
-                    fallback.appendChild(urlText);
                     target.parentNode?.appendChild(fallback);
                   }}
                 />
@@ -242,98 +231,102 @@ const Exam = () => {
             )}
             
             {question.hasImage && !question.imageUrl && (
-              <p className="text-muted-foreground italic mb-4 text-sm bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200 dark:border-yellow-800">
+              <p className="text-muted-foreground italic mb-3 text-xs bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-200 dark:border-yellow-800 flex-shrink-0">
                 [Soal bergambar - Upload gambar di database untuk soal ini]
               </p>
             )}
 
-            {/* Pilihan Jawaban */}
-            {question.optionImageUrls ? (
-              // Grid layout untuk pilihan jawaban bergambar (figural)
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 md:gap-4">
-                {question.options.map((opt) => {
-                  const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
-                  return (
+            {/* Pilihan Jawaban - Flex grow to fill space */}
+            <div className={`flex-1 min-h-0 ${isLongQuestion ? '' : 'overflow-hidden'}`}>
+              {question.optionImageUrls ? (
+                // Grid layout untuk pilihan jawaban bergambar (figural)
+                <div className="grid grid-cols-5 gap-2">
+                  {question.options.map((opt) => {
+                    const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
+                    return (
+                      <button
+                        key={opt.key}
+                        onClick={() => handleAnswer(opt.key)}
+                        className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${
+                          answers[question.id] === opt.key 
+                            ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
+                            : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                        }`}
+                      >
+                        <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-secondary flex items-center justify-center font-semibold text-[10px]">
+                          {opt.key}
+                        </span>
+                        {optionImage ? (
+                          <img 
+                            src={optionImage} 
+                            alt={`Pilihan ${opt.key}`}
+                            className="w-full h-auto rounded mt-4 max-h-20 object-contain"
+                            onError={(e) => {
+                              const target = e.currentTarget;
+                              target.style.display = 'none';
+                              const fallback = document.createElement('div');
+                              fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-4 p-1';
+                              const errorSpan = document.createElement('span');
+                              errorSpan.className = 'text-red-500 text-[8px] text-center';
+                              errorSpan.textContent = 'Gagal';
+                              fallback.appendChild(errorSpan);
+                              target.parentNode?.appendChild(fallback);
+                            }}
+                          />
+                        ) : (
+                          <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-4">
+                            <span className="text-muted-foreground text-[10px]">{opt.key}</span>
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                // Layout standar untuk pilihan jawaban teks - compact
+                <div className="space-y-1.5">
+                  {question.options.map((opt) => (
                     <button
                       key={opt.key}
                       onClick={() => handleAnswer(opt.key)}
-                      className={`relative flex flex-col items-center p-2 md:p-3 rounded-lg border-2 transition-all ${
-                        answers[question.id] === opt.key 
-                          ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
-                          : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                      className={`answer-option w-full text-left flex gap-2 p-2 md:p-2.5 ${
+                        answers[question.id] === opt.key ? 'answer-option-selected' : ''
                       }`}
                     >
-                      <span className="absolute top-1 left-1 w-5 h-5 md:w-6 md:h-6 rounded-full bg-secondary flex items-center justify-center font-semibold text-[10px] md:text-xs">
+                      <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs">
                         {opt.key}
                       </span>
-                      {optionImage ? (
-                        <img 
-                          src={optionImage} 
-                          alt={`Pilihan ${opt.key}`}
-                          className="w-full h-auto rounded mt-4"
-                          onError={(e) => {
-                            const target = e.currentTarget;
-                            target.style.display = 'none';
-                            const fallback = document.createElement('div');
-                            fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-4 p-2';
-                            const errorSpan = document.createElement('span');
-                            errorSpan.className = 'text-red-500 text-[10px] text-center';
-                            errorSpan.textContent = 'Gagal memuat';
-                            fallback.appendChild(errorSpan);
-                            target.parentNode?.appendChild(fallback);
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-4">
-                          <span className="text-muted-foreground text-xs">Gambar {opt.key}</span>
-                        </div>
-                      )}
+                      <span className="text-sm"><LatexText>{opt.text}</LatexText></span>
                     </button>
-                  );
-                })}
-              </div>
-            ) : (
-              // Layout standar untuk pilihan jawaban teks
-              <div className="space-y-2 md:space-y-3">
-                {question.options.map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => handleAnswer(opt.key)}
-                    className={`answer-option w-full text-left flex gap-2 md:gap-3 p-3 md:p-4 ${
-                      answers[question.id] === opt.key ? 'answer-option-selected' : ''
-                    }`}
-                  >
-                    <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs md:text-sm">
-                      {opt.key}
-                    </span>
-                    <span className="text-sm md:text-base"><LatexText>{opt.text}</LatexText></span>
-                  </button>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
 
-            {/* Navigation Buttons - Stack on mobile */}
-            <div className="flex flex-col sm:flex-row justify-between gap-2 mt-6 md:mt-8">
+            {/* Navigation Buttons - Compact, always at bottom */}
+            <div className="flex justify-between gap-2 mt-3 pt-2 border-t flex-shrink-0">
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
                 disabled={currentQuestion === 0}
-                className="w-full sm:w-auto order-2 sm:order-1 py-3 md:py-2 border-primary text-primary hover:bg-primary/10"
+                className="border-primary text-primary hover:bg-primary/10"
               >
-                <ChevronLeft className="w-4 h-4 mr-2" /> Sebelumnya
+                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
               </Button>
               <Button
+                size="sm"
                 onClick={() => setCurrentQuestion(currentQuestion === 109 ? 0 : currentQuestion + 1)}
-                className="w-full sm:w-auto order-1 sm:order-2 py-3 md:py-2 bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90"
               >
-                Selanjutnya <ChevronRight className="w-4 h-4 ml-2" />
+                Next <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </Card>
         </main>
 
-        {/* Desktop: Right Sidebar - Question Navigation */}
-        <aside className="hidden lg:flex w-64 bg-card border-l flex-col h-[calc(100vh-56px)] sticky top-14">
+        {/* Desktop: Right Sidebar - Dense Question Navigation */}
+        <aside className="hidden lg:flex w-52 bg-card border-l flex-col flex-shrink-0">
           <QuestionNavGrid 
             answers={answers} 
             currentQuestion={currentQuestion} 
