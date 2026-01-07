@@ -23,30 +23,31 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-2 border-b flex-shrink-0">
+      {/* Header */}
+      <div className="p-3 border-b flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-xs">Navigasi Soal</h3>
-          <div className="flex items-center gap-2 text-[10px]">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded bg-[hsl(var(--answered))]" />
-              <span>{Object.keys(answers).length}</span>
+          <h3 className="font-semibold text-sm">Navigasi Soal</h3>
+          <div className="flex items-center gap-3 text-xs">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[hsl(var(--answered))]" />
+              <span className="font-medium">{Object.keys(answers).length}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded bg-[hsl(var(--unanswered))] border" />
-              <span>{110 - Object.keys(answers).length}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded bg-[hsl(var(--unanswered))] border" />
+              <span className="font-medium">{110 - Object.keys(answers).length}</span>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Dense grid - 11 columns x 10 rows = 110 buttons, no scroll */}
-      <div className="flex-1 p-2 overflow-hidden">
-        <div className="grid grid-cols-10 lg:grid-cols-11 gap-0.5">
+      {/* Grid 10 kolom x 11 baris = 110 tombol */}
+      <div className="flex-1 p-3 overflow-hidden flex items-center">
+        <div className="grid grid-cols-10 gap-2 w-full">
           {questions.map((q, idx) => (
             <button
               key={q.id}
               onClick={() => onNavClick(idx)}
-              className={`w-6 h-6 lg:w-5 lg:h-5 rounded text-[9px] font-medium border transition-all flex items-center justify-center ${
+              className={`aspect-square w-full min-w-[28px] rounded-md text-xs font-semibold border-2 transition-all flex items-center justify-center hover:scale-105 ${
                 currentQuestion === idx
                   ? 'nav-btn-current'
                   : isAnswered(q.id)
@@ -325,8 +326,8 @@ const Exam = () => {
           </Card>
         </main>
 
-        {/* Desktop: Right Sidebar - Dense Question Navigation */}
-        <aside className="hidden lg:flex w-52 bg-card border-l flex-col flex-shrink-0">
+        {/* Desktop: Right Sidebar - Question Navigation */}
+        <aside className="hidden lg:flex w-80 bg-card border-l flex-col flex-shrink-0">
           <QuestionNavGrid 
             answers={answers} 
             currentQuestion={currentQuestion} 
@@ -345,7 +346,7 @@ const Exam = () => {
                 <Grid3X3 className="w-6 h-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-72 p-0 flex flex-col">
+            <SheetContent side="right" className="w-[340px] p-0 flex flex-col">
               <VisuallyHidden>
                 <SheetTitle>Navigasi Soal</SheetTitle>
               </VisuallyHidden>
