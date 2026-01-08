@@ -43,22 +43,29 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
       {/* Grid 10 kolom x 11 baris = 110 tombol - tersebar vertikal */}
       <div className="flex-1 p-2 overflow-hidden">
         <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: 'repeat(11, 1fr)' }}>
-          {questions.map((q, idx) => (
-            <button
-              key={q.id}
-              onClick={() => onNavClick(idx)}
-              className={`w-full h-full min-h-[24px] max-h-[36px] rounded text-[10px] font-semibold border transition-all flex items-center justify-center hover:opacity-80 ${
-                currentQuestion === idx
-                  ? 'nav-btn-current'
-                  : isAnswered(q.id)
-                  ? 'nav-btn-answered'
-                  : 'nav-btn-unanswered'
-              }`}
-              title={answers[q.id] ? `Soal ${q.id}: ${answers[q.id]}` : `Soal ${q.id}`}
-            >
-              {q.id}
-            </button>
-          ))}
+          {questions.map((q, idx) => {
+            const answered = isAnswered(q.id);
+            const selectedLetter = answers[q.id];
+            return (
+              <button
+                key={q.id}
+                onClick={() => onNavClick(idx)}
+                className={`w-full h-full min-h-[24px] max-h-[36px] rounded font-bold border transition-all flex flex-col items-center justify-center hover:opacity-80 ${
+                  currentQuestion === idx
+                    ? 'nav-btn-current'
+                    : answered
+                    ? 'nav-btn-answered'
+                    : 'nav-btn-unanswered'
+                }`}
+                title={selectedLetter ? `Soal ${q.id}: ${selectedLetter}` : `Soal ${q.id}`}
+              >
+                <span className="text-[8px] leading-none opacity-70">{q.id}</span>
+                {answered && (
+                  <span className="text-xs leading-none font-extrabold">{selectedLetter}</span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
