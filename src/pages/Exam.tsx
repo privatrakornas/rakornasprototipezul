@@ -23,31 +23,31 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="p-3 border-b flex-shrink-0">
+      {/* Header - compact */}
+      <div className="px-2 py-1.5 border-b flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-sm">Navigasi Soal</h3>
-          <div className="flex items-center gap-3 text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-[hsl(var(--answered))]" />
+          <h3 className="font-semibold text-xs">Navigasi Soal</h3>
+          <div className="flex items-center gap-2 text-[10px]">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-[hsl(var(--answered))]" />
               <span className="font-medium">{Object.keys(answers).length}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-[hsl(var(--unanswered))] border" />
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-[hsl(var(--unanswered))] border" />
               <span className="font-medium">{110 - Object.keys(answers).length}</span>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Grid 10 kolom x 11 baris = 110 tombol */}
-      <div className="flex-1 p-3 overflow-hidden flex items-center">
-        <div className="grid grid-cols-10 gap-2 w-full">
+      {/* Grid 10 kolom x 11 baris = 110 tombol - tersebar vertikal */}
+      <div className="flex-1 p-2 overflow-hidden">
+        <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: 'repeat(11, 1fr)' }}>
           {questions.map((q, idx) => (
             <button
               key={q.id}
               onClick={() => onNavClick(idx)}
-              className={`aspect-square w-full min-w-[28px] rounded-md text-xs font-semibold border-2 transition-all flex items-center justify-center hover:scale-105 ${
+              className={`w-full h-full min-h-[24px] max-h-[36px] rounded text-[10px] font-semibold border transition-all flex items-center justify-center hover:opacity-80 ${
                 currentQuestion === idx
                   ? 'nav-btn-current'
                   : isAnswered(q.id)
@@ -192,28 +192,28 @@ const Exam = () => {
 
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Main Question Panel */}
-        <main className={`flex-1 p-2 md:p-4 pb-16 lg:pb-4 ${isLongQuestion ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-          <Card className={`p-3 md:p-4 animate-fade-in h-full flex flex-col ${isLongQuestion ? '' : 'overflow-hidden'}`}>
+        <main className={`flex-1 p-2 md:p-3 pb-16 lg:pb-3 min-h-0 ${isLongQuestion ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+          <Card className={`p-2 md:p-3 animate-fade-in h-full flex flex-col ${isLongQuestion ? '' : 'overflow-hidden'}`}>
             {/* Question Header - Compact */}
-            <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
-              <span className="text-muted-foreground text-xs">Soal {question.id}/110</span>
-              <span className="px-2 py-1 bg-accent/20 text-accent rounded text-xs font-medium">
+            <div className="flex items-center justify-between gap-2 mb-1.5 flex-shrink-0">
+              <span className="text-muted-foreground text-[11px]">Soal {question.id}/110</span>
+              <span className="px-1.5 py-0.5 bg-accent/20 text-accent rounded text-[10px] font-medium">
                 {question.category} - {question.code}
               </span>
             </div>
 
-            {/* Question Text */}
-            <div className={`text-sm md:text-base leading-relaxed mb-3 whitespace-pre-line ${isLongQuestion ? '' : 'flex-shrink-0'}`}>
+            {/* Question Text - Adaptive font & tight leading */}
+            <div className={`text-sm md:text-base leading-snug mb-2 whitespace-pre-line ${isLongQuestion ? '' : 'flex-shrink-0'}`}>
               <LatexText>{question.text}</LatexText>
             </div>
 
             {/* Gambar Soal */}
             {question.imageUrl && (
-              <div className="mb-3 flex-shrink-0">
+              <div className="mb-2 flex-shrink-0">
                 <img 
                   src={question.imageUrl} 
                   alt={`Gambar soal ${question.id}`}
-                  className="max-w-full max-h-32 md:max-h-40 h-auto rounded-lg border shadow-sm object-contain"
+                  className="max-w-full max-h-24 md:max-h-32 h-auto rounded-lg border shadow-sm object-contain"
                   onError={(e) => {
                     const target = e.currentTarget;
                     target.style.display = 'none';
@@ -232,41 +232,41 @@ const Exam = () => {
             )}
             
             {question.hasImage && !question.imageUrl && (
-              <p className="text-muted-foreground italic mb-3 text-xs bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded-lg border border-yellow-200 dark:border-yellow-800 flex-shrink-0">
+              <p className="text-muted-foreground italic mb-2 text-[11px] bg-yellow-50 dark:bg-yellow-900/20 p-1.5 rounded-lg border border-yellow-200 dark:border-yellow-800 flex-shrink-0">
                 [Soal bergambar - Upload gambar di database untuk soal ini]
               </p>
             )}
 
-            {/* Pilihan Jawaban - Flex grow to fill space */}
-            <div className={`flex-1 min-h-0 ${isLongQuestion ? '' : 'overflow-hidden'}`}>
+            {/* Pilihan Jawaban - scrollable only if needed */}
+            <div className={`flex-1 min-h-0 ${isLongQuestion ? '' : 'overflow-y-auto'}`}>
               {question.optionImageUrls ? (
                 // Grid layout untuk pilihan jawaban bergambar (figural)
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-5 gap-1.5">
                   {question.options.map((opt) => {
                     const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
                     return (
                       <button
                         key={opt.key}
                         onClick={() => handleAnswer(opt.key)}
-                        className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${
+                        className={`relative flex flex-col items-center p-1.5 rounded-lg border-2 transition-all ${
                           answers[question.id] === opt.key 
                             ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
                             : 'border-border hover:border-primary/50 hover:bg-accent/50'
                         }`}
                       >
-                        <span className="absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-secondary flex items-center justify-center font-semibold text-[10px]">
+                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-secondary flex items-center justify-center font-semibold text-[9px]">
                           {opt.key}
                         </span>
                         {optionImage ? (
                           <img 
                             src={optionImage} 
                             alt={`Pilihan ${opt.key}`}
-                            className="w-full h-auto rounded mt-4 max-h-20 object-contain"
+                            className="w-full h-auto rounded mt-3 max-h-16 object-contain"
                             onError={(e) => {
                               const target = e.currentTarget;
                               target.style.display = 'none';
                               const fallback = document.createElement('div');
-                              fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-4 p-1';
+                              fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-3 p-1';
                               const errorSpan = document.createElement('span');
                               errorSpan.className = 'text-red-500 text-[8px] text-center';
                               errorSpan.textContent = 'Gagal';
@@ -275,8 +275,8 @@ const Exam = () => {
                             }}
                           />
                         ) : (
-                          <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-4">
-                            <span className="text-muted-foreground text-[10px]">{opt.key}</span>
+                          <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-3">
+                            <span className="text-muted-foreground text-[9px]">{opt.key}</span>
                           </div>
                         )}
                       </button>
@@ -285,19 +285,19 @@ const Exam = () => {
                 </div>
               ) : (
                 // Layout standar untuk pilihan jawaban teks - compact
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {question.options.map((opt) => (
                     <button
                       key={opt.key}
                       onClick={() => handleAnswer(opt.key)}
-                      className={`answer-option w-full text-left flex gap-2 p-2 md:p-2.5 ${
+                      className={`answer-option w-full text-left flex gap-2 p-1.5 md:p-2 ${
                         answers[question.id] === opt.key ? 'answer-option-selected' : ''
                       }`}
                     >
-                      <span className="w-6 h-6 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-xs">
+                      <span className="w-5 h-5 rounded-full bg-secondary flex items-center justify-center font-semibold flex-shrink-0 text-[11px]">
                         {opt.key}
                       </span>
-                      <span className="text-sm"><LatexText>{opt.text}</LatexText></span>
+                      <span className="text-xs md:text-sm leading-snug"><LatexText>{opt.text}</LatexText></span>
                     </button>
                   ))}
                 </div>
@@ -305,29 +305,29 @@ const Exam = () => {
             </div>
 
             {/* Navigation Buttons - Compact, always at bottom */}
-            <div className="flex justify-between gap-2 mt-3 pt-2 border-t flex-shrink-0">
+            <div className="flex justify-between gap-2 mt-2 pt-1.5 border-t flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
                 disabled={currentQuestion === 0}
-                className="border-primary text-primary hover:bg-primary/10"
+                className="border-primary text-primary hover:bg-primary/10 h-8 text-xs"
               >
-                <ChevronLeft className="w-4 h-4 mr-1" /> Prev
+                <ChevronLeft className="w-3 h-3 mr-0.5" /> Prev
               </Button>
               <Button
                 size="sm"
                 onClick={() => setCurrentQuestion(currentQuestion === 109 ? 0 : currentQuestion + 1)}
-                className="bg-primary hover:bg-primary/90"
+                className="bg-primary hover:bg-primary/90 h-8 text-xs"
               >
-                Next <ChevronRight className="w-4 h-4 ml-1" />
+                Next <ChevronRight className="w-3 h-3 ml-0.5" />
               </Button>
             </div>
           </Card>
         </main>
 
         {/* Desktop: Right Sidebar - Question Navigation */}
-        <aside className="hidden lg:flex w-80 bg-card border-l flex-col flex-shrink-0">
+        <aside className="hidden lg:flex w-64 bg-card border-l flex-col flex-shrink-0">
           <QuestionNavGrid 
             answers={answers} 
             currentQuestion={currentQuestion} 
@@ -346,7 +346,7 @@ const Exam = () => {
                 <Grid3X3 className="w-6 h-6" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[340px] p-0 flex flex-col">
+            <SheetContent side="right" className="w-[280px] p-0 flex flex-col">
               <VisuallyHidden>
                 <SheetTitle>Navigasi Soal</SheetTitle>
               </VisuallyHidden>
