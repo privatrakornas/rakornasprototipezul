@@ -166,8 +166,9 @@ const Exam = () => {
 
   const question = questions[currentQuestion];
   
-  // Soal 61-65 adalah soal bacaan panjang, izinkan scroll
-  const isLongQuestion = question.id >= 61 && question.id <= 65;
+  // Soal panjang: 22-24, 26, 30, 61-65 - izinkan scroll pada konten
+  const longQuestionIds = [22, 23, 24, 26, 30, 61, 62, 63, 64, 65];
+  const isLongQuestion = longQuestionIds.includes(question.id);
 
   return (
     <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
