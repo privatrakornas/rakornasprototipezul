@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { questions } from '@/data/questions';
-import { Clock, ChevronLeft, ChevronRight, Grid3X3 } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 
@@ -80,6 +81,7 @@ const Exam = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
   const [navOpen, setNavOpen] = useState(false);
+  const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
     const storedStartTime = sessionStorage.getItem('examStartedAt');
@@ -249,48 +251,73 @@ const Exam = () => {
             <div className={`flex-1 min-h-0 ${isLongQuestion ? '' : 'overflow-y-auto'}`}>
               {question.optionImageUrls ? (
                 // Grid layout untuk pilihan jawaban bergambar (figural)
-                <div className="grid grid-cols-5 gap-1.5">
-                  {question.options.map((opt) => {
-                    const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
-                    return (
-                      <button
-                        key={opt.key}
-                        onClick={() => handleAnswer(opt.key)}
-                        className={`relative flex flex-col items-center p-1.5 rounded-lg border-2 transition-all ${
-                          answers[question.id] === opt.key 
-                            ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
-                            : 'border-border hover:border-primary/50 hover:bg-accent/50'
-                        }`}
-                      >
-                        <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-secondary flex items-center justify-center font-semibold text-[9px]">
-                          {opt.key}
-                        </span>
-                        {optionImage ? (
-                          <img 
-                            src={optionImage} 
-                            alt={`Pilihan ${opt.key}`}
-                            className="w-full h-auto rounded mt-3 max-h-16 object-contain"
-                            onError={(e) => {
-                              const target = e.currentTarget;
-                              target.style.display = 'none';
-                              const fallback = document.createElement('div');
-                              fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-3 p-1';
-                              const errorSpan = document.createElement('span');
-                              errorSpan.className = 'text-red-500 text-[8px] text-center';
-                              errorSpan.textContent = 'Gagal';
-                              fallback.appendChild(errorSpan);
-                              target.parentNode?.appendChild(fallback);
-                            }}
-                          />
-                        ) : (
-                          <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-3">
-                            <span className="text-muted-foreground text-[9px]">{opt.key}</span>
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
+                <>
+                  <div className="flex items-center justify-end mb-1">
+                    <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                      <ZoomIn className="w-3 h-3" /> Tap gambar untuk zoom
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-5 gap-1.5">
+                    {question.options.map((opt) => {
+                      const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
+                      return (
+                        <div key={opt.key} className="relative flex flex-col items-center">
+                          {/* Zoom button */}
+                          {optionImage && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setZoomImage(optionImage);
+                              }}
+                              className="absolute top-0 right-0 z-10 w-5 h-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                              title="Perbesar gambar"
+                            >
+                              <ZoomIn className="w-3 h-3" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleAnswer(opt.key)}
+                            className={`w-full relative flex flex-col items-center p-1.5 rounded-lg border-2 transition-all ${
+                              answers[question.id] === opt.key 
+                                ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
+                                : 'border-border hover:border-primary/50 hover:bg-accent/50'
+                            }`}
+                          >
+                            <span className="absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-secondary flex items-center justify-center font-semibold text-[9px]">
+                              {opt.key}
+                            </span>
+                            {optionImage ? (
+                              <img 
+                                src={optionImage} 
+                                alt={`Pilihan ${opt.key}`}
+                                className="w-full h-auto rounded mt-3 max-h-16 object-contain cursor-zoom-in"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setZoomImage(optionImage);
+                                }}
+                                onError={(e) => {
+                                  const target = e.currentTarget;
+                                  target.style.display = 'none';
+                                  const fallback = document.createElement('div');
+                                  fallback.className = 'w-full aspect-square bg-red-50 dark:bg-red-900/20 rounded flex items-center justify-center mt-3 p-1';
+                                  const errorSpan = document.createElement('span');
+                                  errorSpan.className = 'text-red-500 text-[8px] text-center';
+                                  errorSpan.textContent = 'Gagal';
+                                  fallback.appendChild(errorSpan);
+                                  target.parentNode?.appendChild(fallback);
+                                }}
+                              />
+                            ) : (
+                              <div className="w-full aspect-square bg-muted rounded flex items-center justify-center mt-3">
+                                <span className="text-muted-foreground text-[9px]">{opt.key}</span>
+                              </div>
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 // Layout standar untuk pilihan jawaban teks - compact
                 <div className="space-y-1">
@@ -367,6 +394,28 @@ const Exam = () => {
           </Sheet>
         </div>
       </div>
+
+      {/* Zoom Image Modal */}
+      <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
+        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 flex flex-col items-center justify-center bg-black/95 border-none">
+          <VisuallyHidden>
+            <DialogTitle>Gambar Diperbesar</DialogTitle>
+          </VisuallyHidden>
+          <button
+            onClick={() => setZoomImage(null)}
+            className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          {zoomImage && (
+            <img
+              src={zoomImage}
+              alt="Gambar diperbesar"
+              className="max-w-full max-h-[85vh] object-contain rounded-lg"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
