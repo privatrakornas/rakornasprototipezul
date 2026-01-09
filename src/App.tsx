@@ -10,6 +10,7 @@ import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Watermark from "./components/Watermark";
 import { useContentProtection } from "./hooks/useContentProtection";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ const AppContent = () => {
   
   return (
     <div className="protected-content no-print">
+      <Watermark />
       <Toaster />
       <Sonner />
       <BrowserRouter>
