@@ -213,13 +213,28 @@ const Exam = () => {
               <LatexText>{question.text}</LatexText>
             </div>
 
-            {/* Gambar Soal */}
+            {/* Gambar Soal - dengan zoom untuk soal figural 61-65 */}
             {question.imageUrl && (
-              <div className="mb-2 flex-shrink-0">
+              <div className="mb-2 flex-shrink-0 relative inline-block">
+                {/* Zoom button untuk soal figural */}
+                {[61, 62, 63, 64, 65].includes(question.id) && (
+                  <button
+                    onClick={() => setZoomImage(question.imageUrl!)}
+                    className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
+                    title="Perbesar gambar soal"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                )}
                 <img 
                   src={question.imageUrl} 
                   alt={`Gambar soal ${question.id}`}
-                  className="max-w-full max-h-24 md:max-h-32 h-auto rounded-lg border shadow-sm object-contain"
+                  className={`max-w-full max-h-24 md:max-h-32 h-auto rounded-lg border shadow-sm object-contain ${[61, 62, 63, 64, 65].includes(question.id) ? 'cursor-zoom-in' : ''}`}
+                  onClick={() => {
+                    if ([61, 62, 63, 64, 65].includes(question.id)) {
+                      setZoomImage(question.imageUrl!);
+                    }
+                  }}
                   onError={(e) => {
                     const target = e.currentTarget;
                     target.style.display = 'none';
@@ -234,6 +249,11 @@ const Exam = () => {
                     target.parentNode?.appendChild(fallback);
                   }}
                 />
+                {[61, 62, 63, 64, 65].includes(question.id) && (
+                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                    <ZoomIn className="w-3 h-3" /> Tap gambar untuk zoom
+                  </p>
+                )}
               </div>
             )}
             
