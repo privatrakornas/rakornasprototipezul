@@ -215,44 +215,54 @@ const Exam = () => {
 
             {/* Gambar Soal - dengan zoom untuk soal figural 61-65 */}
             {question.imageUrl && (
-              <div className="mb-2 flex-shrink-0 relative inline-block">
-                {/* Zoom button untuk soal figural */}
-                {[61, 62, 63, 64, 65].includes(question.id) && (
-                  <button
+              <div className={`mb-2 flex-shrink-0 relative ${[61, 62, 63, 64, 65].includes(question.id) ? 'w-full' : 'inline-block'}`}>
+                {/* Gambar figural dengan ukuran lebih besar di mobile */}
+                {[61, 62, 63, 64, 65].includes(question.id) ? (
+                  <div 
+                    className="relative w-full bg-muted/30 rounded-xl p-3 border-2 border-dashed border-primary/30 cursor-zoom-in active:scale-[0.98] transition-transform"
                     onClick={() => setZoomImage(question.imageUrl!)}
-                    className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80 transition-colors"
-                    title="Perbesar gambar soal"
                   >
-                    <ZoomIn className="w-4 h-4" />
-                  </button>
-                )}
-                <img 
-                  src={question.imageUrl} 
-                  alt={`Gambar soal ${question.id}`}
-                  className={`max-w-full max-h-24 md:max-h-32 h-auto rounded-lg border shadow-sm object-contain ${[61, 62, 63, 64, 65].includes(question.id) ? 'cursor-zoom-in' : ''}`}
-                  onClick={() => {
-                    if ([61, 62, 63, 64, 65].includes(question.id)) {
-                      setZoomImage(question.imageUrl!);
-                    }
-                  }}
-                  onError={(e) => {
-                    const target = e.currentTarget;
-                    target.style.display = 'none';
-                    const fallback = document.createElement('div');
-                    fallback.className = 'bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800 text-xs';
+                    {/* Zoom indicator overlay */}
+                    <div className="absolute top-2 right-2 z-10 px-2 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-medium flex items-center gap-1 shadow-lg">
+                      <ZoomIn className="w-3 h-3" />
+                      <span className="hidden sm:inline">Perbesar</span>
+                    </div>
                     
-                    const errorText = document.createElement('p');
-                    errorText.className = 'text-red-600 dark:text-red-400 font-medium';
-                    errorText.textContent = '⚠️ Gambar gagal dimuat';
+                    <img 
+                      src={question.imageUrl} 
+                      alt={`Gambar soal figural ${question.id}`}
+                      className="w-full max-h-48 sm:max-h-56 md:max-h-64 h-auto mx-auto rounded-lg object-contain"
+                      onError={(e) => {
+                        const target = e.currentTarget;
+                        target.style.display = 'none';
+                      }}
+                    />
                     
-                    fallback.appendChild(errorText);
-                    target.parentNode?.appendChild(fallback);
-                  }}
-                />
-                {[61, 62, 63, 64, 65].includes(question.id) && (
-                  <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
-                    <ZoomIn className="w-3 h-3" /> Tap gambar untuk zoom
-                  </p>
+                    {/* Label instruksi */}
+                    <p className="text-xs text-center text-primary font-medium mt-2 flex items-center justify-center gap-1.5">
+                      <ZoomIn className="w-4 h-4" />
+                      Ketuk gambar untuk memperbesar
+                    </p>
+                  </div>
+                ) : (
+                  <img 
+                    src={question.imageUrl} 
+                    alt={`Gambar soal ${question.id}`}
+                    className="max-w-full max-h-24 md:max-h-32 h-auto rounded-lg border shadow-sm object-contain"
+                    onError={(e) => {
+                      const target = e.currentTarget;
+                      target.style.display = 'none';
+                      const fallback = document.createElement('div');
+                      fallback.className = 'bg-red-50 dark:bg-red-900/20 p-2 rounded-lg border border-red-200 dark:border-red-800 text-xs';
+                      
+                      const errorText = document.createElement('p');
+                      errorText.className = 'text-red-600 dark:text-red-400 font-medium';
+                      errorText.textContent = '⚠️ Gambar gagal dimuat';
+                      
+                      fallback.appendChild(errorText);
+                      target.parentNode?.appendChild(fallback);
+                    }}
+                  />
                 )}
               </div>
             )}
@@ -411,25 +421,46 @@ const Exam = () => {
         </div>
       </div>
 
-      {/* Zoom Image Modal */}
+      {/* Fullscreen Zoom Image Modal - Optimized for Mobile */}
       <Dialog open={!!zoomImage} onOpenChange={() => setZoomImage(null)}>
-        <DialogContent className="max-w-[95vw] max-h-[95vh] p-2 flex flex-col items-center justify-center bg-black/95 border-none">
+        <DialogContent className="w-screen h-screen max-w-none max-h-none p-0 m-0 flex flex-col items-center justify-center bg-black border-none rounded-none [&>button]:hidden">
           <VisuallyHidden>
             <DialogTitle>Gambar Diperbesar</DialogTitle>
           </VisuallyHidden>
+          
+          {/* Large Close Button - Easy to tap on mobile */}
           <button
             onClick={() => setZoomImage(null)}
-            className="absolute top-2 right-2 z-10 w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30 transition-colors"
+            className="absolute top-4 right-4 z-50 w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm text-white flex items-center justify-center hover:bg-white/30 active:bg-white/40 transition-colors shadow-lg border border-white/20"
+            aria-label="Tutup gambar"
           >
-            <X className="w-5 h-5" />
+            <X className="w-7 h-7" />
           </button>
-          {zoomImage && (
-            <img
-              src={zoomImage}
-              alt="Gambar diperbesar"
-              className="max-w-full max-h-[85vh] object-contain rounded-lg"
-            />
-          )}
+          
+          {/* Close instruction text */}
+          <p className="absolute top-5 left-4 text-white/70 text-xs flex items-center gap-1">
+            <X className="w-3 h-3" /> Ketuk untuk tutup
+          </p>
+          
+          {/* Fullscreen Image Container */}
+          <div 
+            className="w-full h-full flex items-center justify-center p-4"
+            onClick={() => setZoomImage(null)}
+          >
+            {zoomImage && (
+              <img
+                src={zoomImage}
+                alt="Gambar diperbesar"
+                className="max-w-full max-h-full object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </div>
+          
+          {/* Bottom hint */}
+          <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-xs">
+            Ketuk di luar gambar atau tombol X untuk menutup
+          </p>
         </DialogContent>
       </Dialog>
     </div>
