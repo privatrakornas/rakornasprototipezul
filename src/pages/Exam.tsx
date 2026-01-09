@@ -167,10 +167,6 @@ const Exam = () => {
   }, []);
 
   const question = questions[currentQuestion];
-  
-  // Soal panjang: 22-24, 26, 30, 61-65 - izinkan scroll pada konten
-  const longQuestionIds = [22, 23, 24, 26, 30, 61, 62, 63, 64, 65];
-  const isLongQuestion = longQuestionIds.includes(question.id);
 
   return (
     <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
@@ -200,10 +196,10 @@ const Exam = () => {
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-        {/* Main Question Panel */}
-        <main className={`flex-1 p-2 md:p-3 pb-16 lg:pb-3 min-h-0 ${isLongQuestion ? 'overflow-y-auto' : 'overflow-hidden'}`}>
-          <Card className={`p-2 md:p-3 animate-fade-in h-full flex flex-col ${isLongQuestion ? '' : 'overflow-hidden'}`}>
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+        {/* Main Question Panel - Mobile: scrollable content area */}
+        <main className="flex-1 p-2 md:p-3 pb-24 lg:pb-3 min-h-0 overflow-y-auto">
+          <Card className="p-2 md:p-3 animate-fade-in flex flex-col min-h-full">
             {/* Question Header - Compact */}
             <div className="flex items-center justify-between gap-2 mb-1.5 flex-shrink-0">
               <span className="text-muted-foreground text-[11px]">Soal {question.id}/110</span>
@@ -213,7 +209,7 @@ const Exam = () => {
             </div>
 
             {/* Question Text - Adaptive font & tight leading */}
-            <div className={`text-sm md:text-base leading-snug mb-2 whitespace-pre-line ${isLongQuestion ? '' : 'flex-shrink-0'}`}>
+            <div className="text-sm md:text-base leading-snug mb-2 whitespace-pre-line flex-shrink-0">
               <LatexText>{question.text}</LatexText>
             </div>
 
@@ -247,8 +243,8 @@ const Exam = () => {
               </p>
             )}
 
-            {/* Pilihan Jawaban - scrollable only if needed */}
-            <div className={`flex-1 min-h-0 ${isLongQuestion ? '' : 'overflow-y-auto'}`}>
+            {/* Pilihan Jawaban - always visible, parent scrolls */}
+            <div className="flex-1 min-h-0 pb-4">
               {question.optionImageUrls ? (
                 // Grid layout untuk pilihan jawaban bergambar (figural)
                 <>
