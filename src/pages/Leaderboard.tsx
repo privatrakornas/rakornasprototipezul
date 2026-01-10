@@ -130,13 +130,58 @@ const Leaderboard = () => {
     return <span className="w-4 md:w-5 text-center text-sm">{rank}</span>;
   };
 
-  // Get score cell class based on passing grade
-  const getScoreClass = (score: number, type: 'TWK' | 'TIU' | 'TKP'): string => {
+  // Get score cell class based on passing grade and row background
+  const getScoreClass = (score: number, type: 'TWK' | 'TIU' | 'TKP', isLightText: boolean): string => {
     const passingGrade = PASSING_GRADE[type];
     if (score < passingGrade) {
-      return 'text-red-600 dark:text-red-500 font-semibold';
+      // For light text rows (gradient backgrounds), use lighter red
+      return isLightText ? 'text-red-200 font-bold underline' : 'text-red-600 dark:text-red-500 font-semibold';
     }
     return '';
+  };
+
+  // Get row styling based on rank and passing status
+  const getRowStyle = (rank: number, lulus: boolean): { className: string; isLightText: boolean } => {
+    // Rank 1-3: Podium with gradient backgrounds
+    if (rank === 1) {
+      return {
+        className: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 text-white shadow-lg',
+        isLightText: true
+      };
+    }
+    if (rank === 2) {
+      return {
+        className: 'bg-gradient-to-r from-gray-300 via-gray-400 to-gray-500 text-white shadow-md',
+        isLightText: true
+      };
+    }
+    if (rank === 3) {
+      return {
+        className: 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white shadow-md',
+        isLightText: true
+      };
+    }
+    
+    // Rank 4-10: Top 10 with green background
+    if (rank <= 10) {
+      return {
+        className: 'bg-green-100 dark:bg-green-900/30 text-gray-900 dark:text-gray-100',
+        isLightText: false
+      };
+    }
+    
+    // Rank 11+: Based on passing status
+    if (lulus) {
+      return {
+        className: 'bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100',
+        isLightText: false
+      };
+    } else {
+      return {
+        className: 'bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-gray-100',
+        isLightText: false
+      };
+    }
   };
 
   return (
@@ -191,45 +236,47 @@ const Leaderboard = () => {
                   {data.map((entry, idx) => {
                     const rank = idx + 1;
                     const lulus = isLulus(entry);
-                    let rowClass = '';
-                    if (rank <= 3 && lulus) {
-                      rowClass = 'bg-yellow-100/70 dark:bg-yellow-900/30';
-                    } else if (rank <= 10 && lulus) {
-                      rowClass = 'bg-slate-100/70 dark:bg-slate-800/30';
-                    } else if (!lulus) {
-                      rowClass = 'bg-red-50/50 dark:bg-red-950/20';
-                    }
+                    const { className: rowClass, isLightText } = getRowStyle(rank, lulus);
+                    
                     return (
                       <TableRow key={entry.id} className={rowClass}>
-                        <TableCell className="flex items-center justify-center py-2 md:py-4">
+                        <TableCell className={`flex items-center justify-center py-2 md:py-4 ${isLightText ? '' : ''}`}>
                           {getRankIcon(rank)}
                         </TableCell>
-                        <TableCell className="font-medium text-xs md:text-sm py-2 md:py-4">{entry.name}</TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4 text-muted-foreground">
+                        <TableCell className={`font-medium text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''}`}>
+                          {entry.name}
+                        </TableCell>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white/90' : 'text-muted-foreground'}`}>
                           {entry.duration_minutes != null 
                             ? `${entry.duration_minutes} menit / ${TOTAL_EXAM_TIME} menit` 
                             : `- / ${TOTAL_EXAM_TIME} menit`}
                         </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.twk_score, 'TWK')}`}>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.twk_score, 'TWK', isLightText)}`}>
                           {entry.twk_score}
                         </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.tiu_score, 'TIU')}`}>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.tiu_score, 'TIU', isLightText)}`}>
                           {entry.tiu_score}
                         </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${getScoreClass(entry.tkp_score, 'TKP')}`}>
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.tkp_score, 'TKP', isLightText)}`}>
                           {entry.tkp_score}
                         </TableCell>
-                        <TableCell className="text-center font-bold text-xs md:text-sm py-2 md:py-4">{entry.total_score}</TableCell>
+                        <TableCell className={`text-center font-bold text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''}`}>
+                          {entry.total_score}
+                        </TableCell>
                         <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">
                           <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
                             lulus 
-                              ? 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' 
-                              : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
+                              ? isLightText 
+                                ? 'bg-white/20 text-white border border-white/30' 
+                                : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
+                              : isLightText 
+                                ? 'bg-red-200/30 text-white border border-red-200/50' 
+                                : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
                           }`}>
                             {lulus ? 'Lulus' : 'Tidak Lulus'}
                           </span>
                         </TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4 text-muted-foreground whitespace-nowrap">
+                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 whitespace-nowrap ${isLightText ? 'text-white/90' : 'text-muted-foreground'}`}>
                           {entry.created_at 
                             ? format(new Date(entry.created_at), 'dd-MM-yyyy') 
                             : '-'}
