@@ -51,9 +51,15 @@ const Index = () => {
     const sessionId =
       globalThis.crypto?.randomUUID?.() ??
       `sess-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    
+    // Generate device fingerprint
+    const deviceFingerprint =
+      globalThis.crypto?.randomUUID?.() ??
+      `device-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
     sessionStorage.setItem('examSession', sessionId);
     sessionStorage.setItem('userName', normalizedName.slice(0, 100));
+    sessionStorage.setItem('deviceFingerprint', deviceFingerprint);
 
     setIsLoading(false);
     navigate('/rules');

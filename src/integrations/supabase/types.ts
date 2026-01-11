@@ -59,6 +59,60 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_sessions: {
+        Row: {
+          answered_count: number
+          created_at: string
+          device_fingerprint: string
+          duration_minutes: number | null
+          finished_at: string | null
+          id: string
+          name: string
+          started_at: string
+          status: string
+          tiu_score: number
+          tkp_score: number
+          total_questions: number
+          total_score: number
+          twk_score: number
+          updated_at: string
+        }
+        Insert: {
+          answered_count?: number
+          created_at?: string
+          device_fingerprint: string
+          duration_minutes?: number | null
+          finished_at?: string | null
+          id?: string
+          name: string
+          started_at?: string
+          status?: string
+          tiu_score?: number
+          tkp_score?: number
+          total_questions?: number
+          total_score?: number
+          twk_score?: number
+          updated_at?: string
+        }
+        Update: {
+          answered_count?: number
+          created_at?: string
+          device_fingerprint?: string
+          duration_minutes?: number | null
+          finished_at?: string | null
+          id?: string
+          name?: string
+          started_at?: string
+          status?: string
+          tiu_score?: number
+          tkp_score?: number
+          total_questions?: number
+          total_score?: number
+          twk_score?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

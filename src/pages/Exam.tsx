@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,6 +8,7 @@ import { questions } from '@/data/questions';
 import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
+import { useExamSession } from '@/hooks/useExamSession';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
 const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
@@ -82,6 +83,9 @@ const Exam = () => {
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
   const [navOpen, setNavOpen] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const sessionInitializedRef = useRef(false);
+  const { createSession, updateScores, finishSession } = useExamSession();
+  
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
     const storedStartTime = sessionStorage.getItem('examStartedAt');
@@ -93,6 +97,23 @@ const Exam = () => {
     return startTime;
   });
   const userName = sessionStorage.getItem('userName') || 'Peserta';
+  const deviceFingerprint = sessionStorage.getItem('deviceFingerprint') || 'unknown';
+
+  // Create exam session on mount
+  useEffect(() => {
+    const initSession = async () => {
+      // Check if we already have a session
+      const existingSessionId = sessionStorage.getItem('examSessionId');
+      if (existingSessionId || sessionInitializedRef.current) {
+        return;
+      }
+      
+      sessionInitializedRef.current = true;
+      await createSession(userName, deviceFingerprint, examStartedAt);
+    };
+    
+    initSession();
+  }, [userName, deviceFingerprint, examStartedAt, createSession]);
 
   // Anti-cheat: detect tab switch
   useEffect(() => {
@@ -130,10 +151,15 @@ const Exam = () => {
   };
 
   const handleAnswer = (key: string) => {
-    setAnswers(prev => ({ ...prev, [questions[currentQuestion].id]: key }));
+    setAnswers(prev => {
+      const newAnswers = { ...prev, [questions[currentQuestion].id]: key };
+      // Update scores in real-time
+      updateScores(newAnswers);
+      return newAnswers;
+    });
   };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     const unanswered = questions.filter(q => !answers[q.id]).length;
     if (unanswered > 0 && timeLeft > 0) {
       alert(`Seluruh soal harus dijawab terlebih dahulu. Masih ada ${unanswered} soal belum dijawab.`);
@@ -152,6 +178,9 @@ const Exam = () => {
       durationMinutes = MAX_DURATION_MINUTES;
     }
     
+    // Finish the exam session
+    await finishSession(durationMinutes);
+    
     // Store all timing data
     localStorage.setItem('examAnswers', JSON.stringify(answers));
     localStorage.setItem('examDuration', String(durationMinutes));
@@ -159,7 +188,7 @@ const Exam = () => {
     localStorage.setItem('examFinishedAt', finishedAt);
     
     navigate('/results');
-  }, [answers, navigate, timeLeft, examStartedAt]);
+  }, [answers, navigate, timeLeft, examStartedAt, finishSession]);
 
   const handleNavClick = useCallback((idx: number) => {
     setCurrentQuestion(idx);
