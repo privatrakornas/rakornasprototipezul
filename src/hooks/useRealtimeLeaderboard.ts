@@ -22,7 +22,7 @@ export interface LeaderboardEntry {
   duration_minutes?: number | null;
   created_at?: string;
   // Real-time fields
-  status: 'ongoing' | 'finished';
+  status: 'ongoing' | 'finished' | 'disqualified';
   started_at?: string | null;
   answered_count?: number;
   total_questions?: number;
@@ -41,7 +41,10 @@ export const isLulus = (entry: LeaderboardEntry): boolean => {
 const sortByPriority = (a: LeaderboardEntry, b: LeaderboardEntry): number => {
   // Priority 0: Ongoing exams at top (to see live progress)
   if (a.status !== b.status) {
-    return a.status === 'ongoing' ? -1 : 1;
+    if (a.status === 'disqualified') return 1;
+    if (b.status === 'disqualified') return -1;
+    if (a.status === 'ongoing') return -1;
+    if (b.status === 'ongoing') return 1;
   }
 
   // Priority 1: Pass status (LULUS first) - only for finished exams
@@ -76,15 +79,44 @@ export const useRealtimeLeaderboard = () => {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  const lastSortedScoresRef = useRef<Map<string, number>>(new Map());
+  const sortTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sort data only when total_score changes (debounced)
+  const sortDataIfNeeded = useCallback((newData: LeaderboardEntry[]) => {
+    const needsSort = newData.some(entry => {
+      const lastScore = lastSortedScoresRef.current.get(entry.id);
+      return lastScore === undefined || lastScore !== entry.total_score;
+    });
+
+    if (needsSort) {
+      // Clear existing timeout
+      if (sortTimeoutRef.current) {
+        clearTimeout(sortTimeoutRef.current);
+      }
+
+      // Debounce sorting to prevent constant re-sorting
+      sortTimeoutRef.current = setTimeout(() => {
+        setData(prev => {
+          const sorted = [...prev].sort(sortByPriority);
+          // Update score cache
+          sorted.forEach(entry => {
+            lastSortedScoresRef.current.set(entry.id, entry.total_score);
+          });
+          return sorted;
+        });
+      }, 300);
+    }
+  }, []);
 
   // Fetch all data - combines ongoing sessions and finished results
   const fetchAllData = useCallback(async () => {
     try {
-      // Fetch ongoing sessions (use type assertion for new table)
+      // Fetch ongoing sessions (exclude disqualified from view)
       const { data: sessions, error: sessionsError } = await (supabase
         .from('exam_sessions' as any)
         .select('*')
-        .eq('status', 'ongoing') as any);
+        .in('status', ['ongoing', 'finished']) as any);
 
       if (sessionsError) {
         console.error('Error fetching sessions:', sessionsError);
@@ -99,20 +131,22 @@ export const useRealtimeLeaderboard = () => {
       }
 
       // Combine and format data
-      const ongoingSessions: LeaderboardEntry[] = (sessions || []).map(s => ({
-        id: s.id,
-        name: s.name,
-        twk_score: s.twk_score,
-        tiu_score: s.tiu_score,
-        tkp_score: s.tkp_score,
-        total_score: s.total_score,
-        duration_minutes: s.duration_minutes,
-        created_at: s.created_at,
-        status: 'ongoing' as const,
-        started_at: s.started_at,
-        answered_count: s.answered_count,
-        total_questions: s.total_questions,
-      }));
+      const ongoingSessions: LeaderboardEntry[] = (sessions || [])
+        .filter((s: any) => s.status === 'ongoing')
+        .map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          twk_score: s.twk_score,
+          tiu_score: s.tiu_score,
+          tkp_score: s.tkp_score,
+          total_score: s.total_score,
+          duration_minutes: s.duration_minutes,
+          created_at: s.created_at,
+          status: 'ongoing' as const,
+          started_at: s.started_at,
+          answered_count: s.answered_count,
+          total_questions: s.total_questions,
+        }));
 
       const finishedResults: LeaderboardEntry[] = (results || [])
         .filter((entry: any) => !(entry.name === 'Mona Sartika' && entry.total_score === 544))
@@ -134,6 +168,12 @@ export const useRealtimeLeaderboard = () => {
       // Combine and sort
       const combined = [...ongoingSessions, ...finishedResults];
       combined.sort(sortByPriority);
+      
+      // Update score cache
+      combined.forEach(entry => {
+        lastSortedScoresRef.current.set(entry.id, entry.total_score);
+      });
+      
       setData(combined);
     } catch (error) {
       console.error('Error:', error);
@@ -142,63 +182,100 @@ export const useRealtimeLeaderboard = () => {
     }
   }, []);
 
-  // Handle realtime updates
+  // Handle realtime updates - optimized to update only affected entries
   const handleRealtimeChange = useCallback((payload: any) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
     
     setData(prevData => {
       let updatedData = [...prevData];
+      let shouldSort = false;
       
       if (eventType === 'INSERT') {
-        // Add new session
-        const newEntry: LeaderboardEntry = {
-          id: newRecord.id,
-          name: newRecord.name,
-          twk_score: newRecord.twk_score || 0,
-          tiu_score: newRecord.tiu_score || 0,
-          tkp_score: newRecord.tkp_score || 0,
-          total_score: newRecord.total_score || 0,
-          duration_minutes: newRecord.duration_minutes,
-          created_at: newRecord.created_at,
-          status: newRecord.status || 'ongoing',
-          started_at: newRecord.started_at,
-          answered_count: newRecord.answered_count || 0,
-          total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
-        };
-        updatedData.push(newEntry);
+        // Check if entry already exists (avoid duplicates)
+        const exists = updatedData.some(e => e.id === newRecord.id);
+        if (!exists) {
+          const newEntry: LeaderboardEntry = {
+            id: newRecord.id,
+            name: newRecord.name,
+            twk_score: newRecord.twk_score || 0,
+            tiu_score: newRecord.tiu_score || 0,
+            tkp_score: newRecord.tkp_score || 0,
+            total_score: newRecord.total_score || 0,
+            duration_minutes: newRecord.duration_minutes,
+            created_at: newRecord.created_at,
+            status: newRecord.status || 'ongoing',
+            started_at: newRecord.started_at,
+            answered_count: newRecord.answered_count || 0,
+            total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
+          };
+          updatedData.push(newEntry);
+          shouldSort = true;
+        }
       } else if (eventType === 'UPDATE') {
-        // Update existing session
         const idx = updatedData.findIndex(e => e.id === newRecord.id);
-        if (idx !== -1) {
+        
+        // Handle disqualification - remove from list immediately
+        if (newRecord.status === 'disqualified') {
+          if (idx !== -1) {
+            updatedData = updatedData.filter(e => e.id !== newRecord.id);
+          }
+          return updatedData;
+        }
+        
+        // Handle status change to finished - update and refetch for final data
+        if (newRecord.status === 'finished' && idx !== -1) {
+          const oldScore = updatedData[idx].total_score;
           updatedData[idx] = {
             ...updatedData[idx],
             twk_score: newRecord.twk_score || 0,
             tiu_score: newRecord.tiu_score || 0,
             tkp_score: newRecord.tkp_score || 0,
             total_score: newRecord.total_score || 0,
-            status: newRecord.status,
-            answered_count: newRecord.answered_count || 0,
+            status: 'finished',
+            duration_minutes: newRecord.duration_minutes,
+            answered_count: TOTAL_QUESTIONS,
+          };
+          
+          // Sort if score changed
+          if (oldScore !== newRecord.total_score) {
+            shouldSort = true;
+          }
+          
+          // Also refetch to get accurate final data
+          setTimeout(() => fetchAllData(), 500);
+        } else if (idx !== -1) {
+          // Regular update for ongoing exams
+          const oldScore = updatedData[idx].total_score;
+          updatedData[idx] = {
+            ...updatedData[idx],
+            twk_score: newRecord.twk_score || updatedData[idx].twk_score,
+            tiu_score: newRecord.tiu_score || updatedData[idx].tiu_score,
+            tkp_score: newRecord.tkp_score || updatedData[idx].tkp_score,
+            total_score: newRecord.total_score || updatedData[idx].total_score,
+            status: newRecord.status || updatedData[idx].status,
+            answered_count: newRecord.answered_count ?? updatedData[idx].answered_count,
             duration_minutes: newRecord.duration_minutes,
           };
           
-          // If status changed to finished, remove from ongoing and refetch
-          if (newRecord.status === 'finished') {
-            updatedData = updatedData.filter(e => e.id !== newRecord.id);
-            // Trigger a full refetch to get the finalized result
-            fetchAllData();
-            return prevData;
+          // Only sort if total_score changed significantly
+          if (oldScore !== (newRecord.total_score || updatedData[idx].total_score)) {
+            shouldSort = true;
           }
         }
       } else if (eventType === 'DELETE') {
-        // Remove deleted session
+        // Remove deleted session immediately
         updatedData = updatedData.filter(e => e.id !== oldRecord.id);
       }
       
-      // Re-sort after changes
-      updatedData.sort(sortByPriority);
+      // Debounced sorting only when needed
+      if (shouldSort) {
+        sortDataIfNeeded(updatedData);
+        return updatedData; // Return unsorted, let debounced sort handle it
+      }
+      
       return updatedData;
     });
-  }, [fetchAllData]);
+  }, [fetchAllData, sortDataIfNeeded]);
 
   // Setup realtime subscription
   useEffect(() => {
@@ -235,6 +312,9 @@ export const useRealtimeLeaderboard = () => {
     return () => {
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
+      }
+      if (sortTimeoutRef.current) {
+        clearTimeout(sortTimeoutRef.current);
       }
     };
   }, [fetchAllData, handleRealtimeChange]);

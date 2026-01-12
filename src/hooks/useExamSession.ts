@@ -54,7 +54,6 @@ export const useExamSession = () => {
   // Create session when exam starts
   const createSession = useCallback(async (name: string, deviceFingerprint: string, startedAt: string) => {
     try {
-      // Use type assertion since exam_sessions table is newly created
       const { data, error } = await (supabase
         .from('exam_sessions' as any)
         .insert({
@@ -93,7 +92,6 @@ export const useExamSession = () => {
     updateQueueRef.current = null;
 
     try {
-      // Use type assertion since exam_sessions table is newly created
       const { error } = await (supabase
         .from('exam_sessions' as any)
         .update({
@@ -140,7 +138,6 @@ export const useExamSession = () => {
     if (!sessionId) return;
 
     try {
-      // Use type assertion since exam_sessions table is newly created
       const { error } = await (supabase
         .from('exam_sessions' as any)
         .update({
@@ -155,6 +152,32 @@ export const useExamSession = () => {
       }
     } catch (err) {
       console.error('Error finishing session:', err);
+    }
+
+    // Clear the session
+    sessionIdRef.current = null;
+    sessionStorage.removeItem('examSessionId');
+  }, []);
+
+  // Disqualify session (for anti-cheat)
+  const disqualifySession = useCallback(async () => {
+    const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
+    if (!sessionId) return;
+
+    try {
+      const { error } = await (supabase
+        .from('exam_sessions' as any)
+        .update({
+          status: 'disqualified',
+          finished_at: new Date().toISOString(),
+        })
+        .eq('id', sessionId) as any);
+
+      if (error) {
+        console.error('Failed to disqualify session:', error);
+      }
+    } catch (err) {
+      console.error('Error disqualifying session:', err);
     }
 
     // Clear the session
@@ -181,6 +204,7 @@ export const useExamSession = () => {
     createSession,
     updateScores,
     finishSession,
+    disqualifySession,
     sessionId: sessionIdRef.current,
   };
 };

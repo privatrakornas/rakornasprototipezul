@@ -1,92 +1,18 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Trophy, Medal, Award, Loader2, Radio, Users } from 'lucide-react';
-import { format } from 'date-fns';
-import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
-import { LiveTimer } from '@/components/LiveTimer';
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Trophy, Loader2, Radio, Users } from 'lucide-react';
+import { useRealtimeLeaderboard } from '@/hooks/useRealtimeLeaderboard';
+import LeaderboardRow from '@/components/LeaderboardRow';
 
 const Leaderboard = () => {
   const navigate = useNavigate();
-  const { data, isLoading, TOTAL_EXAM_TIME, TOTAL_QUESTIONS } = useRealtimeLeaderboard();
+  const { data, isLoading } = useRealtimeLeaderboard();
 
-  const getRankIcon = (rank: number) => {
-    if (rank === 1) return <Trophy className="w-4 h-4 md:w-5 md:h-5 text-yellow-500" />;
-    if (rank === 2) return <Medal className="w-4 h-4 md:w-5 md:h-5 text-gray-400" />;
-    if (rank === 3) return <Award className="w-4 h-4 md:w-5 md:h-5 text-amber-600" />;
-    return <span className="w-4 md:w-5 text-center text-sm">{rank}</span>;
-  };
-
-  // Get score cell class based on passing grade and row background
-  const getScoreClass = (score: number, type: 'TWK' | 'TIU' | 'TKP', isLightText: boolean, passingGrade: Record<string, number>): string => {
-    const pg = passingGrade[type];
-    if (score < pg) {
-      return isLightText ? 'text-red-200 font-bold underline' : 'text-red-600 dark:text-red-500 font-semibold';
-    }
-    return '';
-  };
-
-  // Get row styling based on rank, status and passing status
-  const getRowStyle = (rank: number, entry: LeaderboardEntry): { className: string; isLightText: boolean } => {
-    const lulus = isLulus(entry);
-    
-    // Ongoing exams get a special animated style
-    if (entry.status === 'ongoing') {
-      return {
-        className: 'bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 dark:from-blue-900/40 dark:via-indigo-900/40 dark:to-purple-900/40 animate-pulse border-l-4 border-blue-500',
-        isLightText: false
-      };
-    }
-    
-    // Rank 1-3: Podium with gradient backgrounds
-    if (rank === 1) {
-      return {
-        className: 'bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 text-white shadow-lg',
-        isLightText: true
-      };
-    }
-    if (rank === 2) {
-      return {
-        className: 'bg-gradient-to-r from-gray-300 via-gray-400 to-gray-500 text-white shadow-md',
-        isLightText: true
-      };
-    }
-    if (rank === 3) {
-      return {
-        className: 'bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 text-white shadow-md',
-        isLightText: true
-      };
-    }
-    
-    // Rank 4-10: Top 10 with green background
-    if (rank <= 10) {
-      return {
-        className: 'bg-green-100 dark:bg-green-900/30 text-gray-900 dark:text-gray-100',
-        isLightText: false
-      };
-    }
-    
-    // Rank 11+: Based on passing status
-    if (lulus) {
-      return {
-        className: 'bg-blue-50 dark:bg-blue-900/20 text-gray-900 dark:text-gray-100',
-        isLightText: false
-      };
-    } else {
-      return {
-        className: 'bg-red-50 dark:bg-red-900/20 text-gray-900 dark:text-gray-100',
-        isLightText: false
-      };
-    }
-  };
-
-  // Count ongoing and finished
+  // Count ongoing and finished (exclude disqualified)
   const ongoingCount = data.filter(e => e.status === 'ongoing').length;
   const finishedCount = data.filter(e => e.status === 'finished').length;
-
-  // Passing grade constants for display
-  const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
@@ -164,78 +90,15 @@ const Leaderboard = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {data.map((entry, idx) => {
-                    const rank = idx + 1;
-                    const lulus = isLulus(entry);
-                    const { className: rowClass, isLightText } = getRowStyle(rank, entry);
-                    
-                    return (
-                      <TableRow key={entry.id} className={`transition-all duration-300 ${rowClass}`}>
-                        <TableCell className={`flex items-center justify-center py-2 md:py-4 ${isLightText ? '' : ''}`}>
-                          {entry.status === 'ongoing' ? (
-                            <Radio className="w-4 h-4 text-blue-500 animate-pulse" />
-                          ) : (
-                            getRankIcon(rank)
-                          )}
-                        </TableCell>
-                        <TableCell className={`font-medium text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''}`}>
-                          <div className="flex flex-col gap-0.5">
-                            <span>{entry.name}</span>
-                            {entry.status === 'ongoing' && (
-                              <span className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">
-                                ({entry.answered_count || 0}/{TOTAL_QUESTIONS} soal)
-                              </span>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white/90' : ''}`}>
-                          <LiveTimer
-                            startedAt={entry.started_at}
-                            totalMinutes={TOTAL_EXAM_TIME}
-                            status={entry.status}
-                            durationMinutes={entry.duration_minutes}
-                          />
-                        </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.twk_score, 'TWK', isLightText, PASSING_GRADE)}`}>
-                          {entry.twk_score}
-                        </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.tiu_score, 'TIU', isLightText, PASSING_GRADE)}`}>
-                          {entry.tiu_score}
-                        </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''} ${getScoreClass(entry.tkp_score, 'TKP', isLightText, PASSING_GRADE)}`}>
-                          {entry.tkp_score}
-                        </TableCell>
-                        <TableCell className={`text-center font-bold text-xs md:text-sm py-2 md:py-4 ${isLightText ? 'text-white' : ''}`}>
-                          {entry.total_score}
-                        </TableCell>
-                        <TableCell className="text-center text-xs md:text-sm py-2 md:py-4">
-                          {entry.status === 'ongoing' ? (
-                            <span className="px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 flex items-center justify-center gap-1">
-                              <Radio className="w-3 h-3 animate-pulse" />
-                              Berlangsung
-                            </span>
-                          ) : (
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              lulus 
-                                ? isLightText 
-                                  ? 'bg-white/20 text-white border border-white/30' 
-                                  : 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300'
-                                : isLightText 
-                                  ? 'bg-red-200/30 text-white border border-red-200/50' 
-                                  : 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300'
-                            }`}>
-                              {lulus ? 'Lulus' : 'Tidak Lulus'}
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className={`text-center text-xs md:text-sm py-2 md:py-4 whitespace-nowrap ${isLightText ? 'text-white/90' : 'text-muted-foreground'}`}>
-                          {entry.created_at 
-                            ? format(new Date(entry.created_at), 'dd-MM-yyyy') 
-                            : '-'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {data
+                    .filter(entry => entry.status !== 'disqualified')
+                    .map((entry, idx) => (
+                      <LeaderboardRow 
+                        key={entry.id} 
+                        entry={entry} 
+                        rank={idx + 1} 
+                      />
+                    ))}
                 </TableBody>
               </Table>
             </div>

@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Clock, Timer } from 'lucide-react';
 
 interface LiveTimerProps {
   startedAt: string | null | undefined;
   totalMinutes: number;
-  status: 'ongoing' | 'finished';
+  status: 'ongoing' | 'finished' | 'disqualified';
   durationMinutes?: number | null;
 }
 
-export const LiveTimer = ({ startedAt, totalMinutes, status, durationMinutes }: LiveTimerProps) => {
+export const LiveTimer = memo(({ startedAt, totalMinutes, status, durationMinutes }: LiveTimerProps) => {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
 
   useEffect(() => {
@@ -38,6 +38,15 @@ export const LiveTimer = ({ startedAt, totalMinutes, status, durationMinutes }: 
 
     return () => clearInterval(timer);
   }, [startedAt, totalMinutes, status]);
+
+  // Disqualified exam
+  if (status === 'disqualified') {
+    return (
+      <span className="text-gray-500 font-medium whitespace-nowrap">
+        Diskualifikasi
+      </span>
+    );
+  }
 
   // Finished exam - show final duration
   if (status === 'finished') {
@@ -79,7 +88,17 @@ export const LiveTimer = ({ startedAt, totalMinutes, status, durationMinutes }: 
       }`}
     >
       <Clock className={`w-3 h-3 ${isUrgent ? 'animate-bounce' : ''}`} />
-      Sedang Ujian {formattedTime}
+      Sisa {formattedTime}
     </span>
   );
-};
+}, (prevProps, nextProps) => {
+  // Custom comparison for memo
+  return (
+    prevProps.startedAt === nextProps.startedAt &&
+    prevProps.totalMinutes === nextProps.totalMinutes &&
+    prevProps.status === nextProps.status &&
+    prevProps.durationMinutes === nextProps.durationMinutes
+  );
+});
+
+LiveTimer.displayName = 'LiveTimer';

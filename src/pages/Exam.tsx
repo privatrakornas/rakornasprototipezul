@@ -5,13 +5,15 @@ import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { questions } from '@/data/questions';
-import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
+import { useToast } from '@/hooks/use-toast';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
 const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
+const MIN_DURATION_MINUTES = 45; // Minimum 45 minutes before submit
 
 // Memoized Question Navigation Grid - prevents re-renders from timer
 interface QuestionNavGridProps {
@@ -78,13 +80,16 @@ QuestionNavGrid.displayName = 'QuestionNavGrid';
 
 const Exam = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
   const [navOpen, setNavOpen] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const sessionInitializedRef = useRef(false);
-  const { createSession, updateScores, finishSession } = useExamSession();
+  const autoSubmitTriggeredRef = useRef(false);
+  const { createSession, updateScores, finishSession, disqualifySession } = useExamSession();
   
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
@@ -98,6 +103,15 @@ const Exam = () => {
   });
   const userName = sessionStorage.getItem('userName') || 'Peserta';
   const deviceFingerprint = sessionStorage.getItem('deviceFingerprint') || 'unknown';
+
+  // Calculate elapsed time in minutes
+  const getElapsedMinutes = useCallback(() => {
+    const elapsedSeconds = EXAM_TIME - timeLeft;
+    return Math.floor(elapsedSeconds / 60);
+  }, [timeLeft]);
+
+  // Check if minimum time requirement is met
+  const canSubmit = getElapsedMinutes() >= MIN_DURATION_MINUTES;
 
   // Create exam session on mount
   useEffect(() => {
@@ -115,56 +129,52 @@ const Exam = () => {
     initSession();
   }, [userName, deviceFingerprint, examStartedAt, createSession]);
 
-  // Anti-cheat: detect tab switch
+  // Anti-cheat: detect tab switch - DISQUALIFY user
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        alert('Anda terdeteksi meninggalkan halaman ujian!');
+    const handleVisibilityChange = async () => {
+      if (document.hidden && !isSubmitting) {
+        // Disqualify the session in database
+        await disqualifySession();
+        
+        // Show alert and redirect
+        alert('Anda terdeteksi meninggalkan halaman ujian! Anda telah didiskualifikasi.');
         sessionStorage.removeItem('examSession');
         sessionStorage.removeItem('userName');
+        sessionStorage.removeItem('examStartedAt');
+        sessionStorage.removeItem('examSessionId');
         navigate('/');
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [navigate]);
+  }, [navigate, disqualifySession, isSubmitting]);
 
-  // Timer
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleSubmit();
-          return 0;
-        }
-        return prev - 1;
+  // Handle submit function
+  const handleSubmit = useCallback(async (isAutoSubmit = false) => {
+    // Prevent double submission
+    if (isSubmitting) return;
+    
+    // Check minimum time if not auto-submit
+    if (!isAutoSubmit && !canSubmit) {
+      toast({
+        title: "Waktu Pengerjaan Belum Cukup",
+        description: `Periksa Kembali dan Kerjakan dengan Benar. Waktu pengerjaan minimal ${MIN_DURATION_MINUTES} menit. Sisa waktu: ${Math.ceil((MIN_DURATION_MINUTES * 60 - (EXAM_TIME - timeLeft)) / 60)} menit lagi.`,
+        variant: "destructive",
+        duration: 5000,
       });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleAnswer = (key: string) => {
-    setAnswers(prev => {
-      const newAnswers = { ...prev, [questions[currentQuestion].id]: key };
-      // Update scores in real-time
-      updateScores(newAnswers);
-      return newAnswers;
-    });
-  };
-
-  const handleSubmit = useCallback(async () => {
-    const unanswered = questions.filter(q => !answers[q.id]).length;
-    if (unanswered > 0 && timeLeft > 0) {
-      alert(`Seluruh soal harus dijawab terlebih dahulu. Masih ada ${unanswered} soal belum dijawab.`);
       return;
     }
+
+    // Check unanswered questions only if not auto-submit
+    const unanswered = questions.filter(q => !answers[q.id]).length;
+    if (!isAutoSubmit && unanswered > 0 && timeLeft > 0) {
+      const confirmSubmit = window.confirm(
+        `Masih ada ${unanswered} soal belum dijawab. Yakin ingin submit?`
+      );
+      if (!confirmSubmit) return;
+    }
+    
+    setIsSubmitting(true);
     
     // Calculate real duration based on started_at and current time
     const finishedAt = new Date().toISOString();
@@ -188,7 +198,41 @@ const Exam = () => {
     localStorage.setItem('examFinishedAt', finishedAt);
     
     navigate('/results');
-  }, [answers, navigate, timeLeft, examStartedAt, finishSession]);
+  }, [answers, navigate, timeLeft, examStartedAt, finishSession, canSubmit, toast, isSubmitting]);
+
+  // Timer with auto-submit
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Auto-submit when time is up
+          if (!autoSubmitTriggeredRef.current) {
+            autoSubmitTriggeredRef.current = true;
+            handleSubmit(true);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [handleSubmit]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handleAnswer = (key: string) => {
+    setAnswers(prev => {
+      const newAnswers = { ...prev, [questions[currentQuestion].id]: key };
+      // Update scores in real-time
+      updateScores(newAnswers);
+      return newAnswers;
+    });
+  };
 
   const handleNavClick = useCallback((idx: number) => {
     setCurrentQuestion(idx);
@@ -196,6 +240,9 @@ const Exam = () => {
   }, []);
 
   const question = questions[currentQuestion];
+
+  // Calculate remaining time until submit is allowed
+  const minutesUntilCanSubmit = Math.max(0, MIN_DURATION_MINUTES - getElapsedMinutes());
 
   return (
     <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
@@ -214,13 +261,33 @@ const Exam = () => {
               <Clock className="w-4 h-4 md:w-5 md:h-5" />
               {formatTime(timeLeft)}
             </div>
-            <Button 
-              onClick={handleSubmit} 
-              size="sm" 
-              className="bg-primary hover:bg-primary/90 text-white text-xs md:text-sm px-3 md:px-5 font-semibold"
-            >
-              <span className="hidden sm:inline">Selesai & </span>Submit
-            </Button>
+            <div className="relative">
+              <Button 
+                onClick={() => handleSubmit(false)} 
+                size="sm" 
+                disabled={!canSubmit || isSubmitting}
+                className={`text-xs md:text-sm px-3 md:px-5 font-semibold transition-all ${
+                  canSubmit 
+                    ? 'bg-primary hover:bg-primary/90 text-white' 
+                    : 'bg-gray-400 cursor-not-allowed text-gray-200'
+                }`}
+                title={!canSubmit ? `Tunggu ${minutesUntilCanSubmit} menit lagi` : 'Submit ujian'}
+              >
+                {isSubmitting ? (
+                  'Menyimpan...'
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">Selesai & </span>Submit
+                  </>
+                )}
+              </Button>
+              {!canSubmit && (
+                <span className="absolute -bottom-4 left-1/2 -translate-x-1/2 text-[9px] text-yellow-200 whitespace-nowrap flex items-center gap-0.5">
+                  <AlertTriangle className="w-2.5 h-2.5" />
+                  Min. {minutesUntilCanSubmit}m lagi
+                </span>
+              )}
+            </div>
           </div>
         </div>
       </header>
