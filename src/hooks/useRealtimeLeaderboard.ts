@@ -277,11 +277,50 @@ export const useRealtimeLeaderboard = () => {
     });
   }, [fetchAllData, sortDataIfNeeded]);
 
+  // Handle user_answers changes - recalculate scores for specific session
+  const handleUserAnswerChange = useCallback(async (payload: any) => {
+    const { new: newRecord } = payload;
+    if (!newRecord?.session_id) return;
+
+    // Fetch updated session data for this specific session
+    const { data: session, error } = await (supabase
+      .from('exam_sessions' as any)
+      .select('*')
+      .eq('id', newRecord.session_id)
+      .single() as any);
+
+    if (error || !session) return;
+
+    // Update the specific entry in our data
+    setData(prevData => {
+      const idx = prevData.findIndex(e => e.id === session.id);
+      if (idx === -1) return prevData;
+
+      const oldScore = prevData[idx].total_score;
+      const updatedData = [...prevData];
+      updatedData[idx] = {
+        ...updatedData[idx],
+        twk_score: session.twk_score || 0,
+        tiu_score: session.tiu_score || 0,
+        tkp_score: session.tkp_score || 0,
+        total_score: session.total_score || 0,
+        answered_count: session.answered_count || 0,
+      };
+
+      // Sort if score changed
+      if (oldScore !== session.total_score) {
+        sortDataIfNeeded(updatedData);
+      }
+
+      return updatedData;
+    });
+  }, [sortDataIfNeeded]);
+
   // Setup realtime subscription
   useEffect(() => {
     fetchAllData();
 
-    // Subscribe to exam_sessions changes
+    // Subscribe to exam_sessions, exam_results, and user_answers changes
     const channel = supabase
       .channel('leaderboard-realtime')
       .on(
@@ -305,6 +344,15 @@ export const useRealtimeLeaderboard = () => {
           fetchAllData();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_answers',
+        },
+        (payload) => handleUserAnswerChange(payload)
+      )
       .subscribe();
 
     channelRef.current = channel;
@@ -317,7 +365,7 @@ export const useRealtimeLeaderboard = () => {
         clearTimeout(sortTimeoutRef.current);
       }
     };
-  }, [fetchAllData, handleRealtimeChange]);
+  }, [fetchAllData, handleRealtimeChange, handleUserAnswerChange]);
 
   return {
     data,
