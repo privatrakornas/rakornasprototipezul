@@ -81,6 +81,41 @@ export const useExamSession = () => {
     }
   }, []);
 
+  // Save individual answer to user_answers table
+  const saveUserAnswer = useCallback(async (
+    questionId: number,
+    category: string,
+    selectedAnswer: string,
+    isCorrect: boolean,
+    pointsEarned: number
+  ) => {
+    const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
+    if (!sessionId) return;
+
+    try {
+      // Upsert the answer (insert or update if exists)
+      const { error } = await (supabase
+        .from('user_answers' as any)
+        .upsert({
+          session_id: sessionId,
+          question_number: questionId,
+          category: category,
+          selected_answer: selectedAnswer,
+          is_correct: isCorrect,
+          points_earned: pointsEarned,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'session_id,question_number',
+        }) as any);
+
+      if (error) {
+        console.error('Failed to save user answer:', error);
+      }
+    } catch (err) {
+      console.error('Error saving user answer:', err);
+    }
+  }, []);
+
   // Debounced update function to prevent too many requests
   const processUpdate = useCallback(async () => {
     if (!sessionIdRef.current || !updateQueueRef.current || isUpdatingRef.current) {
@@ -119,9 +154,35 @@ export const useExamSession = () => {
   }, []);
 
   // Update scores with debouncing (500ms delay to batch updates)
-  const updateScores = useCallback((answers: Record<number, string>) => {
+  const updateScores = useCallback((answers: Record<number, string>, lastAnsweredQuestion?: { id: number; category: string; answer: string }) => {
     const scores = calculateScores(answers);
     updateQueueRef.current = scores;
+
+    // Save individual answer to user_answers table
+    if (lastAnsweredQuestion) {
+      const q = questions.find(q => q.id === lastAnsweredQuestion.id);
+      if (q) {
+        let isCorrect = false;
+        let pointsEarned = 0;
+
+        if (q.category === 'TKP') {
+          const option = q.options.find(o => o.key === lastAnsweredQuestion.answer);
+          pointsEarned = option?.score || 0;
+          isCorrect = pointsEarned >= 4; // Consider 4-5 as "correct" for TKP
+        } else {
+          isCorrect = lastAnsweredQuestion.answer === q.correctAnswer;
+          pointsEarned = isCorrect ? 5 : 0;
+        }
+
+        saveUserAnswer(
+          lastAnsweredQuestion.id,
+          lastAnsweredQuestion.category,
+          lastAnsweredQuestion.answer,
+          isCorrect,
+          pointsEarned
+        );
+      }
+    }
 
     // Clear existing timeout
     if (updateTimeoutRef.current) {
@@ -130,7 +191,7 @@ export const useExamSession = () => {
 
     // Debounce updates to every 500ms
     updateTimeoutRef.current = setTimeout(processUpdate, 500);
-  }, [processUpdate]);
+  }, [processUpdate, saveUserAnswer]);
 
   // Finish session when exam is submitted
   const finishSession = useCallback(async (durationMinutes: number) => {
