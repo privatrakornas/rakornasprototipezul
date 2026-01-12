@@ -113,6 +113,143 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          created_at: string
+          device_fingerprint: string
+          email: string | null
+          id: string
+          instansi: string | null
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_fingerprint: string
+          email?: string | null
+          id?: string
+          instansi?: string | null
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_fingerprint?: string
+          email?: string | null
+          id?: string
+          instansi?: string | null
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          category: string
+          correct_answer: string | null
+          created_at: string
+          explanation: string | null
+          id: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          option_e: string
+          points_a: number | null
+          points_b: number | null
+          points_c: number | null
+          points_d: number | null
+          points_e: number | null
+          question_number: number
+          question_text: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          correct_answer?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          option_a: string
+          option_b: string
+          option_c: string
+          option_d: string
+          option_e: string
+          points_a?: number | null
+          points_b?: number | null
+          points_c?: number | null
+          points_d?: number | null
+          points_e?: number | null
+          question_number: number
+          question_text: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          correct_answer?: string | null
+          created_at?: string
+          explanation?: string | null
+          id?: string
+          option_a?: string
+          option_b?: string
+          option_c?: string
+          option_d?: string
+          option_e?: string
+          points_a?: number | null
+          points_b?: number | null
+          points_c?: number | null
+          points_d?: number | null
+          points_e?: number | null
+          question_number?: number
+          question_text?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_answers: {
+        Row: {
+          answered_at: string
+          category: string
+          id: string
+          is_correct: boolean | null
+          points_earned: number | null
+          question_number: number
+          selected_answer: string | null
+          session_id: string
+          updated_at: string
+        }
+        Insert: {
+          answered_at?: string
+          category: string
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_number: number
+          selected_answer?: string | null
+          session_id: string
+          updated_at?: string
+        }
+        Update: {
+          answered_at?: string
+          category?: string
+          id?: string
+          is_correct?: boolean | null
+          points_earned?: number | null
+          question_number?: number
+          selected_answer?: string | null
+          session_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "exam_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
