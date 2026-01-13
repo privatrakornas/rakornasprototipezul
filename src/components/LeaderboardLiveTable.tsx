@@ -289,36 +289,40 @@ const LeaderboardLiveTable = memo(({ data }: LeaderboardLiveTableProps) => {
         className="flex-1 overflow-y-auto border border-t-0 bg-background scroll-smooth"
         style={{ maxHeight: '450px' }}
       >
-        {liveData.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-            <Radio className="w-8 h-8 mb-2 opacity-30" />
-            <span className="text-sm">Tidak ada peserta sedang ujian</span>
-          </div>
-        ) : (
-          <Table>
-            <TableHeader className="sticky top-0 bg-background z-10">
+        <Table>
+          <TableHeader className="sticky top-0 bg-gradient-to-r from-blue-500 to-indigo-500 z-10">
+            <TableRow>
+              <TableHead className="w-10 text-[10px] text-white font-semibold">Rank</TableHead>
+              <TableHead className="text-[10px] text-white font-semibold">Nama</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">Timer</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">TWK</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">TIU</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">TKP</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">Total</TableHead>
+              <TableHead className="text-center text-[10px] text-white font-semibold">Ket</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {liveData.length === 0 ? (
               <TableRow>
-                <TableHead className="w-10 text-[10px]">#</TableHead>
-                <TableHead className="text-[10px]">Nama / Progress</TableHead>
-                <TableHead className="text-center text-[10px]">Sisa Waktu</TableHead>
-                <TableHead className="text-center text-[10px]">TWK</TableHead>
-                <TableHead className="text-center text-[10px]">TIU</TableHead>
-                <TableHead className="text-center text-[10px]">TKP</TableHead>
-                <TableHead className="text-center text-[10px]">Total</TableHead>
-                <TableHead className="text-center text-[10px]">Ket</TableHead>
+                <TableCell colSpan={8} className="h-32">
+                  <div className="flex flex-col items-center justify-center text-muted-foreground">
+                    <Radio className="w-8 h-8 mb-2 opacity-30" />
+                    <span className="text-sm">Tidak ada peserta sedang ujian</span>
+                  </div>
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {liveData.map((entry, idx) => (
+            ) : (
+              liveData.map((entry, idx) => (
                 <LiveRow 
                   key={entry.id} 
                   entry={entry} 
                   rank={idx + 1}
                 />
-              ))}
-            </TableBody>
-          </Table>
-        )}
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
       
       {/* Footer legend */}
