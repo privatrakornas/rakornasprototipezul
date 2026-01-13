@@ -226,10 +226,15 @@ const Exam = () => {
   };
 
   const handleAnswer = (key: string) => {
+    const currentQ = questions[currentQuestion];
     setAnswers(prev => {
-      const newAnswers = { ...prev, [questions[currentQuestion].id]: key };
-      // Update scores in real-time
-      updateScores(newAnswers);
+      const newAnswers = { ...prev, [currentQ.id]: key };
+      // Update scores in real-time with last answered question info
+      updateScores(newAnswers, {
+        id: currentQ.id,
+        category: currentQ.category,
+        answer: key,
+      });
       return newAnswers;
     });
   };
