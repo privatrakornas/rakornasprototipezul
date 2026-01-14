@@ -22,7 +22,7 @@ export interface LeaderboardEntry {
   duration_minutes?: number | null;
   created_at?: string;
   // Real-time fields
-  status: 'ongoing' | 'finished' | 'disqualified';
+  status: 'ongoing' | 'finished' | 'disqualified' | 'abandoned';
   started_at?: string | null;
   answered_count?: number;
   total_questions?: number;
@@ -109,10 +109,10 @@ export const useRealtimeLeaderboard = () => {
     }
   }, []);
 
-  // Fetch all data - combines ongoing sessions and finished results
+  // Fetch all data - pulls from exam_sessions for both ongoing + finished
   const fetchAllData = useCallback(async () => {
     try {
-      // Fetch ongoing sessions (exclude disqualified from view)
+      // Fetch sessions (ignore abandoned/disqualified)
       const { data: sessions, error: sessionsError } = await (supabase
         .from('exam_sessions' as any)
         .select('*')
@@ -122,59 +122,29 @@ export const useRealtimeLeaderboard = () => {
         console.error('Error fetching sessions:', sessionsError);
       }
 
-      // Fetch finished results using the secure RPC
-      const { data: results, error: resultsError } = await supabase
-        .rpc('get_leaderboard');
+      const sessionsAsEntries: LeaderboardEntry[] = (sessions || []).map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        twk_score: s.twk_score || 0,
+        tiu_score: s.tiu_score || 0,
+        tkp_score: s.tkp_score || 0,
+        total_score: s.total_score || 0,
+        duration_minutes: s.duration_minutes,
+        created_at: s.created_at,
+        status: (s.status || 'ongoing') as LeaderboardEntry['status'],
+        started_at: s.started_at,
+        answered_count: s.answered_count || 0,
+        total_questions: s.total_questions || TOTAL_QUESTIONS,
+      }));
 
-      if (resultsError) {
-        console.error('Error fetching leaderboard:', resultsError);
-      }
+      sessionsAsEntries.sort(sortByPriority);
 
-      // Combine and format data
-      const ongoingSessions: LeaderboardEntry[] = (sessions || [])
-        .filter((s: any) => s.status === 'ongoing')
-        .map((s: any) => ({
-          id: s.id,
-          name: s.name,
-          twk_score: s.twk_score,
-          tiu_score: s.tiu_score,
-          tkp_score: s.tkp_score,
-          total_score: s.total_score,
-          duration_minutes: s.duration_minutes,
-          created_at: s.created_at,
-          status: 'ongoing' as const,
-          started_at: s.started_at,
-          answered_count: s.answered_count,
-          total_questions: s.total_questions,
-        }));
-
-      const finishedResults: LeaderboardEntry[] = (results || [])
-        .filter((entry: any) => !(entry.name === 'Mona Sartika' && entry.total_score === 544))
-        .map((r: any) => ({
-          id: r.id,
-          name: r.name,
-          twk_score: r.twk_score,
-          tiu_score: r.tiu_score,
-          tkp_score: r.tkp_score,
-          total_score: r.total_score,
-          duration_minutes: r.duration_minutes,
-          created_at: r.created_at,
-          status: 'finished' as const,
-          started_at: r.started_at,
-          answered_count: TOTAL_QUESTIONS,
-          total_questions: TOTAL_QUESTIONS,
-        }));
-
-      // Combine and sort
-      const combined = [...ongoingSessions, ...finishedResults];
-      combined.sort(sortByPriority);
-      
       // Update score cache
-      combined.forEach(entry => {
+      sessionsAsEntries.forEach(entry => {
         lastSortedScoresRef.current.set(entry.id, entry.total_score);
       });
-      
-      setData(combined);
+
+      setData(sessionsAsEntries);
     } catch (error) {
       console.error('Error:', error);
     } finally {
@@ -211,58 +181,57 @@ export const useRealtimeLeaderboard = () => {
           updatedData.push(newEntry);
           shouldSort = true;
         }
-      } else if (eventType === 'UPDATE') {
-        const idx = updatedData.findIndex(e => e.id === newRecord.id);
-        
-        // Handle disqualification - remove from list immediately
-        if (newRecord.status === 'disqualified') {
-          if (idx !== -1) {
-            updatedData = updatedData.filter(e => e.id !== newRecord.id);
-          }
-          return updatedData;
-        }
-        
-        // Handle status change to finished - update and refetch for final data
-        if (newRecord.status === 'finished' && idx !== -1) {
-          const oldScore = updatedData[idx].total_score;
-          updatedData[idx] = {
-            ...updatedData[idx],
-            twk_score: newRecord.twk_score || 0,
-            tiu_score: newRecord.tiu_score || 0,
-            tkp_score: newRecord.tkp_score || 0,
-            total_score: newRecord.total_score || 0,
-            status: 'finished',
-            duration_minutes: newRecord.duration_minutes,
-            answered_count: TOTAL_QUESTIONS,
-          };
-          
-          // Sort if score changed
-          if (oldScore !== newRecord.total_score) {
-            shouldSort = true;
-          }
-          
-          // Also refetch to get accurate final data
-          setTimeout(() => fetchAllData(), 500);
-        } else if (idx !== -1) {
-          // Regular update for ongoing exams
-          const oldScore = updatedData[idx].total_score;
-          updatedData[idx] = {
-            ...updatedData[idx],
-            twk_score: newRecord.twk_score || updatedData[idx].twk_score,
-            tiu_score: newRecord.tiu_score || updatedData[idx].tiu_score,
-            tkp_score: newRecord.tkp_score || updatedData[idx].tkp_score,
-            total_score: newRecord.total_score || updatedData[idx].total_score,
-            status: newRecord.status || updatedData[idx].status,
-            answered_count: newRecord.answered_count ?? updatedData[idx].answered_count,
-            duration_minutes: newRecord.duration_minutes,
-          };
-          
-          // Only sort if total_score changed significantly
-          if (oldScore !== (newRecord.total_score || updatedData[idx].total_score)) {
-            shouldSort = true;
-          }
-        }
-      } else if (eventType === 'DELETE') {
+       } else if (eventType === 'UPDATE') {
+         const idx = updatedData.findIndex(e => e.id === newRecord.id);
+
+         // Remove immediately if moved out of leaderboard views
+         if (newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
+           if (idx !== -1) {
+             updatedData = updatedData.filter(e => e.id !== newRecord.id);
+           }
+           return updatedData;
+         }
+
+         if (idx !== -1) {
+           const oldScore = updatedData[idx].total_score;
+           updatedData[idx] = {
+             ...updatedData[idx],
+             twk_score: newRecord.twk_score ?? updatedData[idx].twk_score,
+             tiu_score: newRecord.tiu_score ?? updatedData[idx].tiu_score,
+             tkp_score: newRecord.tkp_score ?? updatedData[idx].tkp_score,
+             total_score: newRecord.total_score ?? updatedData[idx].total_score,
+             status: (newRecord.status || updatedData[idx].status) as LeaderboardEntry['status'],
+             started_at: newRecord.started_at ?? updatedData[idx].started_at,
+             answered_count: newRecord.answered_count ?? updatedData[idx].answered_count,
+             total_questions: newRecord.total_questions ?? updatedData[idx].total_questions,
+             duration_minutes: newRecord.duration_minutes,
+             created_at: newRecord.created_at ?? updatedData[idx].created_at,
+           };
+
+           if (oldScore !== (newRecord.total_score ?? oldScore)) {
+             shouldSort = true;
+           }
+         } else {
+           // Entry not found yet; add it if it's relevant
+           if (newRecord.status === 'ongoing' || newRecord.status === 'finished') {
+             updatedData.push({
+               id: newRecord.id,
+               name: newRecord.name,
+               twk_score: newRecord.twk_score || 0,
+               tiu_score: newRecord.tiu_score || 0,
+               tkp_score: newRecord.tkp_score || 0,
+               total_score: newRecord.total_score || 0,
+               duration_minutes: newRecord.duration_minutes,
+               created_at: newRecord.created_at,
+               status: (newRecord.status || 'ongoing') as LeaderboardEntry['status'],
+               started_at: newRecord.started_at,
+               answered_count: newRecord.answered_count || 0,
+               total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
+             });
+             shouldSort = true;
+           }
+         }
+       } else if (eventType === 'DELETE') {
         // Remove deleted session immediately
         updatedData = updatedData.filter(e => e.id !== oldRecord.id);
       }
@@ -331,18 +300,6 @@ export const useRealtimeLeaderboard = () => {
           table: 'exam_sessions',
         },
         (payload) => handleRealtimeChange(payload)
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'exam_results',
-        },
-        () => {
-          // Refetch when new result is inserted
-          fetchAllData();
-        }
       )
       .on(
         'postgres_changes',

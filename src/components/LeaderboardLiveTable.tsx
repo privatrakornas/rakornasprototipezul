@@ -156,9 +156,23 @@ const LeaderboardLiveTable = memo(({ data }: LeaderboardLiveTableProps) => {
   const scrollDirectionRef = useRef<'down' | 'up'>('down');
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Filter ongoing entries and sort by score
+  // Filter ongoing entries and sort by score (with zombie-hide safeguard)
   const liveData = data
-    .filter(e => e.status === 'ongoing')
+    .filter(e => {
+      if (e.status !== 'ongoing') return false;
+      if (!e.started_at) return true;
+
+      const startedMs = new Date(e.started_at).getTime();
+      if (Number.isNaN(startedMs)) return true;
+
+      const elapsedMs = Date.now() - startedMs;
+      const hardExpired = elapsedMs > TOTAL_EXAM_TIME * 60 * 1000 + 30_000; // 30s tolerance
+
+      // Extra visual filter to hide "zombie" users (session stuck as ongoing)
+      const zombieElapsed = elapsedMs > 45 * 60 * 1000; // per requirement
+
+      return !hardExpired && !zombieElapsed;
+    })
     .sort((a, b) => {
       if (b.total_score !== a.total_score) return b.total_score - a.total_score;
       if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
