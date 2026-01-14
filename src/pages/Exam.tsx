@@ -89,7 +89,7 @@ const Exam = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
-  const { createSession, updateScores, finishSession, disqualifySession } = useExamSession();
+  const { createSession, updateScores, finishSession, abandonSession } = useExamSession();
   
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
@@ -129,25 +129,54 @@ const Exam = () => {
     initSession();
   }, [userName, deviceFingerprint, examStartedAt, createSession]);
 
-  // Anti-cheat: detect tab switch - DISQUALIFY user
+  // Anti-cheat: detect tab/window switch -> mark session as abandoned BEFORE redirect
   useEffect(() => {
-    const handleVisibilityChange = async () => {
-      if (document.hidden && !isSubmitting) {
-        // Disqualify the session in database
-        await disqualifySession();
-        
-        // Show alert and redirect
-        alert('Anda terdeteksi meninggalkan halaman ujian! Anda telah didiskualifikasi.');
-        sessionStorage.removeItem('examSession');
-        sessionStorage.removeItem('userName');
-        sessionStorage.removeItem('examStartedAt');
-        sessionStorage.removeItem('examSessionId');
-        navigate('/');
+    const antiCheatTriggeredRef = { current: false };
+
+    const markAbandonedAndExit = async () => {
+      if (antiCheatTriggeredRef.current || isSubmitting) return;
+      antiCheatTriggeredRef.current = true;
+
+      const ok = await abandonSession();
+      if (!ok) {
+        antiCheatTriggeredRef.current = false;
+        toast({
+          title: 'Gagal menyimpan status ujian',
+          description: 'Koneksi bermasalah. Mohon coba lagi (jangan tutup halaman dulu).',
+          variant: 'destructive',
+          duration: 6000,
+        });
+        return;
+      }
+
+      alert('Anda terdeteksi meninggalkan halaman ujian! Ujian Anda dibatalkan.');
+
+      // Clear local session only AFTER backend status is updated
+      sessionStorage.removeItem('examSession');
+      sessionStorage.removeItem('userName');
+      sessionStorage.removeItem('examStartedAt');
+      sessionStorage.removeItem('examSessionId');
+      navigate('/');
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        void markAbandonedAndExit();
       }
     };
+
+    const handleBlur = () => {
+      void markAbandonedAndExit();
+    };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [navigate, disqualifySession, isSubmitting]);
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [navigate, abandonSession, isSubmitting, toast]);
 
   // Handle submit function
   const handleSubmit = useCallback(async (isAutoSubmit = false) => {
@@ -188,15 +217,25 @@ const Exam = () => {
       durationMinutes = MAX_DURATION_MINUTES;
     }
     
-    // Finish the exam session
-    await finishSession(durationMinutes);
-    
+    // Finish the exam session (MUST succeed before navigation)
+    const finishedOk = await finishSession(durationMinutes);
+    if (!finishedOk) {
+      setIsSubmitting(false);
+      toast({
+        title: 'Gagal submit ujian',
+        description: 'Status ujian gagal disimpan. Pastikan koneksi stabil lalu coba lagi.',
+        variant: 'destructive',
+        duration: 6000,
+      });
+      return;
+    }
+
     // Store all timing data
     localStorage.setItem('examAnswers', JSON.stringify(answers));
     localStorage.setItem('examDuration', String(durationMinutes));
     localStorage.setItem('examStartedAt', examStartedAt);
     localStorage.setItem('examFinishedAt', finishedAt);
-    
+
     navigate('/results');
   }, [answers, navigate, timeLeft, examStartedAt, finishSession, canSubmit, toast, isSubmitting]);
 

@@ -196,7 +196,7 @@ export const useExamSession = () => {
   // Finish session when exam is submitted
   const finishSession = useCallback(async (durationMinutes: number) => {
     const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
-    if (!sessionId) return;
+    if (!sessionId) return false;
 
     try {
       const { error } = await (supabase
@@ -210,41 +210,52 @@ export const useExamSession = () => {
 
       if (error) {
         console.error('Failed to finish session:', error);
+        return false;
       }
+
+      // Clear the session only after a successful DB update
+      sessionIdRef.current = null;
+      sessionStorage.removeItem('examSessionId');
+      return true;
     } catch (err) {
       console.error('Error finishing session:', err);
+      return false;
     }
-
-    // Clear the session
-    sessionIdRef.current = null;
-    sessionStorage.removeItem('examSessionId');
   }, []);
 
-  // Disqualify session (for anti-cheat)
-  const disqualifySession = useCallback(async () => {
+  // Update session status (anti-cheat / abandoned)
+  const setSessionStatus = useCallback(async (status: 'disqualified' | 'abandoned') => {
     const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
-    if (!sessionId) return;
+    if (!sessionId) return false;
 
     try {
       const { error } = await (supabase
         .from('exam_sessions' as any)
         .update({
-          status: 'disqualified',
+          status,
           finished_at: new Date().toISOString(),
         })
         .eq('id', sessionId) as any);
 
       if (error) {
-        console.error('Failed to disqualify session:', error);
+        console.error('Failed to update session status:', error);
+        return false;
       }
-    } catch (err) {
-      console.error('Error disqualifying session:', err);
-    }
 
-    // Clear the session
-    sessionIdRef.current = null;
-    sessionStorage.removeItem('examSessionId');
+      return true;
+    } catch (err) {
+      console.error('Error updating session status:', err);
+      return false;
+    }
   }, []);
+
+  const disqualifySession = useCallback(async () => {
+    return setSessionStatus('disqualified');
+  }, [setSessionStatus]);
+
+  const abandonSession = useCallback(async () => {
+    return setSessionStatus('abandoned');
+  }, [setSessionStatus]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -266,6 +277,7 @@ export const useExamSession = () => {
     updateScores,
     finishSession,
     disqualifySession,
+    abandonSession,
     sessionId: sessionIdRef.current,
   };
 };
