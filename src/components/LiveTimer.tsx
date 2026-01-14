@@ -4,7 +4,7 @@ import { Clock, Timer } from 'lucide-react';
 interface LiveTimerProps {
   startedAt: string | null | undefined;
   totalMinutes: number;
-  status: 'ongoing' | 'finished' | 'disqualified';
+  status: 'ongoing' | 'finished' | 'disqualified' | 'abandoned';
   durationMinutes?: number | null;
 }
 
@@ -39,11 +39,11 @@ export const LiveTimer = memo(({ startedAt, totalMinutes, status, durationMinute
     return () => clearInterval(timer);
   }, [startedAt, totalMinutes, status]);
 
-  // Disqualified exam
-  if (status === 'disqualified') {
+  // Disqualified or abandoned exam
+  if (status === 'disqualified' || status === 'abandoned') {
     return (
       <span className="text-gray-500 font-medium whitespace-nowrap">
-        Diskualifikasi
+        {status === 'abandoned' ? 'Dibatalkan' : 'Diskualifikasi'}
       </span>
     );
   }
