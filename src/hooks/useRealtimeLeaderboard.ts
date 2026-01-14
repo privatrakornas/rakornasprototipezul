@@ -110,13 +110,15 @@ export const useRealtimeLeaderboard = () => {
   }, []);
 
   // Fetch all data - pulls from exam_sessions for both ongoing + finished
+  // IMPORTANT: Include old data where status might be NULL or different values
   const fetchAllData = useCallback(async () => {
     try {
-      // Fetch sessions (ignore abandoned/disqualified)
-      const { data: sessions, error: sessionsError } = await (supabase
-        .from('exam_sessions' as any)
+      // Fetch ALL sessions except explicitly abandoned/disqualified
+      // This includes: status = 'ongoing', 'finished', NULL, or any other value
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('exam_sessions')
         .select('*')
-        .in('status', ['ongoing', 'finished']) as any);
+        .not('status', 'in', '("abandoned","disqualified")');
 
       if (sessionsError) {
         console.error('Error fetching sessions:', sessionsError);
@@ -131,7 +133,8 @@ export const useRealtimeLeaderboard = () => {
         total_score: s.total_score || 0,
         duration_minutes: s.duration_minutes,
         created_at: s.created_at,
-        status: (s.status || 'ongoing') as LeaderboardEntry['status'],
+        // Treat NULL or unknown status as 'finished' for old data display
+        status: (s.status === 'ongoing' ? 'ongoing' : 'finished') as LeaderboardEntry['status'],
         started_at: s.started_at,
         answered_count: s.answered_count || 0,
         total_questions: s.total_questions || TOTAL_QUESTIONS,

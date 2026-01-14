@@ -130,14 +130,20 @@ const FinishedRow = memo(({ entry, rank }: { entry: LeaderboardEntry; rank: numb
 FinishedRow.displayName = 'FinishedRow';
 
 const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) => {
-  // Filter and sort finished entries
+  // Filter finished entries - include all non-ongoing status (finished, null, or any other)
+  // Sort by: lulus first, then total_score desc, then duration_minutes asc (faster is better)
   const finishedData = data
-    .filter(e => e.status === 'finished')
+    .filter(e => e.status !== 'ongoing')
     .sort((a, b) => {
       const aLulus = isLulus(a);
       const bLulus = isLulus(b);
       if (aLulus !== bLulus) return aLulus ? -1 : 1;
       if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+      // Same score: faster duration wins
+      const aDur = a.duration_minutes ?? 999;
+      const bDur = b.duration_minutes ?? 999;
+      if (aDur !== bDur) return aDur - bDur;
+      // Fallback to sub-scores
       if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
       if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
       return b.twk_score - a.twk_score;
@@ -156,8 +162,8 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
         </span>
       </div>
       
-      {/* Table with fixed height and scroll */}
-      <div className="flex-1 overflow-y-auto border border-t-0 rounded-b-lg bg-background" style={{ maxHeight: '500px' }}>
+      {/* Table with fixed height and scroll - 80vh for large datasets */}
+      <div className="flex-1 overflow-y-auto border border-t-0 rounded-b-lg bg-background" style={{ maxHeight: '80vh' }}>
         {finishedData.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
             Belum ada peserta selesai
