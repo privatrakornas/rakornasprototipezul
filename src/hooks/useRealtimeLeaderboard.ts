@@ -109,12 +109,11 @@ export const useRealtimeLeaderboard = () => {
     }
   }, []);
 
-  // Fetch all data - pulls from exam_sessions for both ongoing + finished
-  // IMPORTANT: Include old data where status might be NULL or different values
+  // HYBRID FETCHING: Fetch from exam_sessions (new) and exam_results (old)
   const fetchAllData = useCallback(async () => {
     try {
-      // Fetch ALL sessions except explicitly abandoned/disqualified
-      // This includes: status = 'ongoing', 'finished', NULL, or any other value
+      // === QUERY 1: Fetch from exam_sessions (new data) ===
+      // Get all sessions except explicitly abandoned/disqualified
       const { data: sessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
@@ -124,6 +123,7 @@ export const useRealtimeLeaderboard = () => {
         console.error('Error fetching sessions:', sessionsError);
       }
 
+      // Map exam_sessions to LeaderboardEntry format
       const sessionsAsEntries: LeaderboardEntry[] = (sessions || []).map((s: any) => ({
         id: s.id,
         name: s.name,
@@ -138,16 +138,67 @@ export const useRealtimeLeaderboard = () => {
         started_at: s.started_at,
         answered_count: s.answered_count || 0,
         total_questions: s.total_questions || TOTAL_QUESTIONS,
+        source: 'sessions' as const, // Track data source for dedup
       }));
 
-      sessionsAsEntries.sort(sortByPriority);
+      // === QUERY 2: Fetch from exam_results (old/legacy data) ===
+      const { data: results, error: resultsError } = await supabase
+        .from('exam_results')
+        .select('*');
+
+      if (resultsError) {
+        console.error('Error fetching results:', resultsError);
+      }
+
+      // Map exam_results to LeaderboardEntry format (same structure)
+      const resultsAsEntries: LeaderboardEntry[] = (results || []).map((r: any) => ({
+        id: `results-${r.id}`, // Prefix to avoid ID collision
+        name: r.name,
+        twk_score: r.twk_score || 0,
+        tiu_score: r.tiu_score || 0,
+        tkp_score: r.tkp_score || 0,
+        total_score: r.total_score || 0,
+        duration_minutes: r.duration_minutes,
+        created_at: r.created_at || r.finished_at,
+        status: 'finished' as LeaderboardEntry['status'], // All results are finished
+        started_at: r.started_at,
+        answered_count: TOTAL_QUESTIONS, // Assume all answered
+        total_questions: TOTAL_QUESTIONS,
+        source: 'results' as const,
+      }));
+
+      // === MERGE & DEDUPLICATE ===
+      // Create a map for deduplication: key = name + total_score
+      const entriesMap = new Map<string, LeaderboardEntry>();
+
+      // Add sessions first (they take priority)
+      sessionsAsEntries.forEach(entry => {
+        const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
+        entriesMap.set(key, entry);
+      });
+
+      // Add results only if no duplicate exists
+      resultsAsEntries.forEach(entry => {
+        const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
+        if (!entriesMap.has(key)) {
+          entriesMap.set(key, entry);
+        }
+      });
+
+      // Convert map back to array
+      const allEntries = Array.from(entriesMap.values());
+
+      // Sort by priority
+      allEntries.sort(sortByPriority);
 
       // Update score cache
-      sessionsAsEntries.forEach(entry => {
+      allEntries.forEach(entry => {
         lastSortedScoresRef.current.set(entry.id, entry.total_score);
       });
 
-      setData(sessionsAsEntries);
+      console.log(`Hybrid fetch complete: ${sessionsAsEntries.length} sessions + ${resultsAsEntries.length} results = ${allEntries.length} unique entries`);
+
+      setData(allEntries);
     } catch (error) {
       console.error('Error:', error);
     } finally {
