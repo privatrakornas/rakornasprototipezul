@@ -223,28 +223,51 @@ export const useExamSession = () => {
     }
   }, []);
 
-  // Update session status (anti-cheat / abandoned)
+  // Update session status (anti-cheat / abandoned) - CRITICAL: Must complete before redirect
   const setSessionStatus = useCallback(async (status: 'disqualified' | 'abandoned') => {
     const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
-    if (!sessionId) return false;
+    if (!sessionId) {
+      console.warn('No session ID found for status update');
+      return false;
+    }
+
+    console.log(`[ANTI-CHEAT] Updating session ${sessionId} to status: ${status}`);
 
     try {
-      const { error } = await (supabase
-        .from('exam_sessions' as any)
+      // CRITICAL: Update with finished_at and duration_minutes for proper cleanup
+      const now = new Date();
+      const startedAtStr = sessionStorage.getItem('examStartedAt');
+      let durationMinutes = 0;
+      
+      if (startedAtStr) {
+        const startedAt = new Date(startedAtStr);
+        durationMinutes = Math.floor((now.getTime() - startedAt.getTime()) / (1000 * 60));
+      }
+
+      const { data, error } = await supabase
+        .from('exam_sessions')
         .update({
           status,
-          finished_at: new Date().toISOString(),
+          finished_at: now.toISOString(),
+          duration_minutes: durationMinutes,
         })
-        .eq('id', sessionId) as any);
+        .eq('id', sessionId)
+        .select('id, status')
+        .single();
 
       if (error) {
-        console.error('Failed to update session status:', error);
+        console.error('[ANTI-CHEAT] Failed to update session status:', error);
         return false;
       }
 
+      console.log(`[ANTI-CHEAT] Session ${sessionId} successfully updated to ${data?.status}`);
+      
+      // Clear refs ONLY after successful DB update
+      sessionIdRef.current = null;
+      
       return true;
     } catch (err) {
-      console.error('Error updating session status:', err);
+      console.error('[ANTI-CHEAT] Error updating session status:', err);
       return false;
     }
   }, []);

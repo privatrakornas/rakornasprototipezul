@@ -129,17 +129,43 @@ const Exam = () => {
     initSession();
   }, [userName, deviceFingerprint, examStartedAt, createSession]);
 
-  // Anti-cheat: detect tab/window switch -> mark session as abandoned BEFORE redirect
+  // Anti-cheat: detect tab/window switch -> FORCE UPDATE DATABASE BEFORE REDIRECT
   useEffect(() => {
     const antiCheatTriggeredRef = { current: false };
+    const isProcessingRef = { current: false };
 
     const markAbandonedAndExit = async () => {
-      if (antiCheatTriggeredRef.current || isSubmitting) return;
+      // Prevent multiple triggers and skip if already submitting
+      if (antiCheatTriggeredRef.current || isSubmitting || isProcessingRef.current) return;
+      
       antiCheatTriggeredRef.current = true;
+      isProcessingRef.current = true;
 
-      const ok = await abandonSession();
-      if (!ok) {
+      console.log('[ANTI-CHEAT] Detected tab/window switch - initiating abandon sequence');
+
+      // STEP 1: FORCE UPDATE DATABASE FIRST - DO NOT REDIRECT YET
+      let updateSuccess = false;
+      let retryCount = 0;
+      const maxRetries = 3;
+
+      while (!updateSuccess && retryCount < maxRetries) {
+        console.log(`[ANTI-CHEAT] Attempt ${retryCount + 1} to update database...`);
+        updateSuccess = await abandonSession();
+        
+        if (!updateSuccess) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            // Wait 500ms before retry
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+      }
+
+      // STEP 2: Check if update succeeded
+      if (!updateSuccess) {
+        console.error('[ANTI-CHEAT] Failed to update database after retries');
         antiCheatTriggeredRef.current = false;
+        isProcessingRef.current = false;
         toast({
           title: 'Gagal menyimpan status ujian',
           description: 'Koneksi bermasalah. Mohon coba lagi (jangan tutup halaman dulu).',
@@ -149,13 +175,18 @@ const Exam = () => {
         return;
       }
 
+      console.log('[ANTI-CHEAT] Database updated successfully, now showing alert and redirecting');
+
+      // STEP 3: Show alert ONLY after database update succeeded
       alert('Anda terdeteksi meninggalkan halaman ujian! Ujian Anda dibatalkan.');
 
-      // Clear local session only AFTER backend status is updated
+      // STEP 4: Clear local session ONLY AFTER backend status is confirmed updated
       sessionStorage.removeItem('examSession');
       sessionStorage.removeItem('userName');
       sessionStorage.removeItem('examStartedAt');
       sessionStorage.removeItem('examSessionId');
+      
+      // STEP 5: FINALLY redirect to home
       navigate('/');
     };
 

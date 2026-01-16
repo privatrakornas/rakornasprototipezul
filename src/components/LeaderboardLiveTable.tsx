@@ -156,22 +156,45 @@ const LeaderboardLiveTable = memo(({ data }: LeaderboardLiveTableProps) => {
   const scrollDirectionRef = useRef<'down' | 'up'>('down');
   const scrollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
-  // Filter ongoing entries and sort by score (with zombie-hide safeguard)
+  // Filter ongoing entries with strict zombie/ghost cleanup
   const liveData = data
     .filter(e => {
+      // FILTER 1: Only show 'ongoing' status
       if (e.status !== 'ongoing') return false;
+      
+      // FILTER 2: Must have started_at
       if (!e.started_at) return true;
 
       const startedMs = new Date(e.started_at).getTime();
       if (Number.isNaN(startedMs)) return true;
 
       const elapsedMs = Date.now() - startedMs;
-      const hardExpired = elapsedMs > TOTAL_EXAM_TIME * 60 * 1000 + 30_000; // 30s tolerance
+      const totalExamMs = TOTAL_EXAM_TIME * 60 * 1000;
+      
+      // FILTER 3: Hide if timer exceeded (with 30s tolerance for network lag)
+      const hardExpired = elapsedMs > totalExamMs + 30_000;
+      if (hardExpired) return false;
+      
+      // FILTER 4: CLEANUP TIMER 00:00 with zero scores - ghost/inactive entries
+      // If timer is at 0 (or negative) AND all scores are 0, hide this ghost entry
+      const timeLeftMs = totalExamMs - elapsedMs;
+      const isTimerZero = timeLeftMs <= 0;
+      const hasZeroScores = e.twk_score === 0 && e.tiu_score === 0 && e.tkp_score === 0;
+      
+      if (isTimerZero && hasZeroScores) {
+        console.log(`[LIVE TABLE] Hiding ghost entry: ${e.name} (timer=0, scores=0)`);
+        return false;
+      }
+      
+      // FILTER 5: Extra zombie filter - if elapsed > 45 minutes and still ongoing
+      // This catches sessions that somehow didn't get status updated
+      const zombieThresholdMs = 45 * 60 * 1000;
+      if (elapsedMs > zombieThresholdMs) {
+        console.log(`[LIVE TABLE] Hiding zombie entry: ${e.name} (elapsed > 45min)`);
+        return false;
+      }
 
-      // Extra visual filter to hide "zombie" users (session stuck as ongoing)
-      const zombieElapsed = elapsedMs > 45 * 60 * 1000; // per requirement
-
-      return !hardExpired && !zombieElapsed;
+      return true;
     })
     .sort((a, b) => {
       if (b.total_score !== a.total_score) return b.total_score - a.total_score;
