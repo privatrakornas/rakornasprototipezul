@@ -111,74 +111,77 @@ export const useRealtimeLeaderboard = () => {
 
   // HYBRID FETCHING: Fetch from exam_sessions (new) and exam_results (old)
   const fetchAllData = useCallback(async () => {
+    console.log('[Leaderboard] Starting hybrid fetch...');
+    
     try {
       // === QUERY 1: Fetch from exam_sessions (new data) ===
-      // Get all sessions except explicitly abandoned/disqualified
-      const { data: sessions, error: sessionsError } = await supabase
+      const { data: newSessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
         .not('status', 'in', '("abandoned","disqualified")');
 
       if (sessionsError) {
-        console.error('Error fetching sessions:', sessionsError);
+        console.error('[Leaderboard] Error fetching sessions:', sessionsError);
       }
+      console.log('[Leaderboard] Sessions fetched:', newSessions?.length || 0);
 
-      // Map exam_sessions to LeaderboardEntry format
-      const sessionsAsEntries: LeaderboardEntry[] = (sessions || []).map((s: any) => ({
+      // === QUERY 2: Fetch from exam_results (old/legacy data) ===
+      const { data: oldResults, error: resultsError } = await supabase
+        .from('exam_results')
+        .select('*');
+
+      if (resultsError) {
+        console.error('[Leaderboard] Error fetching results:', resultsError);
+      }
+      console.log('[Leaderboard] Results fetched:', oldResults?.length || 0);
+
+      // === MAPPING: Sessions to LeaderboardEntry ===
+      const mappedSessions: LeaderboardEntry[] = (newSessions || []).map((s: any) => ({
         id: s.id,
-        name: s.name,
+        name: s.name || 'Unknown',
         twk_score: s.twk_score || 0,
         tiu_score: s.tiu_score || 0,
         tkp_score: s.tkp_score || 0,
         total_score: s.total_score || 0,
         duration_minutes: s.duration_minutes,
         created_at: s.created_at,
-        // Treat NULL or unknown status as 'finished' for old data display
         status: (s.status === 'ongoing' ? 'ongoing' : 'finished') as LeaderboardEntry['status'],
         started_at: s.started_at,
         answered_count: s.answered_count || 0,
         total_questions: s.total_questions || TOTAL_QUESTIONS,
-        source: 'sessions' as const, // Track data source for dedup
       }));
 
-      // === QUERY 2: Fetch from exam_results (old/legacy data) ===
-      const { data: results, error: resultsError } = await supabase
-        .from('exam_results')
-        .select('*');
-
-      if (resultsError) {
-        console.error('Error fetching results:', resultsError);
-      }
-
-      // Map exam_results to LeaderboardEntry format (same structure)
-      const resultsAsEntries: LeaderboardEntry[] = (results || []).map((r: any) => ({
-        id: `results-${r.id}`, // Prefix to avoid ID collision
-        name: r.name,
-        twk_score: r.twk_score || 0,
-        tiu_score: r.tiu_score || 0,
-        tkp_score: r.tkp_score || 0,
-        total_score: r.total_score || 0,
-        duration_minutes: r.duration_minutes,
-        created_at: r.created_at || r.finished_at,
-        status: 'finished' as LeaderboardEntry['status'], // All results are finished
-        started_at: r.started_at,
+      // === MAPPING: Legacy Results to LeaderboardEntry (CRITICAL!) ===
+      const mappedOldData: LeaderboardEntry[] = (oldResults || []).map((item: any) => ({
+        id: `legacy-${item.id}`, // Prefix to avoid ID collision
+        name: item.name || 'Unknown', // Name is directly available
+        twk_score: item.twk_score || 0,
+        tiu_score: item.tiu_score || 0,
+        tkp_score: item.tkp_score || 0,
+        total_score: item.total_score || 0,
+        duration_minutes: item.duration_minutes,
+        created_at: item.created_at || item.finished_at,
+        status: 'finished' as LeaderboardEntry['status'], // All old results are finished
+        started_at: item.started_at,
         answered_count: TOTAL_QUESTIONS, // Assume all answered
         total_questions: TOTAL_QUESTIONS,
-        source: 'results' as const,
       }));
 
+      console.log('[Leaderboard] Mapped sessions:', mappedSessions.length);
+      console.log('[Leaderboard] Mapped old data:', mappedOldData.length);
+
       // === MERGE & DEDUPLICATE ===
-      // Create a map for deduplication: key = name + total_score
+      // Use Map with key = lowercase name + total_score to avoid duplicates
       const entriesMap = new Map<string, LeaderboardEntry>();
 
-      // Add sessions first (they take priority)
-      sessionsAsEntries.forEach(entry => {
+      // Add NEW sessions first (they take priority)
+      mappedSessions.forEach(entry => {
         const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
         entriesMap.set(key, entry);
       });
 
-      // Add results only if no duplicate exists
-      resultsAsEntries.forEach(entry => {
+      // Add OLD results only if no duplicate exists
+      mappedOldData.forEach(entry => {
         const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
         if (!entriesMap.has(key)) {
           entriesMap.set(key, entry);
@@ -187,6 +190,7 @@ export const useRealtimeLeaderboard = () => {
 
       // Convert map back to array
       const allEntries = Array.from(entriesMap.values());
+      console.log('[Leaderboard] After dedup:', allEntries.length, 'unique entries');
 
       // Sort by priority
       allEntries.sort(sortByPriority);
@@ -196,11 +200,16 @@ export const useRealtimeLeaderboard = () => {
         lastSortedScoresRef.current.set(entry.id, entry.total_score);
       });
 
-      console.log(`Hybrid fetch complete: ${sessionsAsEntries.length} sessions + ${resultsAsEntries.length} results = ${allEntries.length} unique entries`);
+      // Log some sample entries for debugging
+      console.log('[Leaderboard] Sample entries:', allEntries.slice(0, 5).map(e => ({
+        name: e.name,
+        score: e.total_score,
+        id: e.id.substring(0, 10)
+      })));
 
       setData(allEntries);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('[Leaderboard] Fetch error:', error);
     } finally {
       setIsLoading(false);
     }
