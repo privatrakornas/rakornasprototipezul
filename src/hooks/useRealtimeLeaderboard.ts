@@ -26,6 +26,7 @@ export interface LeaderboardEntry {
   started_at?: string | null;
   answered_count?: number;
   total_questions?: number;
+  device_fingerprint?: string;
 }
 
 // Check if a participant passes all subjects
@@ -75,6 +76,9 @@ const sortByPriority = (a: LeaderboardEntry, b: LeaderboardEntry): number => {
   return b.twk_score - a.twk_score;
 };
 
+// Store profile name map globally for realtime updates
+let profileNameMapCache = new Map<string, string>();
+
 export const useRealtimeLeaderboard = () => {
   const [data, setData] = useState<LeaderboardEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -115,6 +119,8 @@ export const useRealtimeLeaderboard = () => {
     
     try {
       // === QUERY 1: Fetch from exam_sessions (new data) ===
+      // NOTE: exam_sessions does NOT have 'name' column!
+      // We need to join with profiles table using device_fingerprint
       const { data: newSessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
@@ -125,7 +131,28 @@ export const useRealtimeLeaderboard = () => {
       }
       console.log('[Leaderboard] Sessions fetched:', newSessions?.length || 0);
 
+      // === QUERY 1B: Fetch profiles to get names for sessions ===
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('device_fingerprint, name');
+
+      if (profilesError) {
+        console.error('[Leaderboard] Error fetching profiles:', profilesError);
+      }
+      console.log('[Leaderboard] Profiles fetched:', profiles?.length || 0);
+
+      // Create a lookup map: device_fingerprint -> name
+      const profileNameMap = new Map<string, string>();
+      (profiles || []).forEach((p: any) => {
+        if (p.device_fingerprint && p.name) {
+          profileNameMap.set(p.device_fingerprint, p.name);
+        }
+      });
+      // Update cache for realtime updates
+      profileNameMapCache = profileNameMap;
+
       // === QUERY 2: Fetch from exam_results (old/legacy data) ===
+      // NOTE: exam_results HAS the 'name' column directly
       const { data: oldResults, error: resultsError } = await supabase
         .from('exam_results')
         .select('*');
@@ -136,25 +163,31 @@ export const useRealtimeLeaderboard = () => {
       console.log('[Leaderboard] Results fetched:', oldResults?.length || 0);
 
       // === MAPPING: Sessions to LeaderboardEntry ===
-      const mappedSessions: LeaderboardEntry[] = (newSessions || []).map((s: any) => ({
-        id: s.id,
-        name: s.name || 'Unknown',
-        twk_score: s.twk_score || 0,
-        tiu_score: s.tiu_score || 0,
-        tkp_score: s.tkp_score || 0,
-        total_score: s.total_score || 0,
-        duration_minutes: s.duration_minutes,
-        created_at: s.created_at,
-        status: (s.status === 'ongoing' ? 'ongoing' : 'finished') as LeaderboardEntry['status'],
-        started_at: s.started_at,
-        answered_count: s.answered_count || 0,
-        total_questions: s.total_questions || TOTAL_QUESTIONS,
-      }));
+      // Get name from profiles using device_fingerprint lookup
+      const mappedSessions: LeaderboardEntry[] = (newSessions || []).map((s: any) => {
+        const nameFromProfile = profileNameMap.get(s.device_fingerprint) || 'Unknown';
+        return {
+          id: s.id,
+          name: nameFromProfile, // Get name from profiles, NOT from exam_sessions
+          twk_score: s.twk_score || 0,
+          tiu_score: s.tiu_score || 0,
+          tkp_score: s.tkp_score || 0,
+          total_score: s.total_score || 0,
+          duration_minutes: s.duration_minutes,
+          created_at: s.created_at,
+          status: (s.status === 'ongoing' ? 'ongoing' : 'finished') as LeaderboardEntry['status'],
+          started_at: s.started_at,
+          answered_count: s.answered_count || 0,
+          total_questions: s.total_questions || TOTAL_QUESTIONS,
+          device_fingerprint: s.device_fingerprint,
+        };
+      });
 
       // === MAPPING: Legacy Results to LeaderboardEntry (CRITICAL!) ===
+      // exam_results HAS name column directly
       const mappedOldData: LeaderboardEntry[] = (oldResults || []).map((item: any) => ({
         id: `legacy-${item.id}`, // Prefix to avoid ID collision
-        name: item.name || 'Unknown', // Name is directly available
+        name: item.name || 'Unknown', // Name is directly available in exam_results
         twk_score: item.twk_score || 0,
         tiu_score: item.tiu_score || 0,
         tkp_score: item.tkp_score || 0,
@@ -165,6 +198,7 @@ export const useRealtimeLeaderboard = () => {
         started_at: item.started_at,
         answered_count: TOTAL_QUESTIONS, // Assume all answered
         total_questions: TOTAL_QUESTIONS,
+        device_fingerprint: item.device_fingerprint,
       }));
 
       console.log('[Leaderboard] Mapped sessions:', mappedSessions.length);
@@ -227,9 +261,15 @@ export const useRealtimeLeaderboard = () => {
         // Check if entry already exists (avoid duplicates)
         const exists = updatedData.some(e => e.id === newRecord.id);
         if (!exists) {
+          // For INSERT from exam_sessions, get name from profile cache
+          // since exam_sessions doesn't have name column
+          const nameFromCache = newRecord.device_fingerprint 
+            ? profileNameMapCache.get(newRecord.device_fingerprint) 
+            : null;
+          
           const newEntry: LeaderboardEntry = {
             id: newRecord.id,
-            name: newRecord.name,
+            name: nameFromCache || 'Loading...', // Use cache or placeholder
             twk_score: newRecord.twk_score || 0,
             tiu_score: newRecord.tiu_score || 0,
             tkp_score: newRecord.tkp_score || 0,
@@ -240,61 +280,106 @@ export const useRealtimeLeaderboard = () => {
             started_at: newRecord.started_at,
             answered_count: newRecord.answered_count || 0,
             total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
+            device_fingerprint: newRecord.device_fingerprint,
           };
+          
+          // Fetch name from profiles if not in cache
+          if (!nameFromCache && newRecord.device_fingerprint) {
+            supabase
+              .from('profiles')
+              .select('name')
+              .eq('device_fingerprint', newRecord.device_fingerprint)
+              .single()
+              .then(({ data: profile }) => {
+                if (profile?.name) {
+                  // Update cache
+                  profileNameMapCache.set(newRecord.device_fingerprint, profile.name);
+                  // Update state
+                  setData(prev => prev.map(e => 
+                    e.id === newRecord.id ? { ...e, name: profile.name } : e
+                  ));
+                }
+              });
+          }
+          
           updatedData.push(newEntry);
           shouldSort = true;
         }
-       } else if (eventType === 'UPDATE') {
-         const idx = updatedData.findIndex(e => e.id === newRecord.id);
+      } else if (eventType === 'UPDATE') {
+        const idx = updatedData.findIndex(e => e.id === newRecord.id);
 
-         // Remove immediately if moved out of leaderboard views
-         if (newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
-           if (idx !== -1) {
-             updatedData = updatedData.filter(e => e.id !== newRecord.id);
-           }
-           return updatedData;
-         }
+        // Remove immediately if moved out of leaderboard views
+        if (newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
+          if (idx !== -1) {
+            updatedData = updatedData.filter(e => e.id !== newRecord.id);
+          }
+          return updatedData;
+        }
 
-         if (idx !== -1) {
-           const oldScore = updatedData[idx].total_score;
-           updatedData[idx] = {
-             ...updatedData[idx],
-             twk_score: newRecord.twk_score ?? updatedData[idx].twk_score,
-             tiu_score: newRecord.tiu_score ?? updatedData[idx].tiu_score,
-             tkp_score: newRecord.tkp_score ?? updatedData[idx].tkp_score,
-             total_score: newRecord.total_score ?? updatedData[idx].total_score,
-             status: (newRecord.status || updatedData[idx].status) as LeaderboardEntry['status'],
-             started_at: newRecord.started_at ?? updatedData[idx].started_at,
-             answered_count: newRecord.answered_count ?? updatedData[idx].answered_count,
-             total_questions: newRecord.total_questions ?? updatedData[idx].total_questions,
-             duration_minutes: newRecord.duration_minutes,
-             created_at: newRecord.created_at ?? updatedData[idx].created_at,
-           };
+        if (idx !== -1) {
+          const oldScore = updatedData[idx].total_score;
+          updatedData[idx] = {
+            ...updatedData[idx],
+            twk_score: newRecord.twk_score ?? updatedData[idx].twk_score,
+            tiu_score: newRecord.tiu_score ?? updatedData[idx].tiu_score,
+            tkp_score: newRecord.tkp_score ?? updatedData[idx].tkp_score,
+            total_score: newRecord.total_score ?? updatedData[idx].total_score,
+            status: (newRecord.status || updatedData[idx].status) as LeaderboardEntry['status'],
+            started_at: newRecord.started_at ?? updatedData[idx].started_at,
+            answered_count: newRecord.answered_count ?? updatedData[idx].answered_count,
+            total_questions: newRecord.total_questions ?? updatedData[idx].total_questions,
+            duration_minutes: newRecord.duration_minutes,
+            created_at: newRecord.created_at ?? updatedData[idx].created_at,
+          };
 
-           if (oldScore !== (newRecord.total_score ?? oldScore)) {
-             shouldSort = true;
-           }
-         } else {
-           // Entry not found yet; add it if it's relevant
-           if (newRecord.status === 'ongoing' || newRecord.status === 'finished') {
-             updatedData.push({
-               id: newRecord.id,
-               name: newRecord.name,
-               twk_score: newRecord.twk_score || 0,
-               tiu_score: newRecord.tiu_score || 0,
-               tkp_score: newRecord.tkp_score || 0,
-               total_score: newRecord.total_score || 0,
-               duration_minutes: newRecord.duration_minutes,
-               created_at: newRecord.created_at,
-               status: (newRecord.status || 'ongoing') as LeaderboardEntry['status'],
-               started_at: newRecord.started_at,
-               answered_count: newRecord.answered_count || 0,
-               total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
-             });
-             shouldSort = true;
-           }
-         }
-       } else if (eventType === 'DELETE') {
+          if (oldScore !== (newRecord.total_score ?? oldScore)) {
+            shouldSort = true;
+          }
+        } else {
+          // Entry not found yet; add it if it's relevant
+          if (newRecord.status === 'ongoing' || newRecord.status === 'finished') {
+            const nameFromCache = newRecord.device_fingerprint 
+              ? profileNameMapCache.get(newRecord.device_fingerprint) 
+              : null;
+            
+            const newEntry: LeaderboardEntry = {
+              id: newRecord.id,
+              name: nameFromCache || 'Loading...',
+              twk_score: newRecord.twk_score || 0,
+              tiu_score: newRecord.tiu_score || 0,
+              tkp_score: newRecord.tkp_score || 0,
+              total_score: newRecord.total_score || 0,
+              duration_minutes: newRecord.duration_minutes,
+              created_at: newRecord.created_at,
+              status: (newRecord.status || 'ongoing') as LeaderboardEntry['status'],
+              started_at: newRecord.started_at,
+              answered_count: newRecord.answered_count || 0,
+              total_questions: newRecord.total_questions || TOTAL_QUESTIONS,
+              device_fingerprint: newRecord.device_fingerprint,
+            };
+            
+            // Fetch name if not in cache
+            if (!nameFromCache && newRecord.device_fingerprint) {
+              supabase
+                .from('profiles')
+                .select('name')
+                .eq('device_fingerprint', newRecord.device_fingerprint)
+                .single()
+                .then(({ data: profile }) => {
+                  if (profile?.name) {
+                    profileNameMapCache.set(newRecord.device_fingerprint, profile.name);
+                    setData(prev => prev.map(e => 
+                      e.id === newRecord.id ? { ...e, name: profile.name } : e
+                    ));
+                  }
+                });
+            }
+            
+            updatedData.push(newEntry);
+            shouldSort = true;
+          }
+        }
+      } else if (eventType === 'DELETE') {
         // Remove deleted session immediately
         updatedData = updatedData.filter(e => e.id !== oldRecord.id);
       }
@@ -307,7 +392,7 @@ export const useRealtimeLeaderboard = () => {
       
       return updatedData;
     });
-  }, [fetchAllData, sortDataIfNeeded]);
+  }, [sortDataIfNeeded]);
 
   // Handle user_answers changes - recalculate scores for specific session
   const handleUserAnswerChange = useCallback(async (payload: any) => {
