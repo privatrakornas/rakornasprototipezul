@@ -53,19 +53,32 @@ export const useExamSession = () => {
 
   // Create session when exam starts
   const createSession = useCallback(async (name: string, deviceFingerprint: string, startedAt: string) => {
+    const basePayload = {
+      device_fingerprint: deviceFingerprint,
+      started_at: startedAt,
+      status: 'ongoing',
+      answered_count: 0,
+      total_questions: TOTAL_QUESTIONS,
+    };
+
     try {
-      const { data, error } = await (supabase
+      // Coba insert dengan kolom `name` dulu (untuk skema yang punya kolom tsb).
+      // Kalau ternyata kolom `name` tidak ada (ERROR 42703), retry tanpa `name`.
+      let res = await (supabase
         .from('exam_sessions' as any)
-        .insert({
-          name,
-          device_fingerprint: deviceFingerprint,
-          started_at: startedAt,
-          status: 'ongoing',
-          answered_count: 0,
-          total_questions: TOTAL_QUESTIONS,
-        })
+        .insert({ ...basePayload, name })
         .select('id')
         .single() as any);
+
+      if (res?.error?.code === '42703') {
+        res = await (supabase
+          .from('exam_sessions' as any)
+          .insert(basePayload)
+          .select('id')
+          .single() as any);
+      }
+
+      const { data, error } = res;
 
       if (error) {
         console.error('Failed to create exam session:', error);
