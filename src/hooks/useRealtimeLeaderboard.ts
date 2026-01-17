@@ -152,10 +152,13 @@ export const useRealtimeLeaderboard = () => {
       profileNameMapCache = profileNameMap;
 
       // === QUERY 2: Fetch from exam_results (old/legacy data) ===
-      // NOTE: exam_results HAS the 'name' column directly
+      // IMPORTANT: direct SELECT on exam_results is blocked by RLS.
+      // Use the security-definer RPC instead.
       const { data: oldResults, error: resultsError } = await supabase
-        .from('exam_results')
-        .select('*');
+        .rpc('get_leaderboard', {
+          page_limit: 500,
+          page_offset: 0,
+        });
 
       if (resultsError) {
         console.error('[Leaderboard] Error fetching results:', resultsError);
@@ -165,10 +168,17 @@ export const useRealtimeLeaderboard = () => {
       // === MAPPING: Sessions to LeaderboardEntry ===
       // Get name from profiles using device_fingerprint lookup
       const mappedSessions: LeaderboardEntry[] = (newSessions || []).map((s: any) => {
-        const nameFromProfile = profileNameMap.get(s.device_fingerprint) || 'Unknown';
+        // exam_sessions mungkin TIDAK punya kolom name (tergantung skema).
+        // Jadi: pakai name jika ada, kalau tidak ambil dari profiles map, terakhir fallback ke device_fingerprint.
+        const fallbackName = s.device_fingerprint
+          ? `Peserta (${String(s.device_fingerprint).slice(0, 8)})`
+          : 'Peserta (Tanpa Nama)';
+
+        const nameSafe = (s.name as string | undefined) || profileNameMap.get(s.device_fingerprint) || fallbackName;
+
         return {
           id: s.id,
-          name: nameFromProfile, // Get name from profiles, NOT from exam_sessions
+          name: nameSafe,
           twk_score: s.twk_score || 0,
           tiu_score: s.tiu_score || 0,
           tkp_score: s.tkp_score || 0,
