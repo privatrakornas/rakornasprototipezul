@@ -337,6 +337,25 @@ export const useRealtimeLeaderboard = () => {
           return updatedData;
         }
 
+        // IMPORTANT: When status changes from 'ongoing' to 'finished':
+        // - Entry will be filtered OUT of Live Score table (status !== 'ongoing')
+        // - Entry will be filtered IN to Finished/History table (status === 'finished')
+        // This handles the "Selesai & Submit" transition automatically
+        if (newRecord.status === 'finished' && idx !== -1) {
+          console.log(`[Leaderboard Realtime] Status changed to FINISHED:`, newRecord.id, '- will move from Live to History');
+          // Update the entry's status - the UI components will handle the filtering
+          updatedData[idx] = {
+            ...updatedData[idx],
+            status: 'finished',
+            duration_minutes: newRecord.duration_minutes,
+            twk_score: newRecord.twk_score ?? updatedData[idx].twk_score,
+            tiu_score: newRecord.tiu_score ?? updatedData[idx].tiu_score,
+            tkp_score: newRecord.tkp_score ?? updatedData[idx].tkp_score,
+            total_score: newRecord.total_score ?? updatedData[idx].total_score,
+          };
+          shouldSort = true;
+        }
+
         if (idx !== -1) {
           const oldScore = updatedData[idx].total_score;
           updatedData[idx] = {
