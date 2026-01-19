@@ -121,10 +121,11 @@ export const useRealtimeLeaderboard = () => {
       // === QUERY 1: Fetch from exam_sessions (new data) ===
       // NOTE: exam_sessions does NOT have 'name' column!
       // We need to join with profiles table using device_fingerprint
+      // IMPORTANT: Only fetch 'ongoing' or 'finished' status - exclude abandoned/disqualified
       const { data: newSessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
-        .not('status', 'in', '("abandoned","disqualified")');
+        .in('status', ['ongoing', 'finished']);
 
       if (sessionsError) {
         console.error('[Leaderboard] Error fetching sessions:', sessionsError);
@@ -263,11 +264,19 @@ export const useRealtimeLeaderboard = () => {
   const handleRealtimeChange = useCallback((payload: any) => {
     const { eventType, new: newRecord, old: oldRecord } = payload;
     
+    console.log(`[Leaderboard Realtime] ${eventType}:`, newRecord?.id, 'status:', newRecord?.status);
+    
     setData(prevData => {
       let updatedData = [...prevData];
       let shouldSort = false;
       
       if (eventType === 'INSERT') {
+        // CRITICAL: Only add if status is 'ongoing' - ignore abandoned/disqualified from the start
+        if (newRecord.status === 'abandoned' || newRecord.status === 'disqualified') {
+          console.log(`[Leaderboard Realtime] Ignoring INSERT with status: ${newRecord.status}`);
+          return prevData;
+        }
+        
         // Check if entry already exists (avoid duplicates)
         const exists = updatedData.some(e => e.id === newRecord.id);
         if (!exists) {
@@ -318,8 +327,10 @@ export const useRealtimeLeaderboard = () => {
       } else if (eventType === 'UPDATE') {
         const idx = updatedData.findIndex(e => e.id === newRecord.id);
 
-        // Remove immediately if moved out of leaderboard views
+        // CRITICAL: Remove IMMEDIATELY if status changed to abandoned/disqualified
+        // This ensures Live Score table updates instantly when user is kicked out
         if (newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
+          console.log(`[Leaderboard Realtime] REMOVING entry due to status: ${newRecord.status}`, newRecord.id);
           if (idx !== -1) {
             updatedData = updatedData.filter(e => e.id !== newRecord.id);
           }
