@@ -21,8 +21,8 @@ export interface LeaderboardEntry {
   total_score: number;
   duration_minutes?: number | null;
   created_at?: string;
-  // Real-time fields
-  status: 'ongoing' | 'finished' | 'disqualified' | 'abandoned';
+  // Real-time fields - 'aborted' is now the unified status for violations
+  status: 'ongoing' | 'finished' | 'aborted' | 'abandoned' | 'disqualified';
   started_at?: string | null;
   answered_count?: number;
   total_questions?: number;
@@ -271,8 +271,8 @@ export const useRealtimeLeaderboard = () => {
       let shouldSort = false;
       
       if (eventType === 'INSERT') {
-        // CRITICAL: Only add if status is 'ongoing' - ignore abandoned/disqualified from the start
-        if (newRecord.status === 'abandoned' || newRecord.status === 'disqualified') {
+        // CRITICAL: Only add if status is 'ongoing' - ignore aborted/abandoned/disqualified from the start
+        if (newRecord.status === 'aborted' || newRecord.status === 'abandoned' || newRecord.status === 'disqualified') {
           console.log(`[Leaderboard Realtime] Ignoring INSERT with status: ${newRecord.status}`);
           return prevData;
         }
@@ -327,9 +327,10 @@ export const useRealtimeLeaderboard = () => {
       } else if (eventType === 'UPDATE') {
         const idx = updatedData.findIndex(e => e.id === newRecord.id);
 
-        // CRITICAL: Remove IMMEDIATELY if status changed to abandoned/disqualified
+        // CRITICAL: Remove IMMEDIATELY if status changed to aborted/abandoned/disqualified
         // This ensures Live Score table updates instantly when user is kicked out
-        if (newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
+        // Using 'aborted' as the primary status for violations (end-to-end consistency)
+        if (newRecord.status === 'aborted' || newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
           console.log(`[Leaderboard Realtime] REMOVING entry due to status: ${newRecord.status}`, newRecord.id);
           if (idx !== -1) {
             updatedData = updatedData.filter(e => e.id !== newRecord.id);

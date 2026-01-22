@@ -131,12 +131,12 @@ FinishedRow.displayName = 'FinishedRow';
 
 const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) => {
   // Filter ONLY finished entries - explicitly check for 'finished' status
-  // This excludes: 'ongoing' (Live Score), 'abandoned', 'disqualified'
+  // This excludes: 'ongoing' (Live Score), 'aborted', 'abandoned', 'disqualified'
   // Sort by: lulus first, then total_score desc, then duration_minutes asc (faster is better)
   const finishedData = data
     .filter(e => {
       // CRITICAL: Only show 'finished' status in history table
-      // This ensures abandoned/disqualified entries don't appear here either
+      // This ensures aborted/abandoned/disqualified entries don't appear here either
       return e.status === 'finished';
     })
     .sort((a, b) => {
