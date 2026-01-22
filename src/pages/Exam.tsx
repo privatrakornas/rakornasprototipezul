@@ -235,53 +235,53 @@ const Exam = () => {
     };
   }, [isSubmitting, violationDialogOpen]);
 
-  // Handle violation dialog confirmation - AWAIT database update before redirect
+  // Handle violation dialog confirmation - FAIL-SAFE: Always redirect even if DB fails
   const handleViolationConfirm = useCallback(async () => {
     setIsAbortingSession(true);
-    console.log('[ANTI-CHEAT] User confirmed violation, updating database...');
+    console.log('[ANTI-CHEAT] User confirmed violation, attempting database update...');
 
-    // STEP 1: FORCE UPDATE DATABASE FIRST - set status to 'aborted'
-    let updateSuccess = false;
-    let retryCount = 0;
-    const maxRetries = 3;
-
-    while (!updateSuccess && retryCount < maxRetries) {
-      console.log(`[ANTI-CHEAT] Attempt ${retryCount + 1} to update database with status 'aborted'...`);
-      updateSuccess = await abortSession();
+    try {
+      // STEP 1: TRY to update database with status 'aborted'
+      // Use a single attempt with timeout to avoid blocking user
+      const updatePromise = abortSession();
+      const timeoutPromise = new Promise<boolean>((resolve) => 
+        setTimeout(() => resolve(false), 5000) // 5 second timeout
+      );
       
-      if (!updateSuccess) {
-        retryCount++;
-        if (retryCount < maxRetries) {
-          // Wait 500ms before retry
-          await new Promise(resolve => setTimeout(resolve, 500));
-        }
+      const updateSuccess = await Promise.race([updatePromise, timeoutPromise]);
+      
+      if (updateSuccess) {
+        console.log('[ANTI-CHEAT] Database updated successfully with status "aborted"');
+      } else {
+        console.warn('[ANTI-CHEAT] Database update failed or timed out - proceeding with redirect anyway');
       }
+    } catch (error) {
+      // STEP 2: CATCH any errors but DO NOT block redirect
+      console.error('[ANTI-CHEAT] Error updating database:', error);
+      // Intentionally NOT showing error toast - we want to proceed to redirect
+    } finally {
+      // STEP 3: ALWAYS EXECUTE - Clean up local storage
+      console.log('[ANTI-CHEAT] Cleaning up local storage...');
+      
+      // Clear sessionStorage
+      sessionStorage.removeItem('examSession');
+      sessionStorage.removeItem('userName');
+      sessionStorage.removeItem('examStartedAt');
+      sessionStorage.removeItem('examSessionId');
+      sessionStorage.removeItem('deviceFingerprint');
+      
+      // Clear localStorage exam data to prevent conflicts on re-login
+      localStorage.removeItem('examAnswers');
+      localStorage.removeItem('examDuration');
+      localStorage.removeItem('examStartedAt');
+      localStorage.removeItem('examFinishedAt');
+      
+      console.log('[ANTI-CHEAT] Redirecting to login page...');
+      
+      // STEP 4: ALWAYS redirect - this runs regardless of DB success/failure
+      navigate('/');
     }
-
-    // STEP 2: Check if update succeeded
-    if (!updateSuccess) {
-      console.error('[ANTI-CHEAT] Failed to update database after retries');
-      setIsAbortingSession(false);
-      toast({
-        title: 'Gagal menyimpan status ujian',
-        description: 'Koneksi bermasalah. Mohon coba lagi.',
-        variant: 'destructive',
-        duration: 6000,
-      });
-      return;
-    }
-
-    console.log('[ANTI-CHEAT] Database updated successfully with status "aborted", now redirecting');
-
-    // STEP 3: Clear local session ONLY AFTER backend status is confirmed updated
-    sessionStorage.removeItem('examSession');
-    sessionStorage.removeItem('userName');
-    sessionStorage.removeItem('examStartedAt');
-    sessionStorage.removeItem('examSessionId');
-    
-    // STEP 4: FINALLY redirect to home
-    navigate('/');
-  }, [navigate, abortSession, toast]);
+  }, [navigate, abortSession]);
 
   // Handle submit function
   const handleSubmit = useCallback(async (isAutoSubmit = false) => {
