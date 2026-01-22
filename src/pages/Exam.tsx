@@ -236,52 +236,90 @@ const Exam = () => {
   }, [isSubmitting, violationDialogOpen]);
 
   // Handle violation dialog confirmation - FAIL-SAFE: Always redirect even if DB fails
+  // CRITICAL FIX: Force await database update with retry, then always redirect
   const handleViolationConfirm = useCallback(async () => {
     setIsAbortingSession(true);
-    console.log('[ANTI-CHEAT] User confirmed violation, attempting database update...');
+    const sessionId = sessionStorage.getItem('examSessionId');
+    
+    console.log('[ANTI-CHEAT] User confirmed violation, session ID:', sessionId);
+    console.log('[ANTI-CHEAT] Attempting DIRECT database update to status "aborted"...');
 
-    try {
-      // STEP 1: TRY to update database with status 'aborted'
-      // Use a single attempt with timeout to avoid blocking user
-      const updatePromise = abortSession();
-      const timeoutPromise = new Promise<boolean>((resolve) => 
-        setTimeout(() => resolve(false), 5000) // 5 second timeout
-      );
+    let updateSuccess = false;
+
+    // STEP 1: Direct database update with retry (bypass abortSession to ensure execution)
+    if (sessionId) {
+      const now = new Date();
+      const startedAtStr = sessionStorage.getItem('examStartedAt');
+      let durationMinutes = 0;
       
-      const updateSuccess = await Promise.race([updatePromise, timeoutPromise]);
-      
-      if (updateSuccess) {
-        console.log('[ANTI-CHEAT] Database updated successfully with status "aborted"');
-      } else {
-        console.warn('[ANTI-CHEAT] Database update failed or timed out - proceeding with redirect anyway');
+      if (startedAtStr) {
+        const startedAt = new Date(startedAtStr);
+        durationMinutes = Math.floor((now.getTime() - startedAt.getTime()) / (1000 * 60));
       }
-    } catch (error) {
-      // STEP 2: CATCH any errors but DO NOT block redirect
-      console.error('[ANTI-CHEAT] Error updating database:', error);
-      // Intentionally NOT showing error toast - we want to proceed to redirect
-    } finally {
-      // STEP 3: ALWAYS EXECUTE - Clean up local storage
-      console.log('[ANTI-CHEAT] Cleaning up local storage...');
-      
-      // Clear sessionStorage
-      sessionStorage.removeItem('examSession');
-      sessionStorage.removeItem('userName');
-      sessionStorage.removeItem('examStartedAt');
-      sessionStorage.removeItem('examSessionId');
-      sessionStorage.removeItem('deviceFingerprint');
-      
-      // Clear localStorage exam data to prevent conflicts on re-login
-      localStorage.removeItem('examAnswers');
-      localStorage.removeItem('examDuration');
-      localStorage.removeItem('examStartedAt');
-      localStorage.removeItem('examFinishedAt');
-      
-      console.log('[ANTI-CHEAT] Redirecting to login page...');
-      
-      // STEP 4: ALWAYS redirect - this runs regardless of DB success/failure
-      navigate('/');
+
+      // Try up to 3 times with increasing delays
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          console.log(`[ANTI-CHEAT] Database update attempt ${attempt}/3...`);
+          
+          const { data, error } = await supabase
+            .from('exam_sessions')
+            .update({
+              status: 'aborted',
+              finished_at: now.toISOString(),
+              duration_minutes: durationMinutes,
+            })
+            .eq('id', sessionId)
+            .select('id, status')
+            .single();
+
+          if (error) {
+            console.error(`[ANTI-CHEAT] Attempt ${attempt} failed:`, error.message);
+            if (attempt < 3) {
+              // Wait before retry (500ms, 1000ms)
+              await new Promise(resolve => setTimeout(resolve, attempt * 500));
+            }
+          } else {
+            console.log(`[ANTI-CHEAT] ✅ Database updated successfully! Status: ${data?.status}`);
+            updateSuccess = true;
+            break; // Success - exit retry loop
+          }
+        } catch (err) {
+          console.error(`[ANTI-CHEAT] Attempt ${attempt} exception:`, err);
+          if (attempt < 3) {
+            await new Promise(resolve => setTimeout(resolve, attempt * 500));
+          }
+        }
+      }
+
+      if (!updateSuccess) {
+        console.warn('[ANTI-CHEAT] ⚠️ All 3 database update attempts failed - proceeding with redirect anyway');
+      }
+    } else {
+      console.warn('[ANTI-CHEAT] No session ID found - skipping database update');
     }
-  }, [navigate, abortSession]);
+
+    // STEP 2: ALWAYS clean up local storage (runs regardless of DB success)
+    console.log('[ANTI-CHEAT] Cleaning up local storage...');
+    
+    // Clear sessionStorage
+    sessionStorage.removeItem('examSession');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('examStartedAt');
+    sessionStorage.removeItem('examSessionId');
+    sessionStorage.removeItem('deviceFingerprint');
+    
+    // Clear localStorage exam data to prevent conflicts on re-login
+    localStorage.removeItem('examAnswers');
+    localStorage.removeItem('examDuration');
+    localStorage.removeItem('examStartedAt');
+    localStorage.removeItem('examFinishedAt');
+    
+    console.log('[ANTI-CHEAT] ✅ Storage cleaned. Redirecting to login page...');
+    
+    // STEP 3: ALWAYS redirect - this runs regardless of DB success/failure
+    navigate('/');
+  }, [navigate]);
 
   // Handle submit function
   const handleSubmit = useCallback(async (isAutoSubmit = false) => {
