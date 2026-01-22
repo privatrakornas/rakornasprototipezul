@@ -114,8 +114,9 @@ export const useRealtimeLeaderboard = () => {
   }, []);
 
   // HYBRID FETCHING: Fetch from exam_sessions (new) and exam_results (old)
+  // FIRST ATTEMPT ONLY: Only show the earliest attempt per device_fingerprint
   const fetchAllData = useCallback(async () => {
-    console.log('[Leaderboard] Starting hybrid fetch...');
+    console.log('[Leaderboard] Starting hybrid fetch (first attempt only)...');
     
     try {
       // === QUERY 1: Fetch from exam_sessions (new data) ===
@@ -125,7 +126,8 @@ export const useRealtimeLeaderboard = () => {
       const { data: newSessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
-        .in('status', ['ongoing', 'finished']);
+        .in('status', ['ongoing', 'finished'])
+        .order('created_at', { ascending: true }); // Order by earliest first
 
       if (sessionsError) {
         console.error('[Leaderboard] Error fetching sessions:', sessionsError);
@@ -166,9 +168,27 @@ export const useRealtimeLeaderboard = () => {
       }
       console.log('[Leaderboard] Results fetched:', oldResults?.length || 0);
 
+      // === FIRST ATTEMPT FILTERING FOR SESSIONS ===
+      // Keep only the EARLIEST session per device_fingerprint
+      // Sessions are already ordered by created_at ASC from the query
+      const firstAttemptSessionsMap = new Map<string, any>();
+      (newSessions || []).forEach((s: any) => {
+        if (!s.device_fingerprint) {
+          // No fingerprint - include as unique entry
+          firstAttemptSessionsMap.set(s.id, s);
+        } else if (!firstAttemptSessionsMap.has(s.device_fingerprint)) {
+          // First occurrence of this fingerprint = first attempt
+          firstAttemptSessionsMap.set(s.device_fingerprint, s);
+        }
+        // Subsequent occurrences are ignored (not first attempt)
+      });
+      
+      const filteredSessions = Array.from(firstAttemptSessionsMap.values());
+      console.log('[Leaderboard] Sessions after first-attempt filter:', filteredSessions.length);
+
       // === MAPPING: Sessions to LeaderboardEntry ===
       // Get name from profiles using device_fingerprint lookup
-      const mappedSessions: LeaderboardEntry[] = (newSessions || []).map((s: any) => {
+      const mappedSessions: LeaderboardEntry[] = filteredSessions.map((s: any) => {
         // exam_sessions mungkin TIDAK punya kolom name (tergantung skema).
         // Jadi: pakai name jika ada, kalau tidak ambil dari profiles map, terakhir fallback ke device_fingerprint.
         const fallbackName = s.device_fingerprint
@@ -196,6 +216,7 @@ export const useRealtimeLeaderboard = () => {
 
       // === MAPPING: Legacy Results to LeaderboardEntry (CRITICAL!) ===
       // exam_results HAS name column directly
+      // NOTE: get_leaderboard RPC already applies first-attempt deduplication
       const mappedOldData: LeaderboardEntry[] = (oldResults || []).map((item: any) => ({
         id: `legacy-${item.id}`, // Prefix to avoid ID collision
         name: item.name || 'Unknown', // Name is directly available in exam_results
@@ -216,26 +237,39 @@ export const useRealtimeLeaderboard = () => {
       console.log('[Leaderboard] Mapped old data:', mappedOldData.length);
 
       // === MERGE & DEDUPLICATE ===
-      // Use Map with key = lowercase name + total_score to avoid duplicates
+      // Priority: Dedupe by device_fingerprint first (across both sources)
+      // Then fallback to name+score deduplication
       const entriesMap = new Map<string, LeaderboardEntry>();
+      const seenFingerprints = new Set<string>();
 
-      // Add NEW sessions first (they take priority)
+      // Add NEW sessions first (they take priority - already first-attempt filtered)
       mappedSessions.forEach(entry => {
-        const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
+        if (entry.device_fingerprint) {
+          seenFingerprints.add(entry.device_fingerprint);
+        }
+        const key = entry.device_fingerprint || `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
         entriesMap.set(key, entry);
       });
 
-      // Add OLD results only if no duplicate exists
+      // Add OLD results only if device_fingerprint not already seen
       mappedOldData.forEach(entry => {
-        const key = `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
+        // Skip if this device already has an entry from new sessions
+        if (entry.device_fingerprint && seenFingerprints.has(entry.device_fingerprint)) {
+          return;
+        }
+        
+        const key = entry.device_fingerprint || `${entry.name.toLowerCase().trim()}_${entry.total_score}`;
         if (!entriesMap.has(key)) {
           entriesMap.set(key, entry);
+          if (entry.device_fingerprint) {
+            seenFingerprints.add(entry.device_fingerprint);
+          }
         }
       });
 
       // Convert map back to array
       const allEntries = Array.from(entriesMap.values());
-      console.log('[Leaderboard] After dedup:', allEntries.length, 'unique entries');
+      console.log('[Leaderboard] After first-attempt dedup:', allEntries.length, 'unique entries');
 
       // Sort by priority
       allEntries.sort(sortByPriority);
