@@ -10,10 +10,13 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
 import { useToast } from '@/hooks/use-toast';
+import { useContentProtection } from '@/hooks/useContentProtection';
+import { supabase } from '@/integrations/supabase/client';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
 const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
 const MIN_DURATION_MINUTES = 45; // Minimum 45 minutes before submit
+const STATUS_CHECK_INTERVAL = 10000; // Check status every 10 seconds
 
 // Memoized Question Navigation Grid - prevents re-renders from timer
 interface QuestionNavGridProps {
@@ -91,7 +94,15 @@ const Exam = () => {
   const [isAbortingSession, setIsAbortingSession] = useState(false);
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
+  const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { createSession, updateScores, finishSession, abortSession } = useExamSession();
+  
+  // ============ CONTENT PROTECTION - ANTI-CHEAT ============
+  // Disable right-click, copy-paste, keyboard shortcuts, etc.
+  useContentProtection({
+    showWarning: true,
+    warningMessage: '⚠️ Aktivitas mencurigakan terdeteksi! Tindakan ini tercatat.',
+  });
   
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
@@ -114,6 +125,64 @@ const Exam = () => {
 
   // Check if minimum time requirement is met
   const canSubmit = getElapsedMinutes() >= MIN_DURATION_MINUTES;
+
+  // ============ REAL-TIME STATUS VALIDATION ============
+  // Check if session was aborted by admin or system every X seconds
+  // If status is no longer 'ongoing', force logout immediately
+  useEffect(() => {
+    const checkSessionStatus = async () => {
+      const sessionId = sessionStorage.getItem('examSessionId');
+      if (!sessionId) return;
+
+      try {
+        const { data, error } = await supabase
+          .from('exam_sessions')
+          .select('status')
+          .eq('id', sessionId)
+          .single();
+
+        if (error) {
+          console.error('[STATUS CHECK] Error checking session status:', error);
+          return;
+        }
+
+        // If status is not 'ongoing', force logout
+        if (data && data.status !== 'ongoing') {
+          console.log(`[STATUS CHECK] Session status changed to "${data.status}" - forcing logout`);
+          
+          // Clear session data
+          sessionStorage.removeItem('examSession');
+          sessionStorage.removeItem('userName');
+          sessionStorage.removeItem('examStartedAt');
+          sessionStorage.removeItem('examSessionId');
+          
+          // Show notification and redirect
+          toast({
+            title: 'Sesi Ujian Berakhir',
+            description: `Status ujian Anda: ${data.status}. Anda akan dialihkan ke halaman login.`,
+            variant: 'destructive',
+            duration: 5000,
+          });
+          
+          navigate('/');
+        }
+      } catch (err) {
+        console.error('[STATUS CHECK] Error:', err);
+      }
+    };
+
+    // Check immediately on mount
+    checkSessionStatus();
+
+    // Set up interval to check periodically
+    statusCheckIntervalRef.current = setInterval(checkSessionStatus, STATUS_CHECK_INTERVAL);
+
+    return () => {
+      if (statusCheckIntervalRef.current) {
+        clearInterval(statusCheckIntervalRef.current);
+      }
+    };
+  }, [navigate, toast]);
 
   // Create exam session on mount
   useEffect(() => {

@@ -1,19 +1,44 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
-const showWarning = () => {
-  toast.error("Eeiits, ingat dosa!!!", {
-    duration: 3000,
-    position: 'top-center',
-  });
-};
+interface UseContentProtectionOptions {
+  showWarning?: boolean;
+  warningMessage?: string;
+  onViolation?: () => void;
+}
 
-export const useContentProtection = () => {
+const defaultWarningMessage = "⚠️ Aktivitas mencurigakan terdeteksi! Tindakan ini tercatat di sistem.";
+
+export const useContentProtection = (options: UseContentProtectionOptions = {}) => {
+  const { 
+    showWarning = true, 
+    warningMessage = defaultWarningMessage,
+    onViolation 
+  } = options;
+
+  const handleWarning = useCallback((action: string) => {
+    console.log(`[CONTENT PROTECTION] Blocked action: ${action}`);
+    
+    if (showWarning) {
+      toast.error(warningMessage, {
+        duration: 3000,
+        position: 'top-center',
+      });
+    }
+    
+    if (onViolation) {
+      onViolation();
+    }
+  }, [showWarning, warningMessage, onViolation]);
+
   useEffect(() => {
+    // ============ MOUSE EVENTS ============
+    
     // Disable right-click context menu
     const handleContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      showWarning();
+      e.stopPropagation();
+      handleWarning('right-click');
       return false;
     };
 
@@ -23,132 +48,307 @@ export const useContentProtection = () => {
       return false;
     };
 
+    // Disable drag
+    const handleDragStart = (e: DragEvent) => {
+      e.preventDefault();
+      handleWarning('drag');
+      return false;
+    };
+
+    // ============ CLIPBOARD EVENTS ============
+    
     // Disable copy
     const handleCopy = (e: ClipboardEvent) => {
       e.preventDefault();
-      showWarning();
+      handleWarning('copy');
       return false;
     };
 
     // Disable cut
     const handleCut = (e: ClipboardEvent) => {
       e.preventDefault();
-      showWarning();
+      handleWarning('cut');
       return false;
     };
 
-    // Disable keyboard shortcuts for copy/paste/print/save/screenshot
+    // Disable paste
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      handleWarning('paste');
+      return false;
+    };
+
+    // ============ KEYBOARD SHORTCUTS ============
+    
     const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isShift = e.shiftKey;
+      const isAlt = e.altKey;
+
       // PrintScreen key
       if (e.key === 'PrintScreen') {
         e.preventDefault();
-        showWarning();
+        handleWarning('PrintScreen');
         // Clear clipboard
         navigator.clipboard.writeText('').catch(() => {});
         return false;
       }
-      // Ctrl/Cmd + C (Copy)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
-      // Ctrl/Cmd + V (Paste)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
-      // Ctrl/Cmd + X (Cut)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
-      // Ctrl/Cmd + P (Print)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
-      // Ctrl/Cmd + S (Save)
-      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
-      // Ctrl/Cmd + A (Select All)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
-        e.preventDefault();
-        showWarning();
-        return false;
-      }
+
       // F12 (Developer Tools)
       if (e.key === 'F12') {
         e.preventDefault();
-        showWarning();
+        handleWarning('F12 - DevTools');
         return false;
       }
-      // Ctrl/Cmd + Shift + I (Developer Tools)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'I') {
+
+      // F1-F11 (Block all function keys for safety)
+      if (e.key.match(/^F[1-9]$|^F1[01]$/)) {
         e.preventDefault();
-        showWarning();
         return false;
       }
-      // Ctrl/Cmd + Shift + J (Console)
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'J') {
-        e.preventDefault();
-        showWarning();
-        return false;
+
+      // Ctrl/Cmd based shortcuts
+      if (isCtrl) {
+        // Ctrl + C (Copy)
+        if (key === 'c') {
+          e.preventDefault();
+          handleWarning('Ctrl+C - Copy');
+          return false;
+        }
+        // Ctrl + V (Paste)
+        if (key === 'v') {
+          e.preventDefault();
+          handleWarning('Ctrl+V - Paste');
+          return false;
+        }
+        // Ctrl + X (Cut)
+        if (key === 'x') {
+          e.preventDefault();
+          handleWarning('Ctrl+X - Cut');
+          return false;
+        }
+        // Ctrl + P (Print)
+        if (key === 'p') {
+          e.preventDefault();
+          handleWarning('Ctrl+P - Print');
+          return false;
+        }
+        // Ctrl + S (Save)
+        if (key === 's') {
+          e.preventDefault();
+          handleWarning('Ctrl+S - Save');
+          return false;
+        }
+        // Ctrl + A (Select All)
+        if (key === 'a') {
+          e.preventDefault();
+          handleWarning('Ctrl+A - Select All');
+          return false;
+        }
+        // Ctrl + U (View Source)
+        if (key === 'u') {
+          e.preventDefault();
+          handleWarning('Ctrl+U - View Source');
+          return false;
+        }
+        // Ctrl + G (Find)
+        if (key === 'g') {
+          e.preventDefault();
+          return false;
+        }
+        // Ctrl + F (Find)
+        if (key === 'f') {
+          e.preventDefault();
+          return false;
+        }
+        // Ctrl + H (History/Replace)
+        if (key === 'h') {
+          e.preventDefault();
+          return false;
+        }
+        // Ctrl + D (Bookmark)
+        if (key === 'd') {
+          e.preventDefault();
+          return false;
+        }
+        // Ctrl + J (Downloads)
+        if (key === 'j') {
+          e.preventDefault();
+          return false;
+        }
+        // Ctrl + K (Search)
+        if (key === 'k') {
+          e.preventDefault();
+          return false;
+        }
+
+        // Ctrl + Shift combinations
+        if (isShift) {
+          // Ctrl + Shift + I (Inspect Element)
+          if (key === 'i') {
+            e.preventDefault();
+            handleWarning('Ctrl+Shift+I - Inspect');
+            return false;
+          }
+          // Ctrl + Shift + J (Console)
+          if (key === 'j') {
+            e.preventDefault();
+            handleWarning('Ctrl+Shift+J - Console');
+            return false;
+          }
+          // Ctrl + Shift + C (Inspect Element)
+          if (key === 'c') {
+            e.preventDefault();
+            handleWarning('Ctrl+Shift+C - Inspect');
+            return false;
+          }
+          // Ctrl + Shift + K (Console in Firefox)
+          if (key === 'k') {
+            e.preventDefault();
+            handleWarning('Ctrl+Shift+K - Console');
+            return false;
+          }
+          // Ctrl + Shift + M (Mobile view)
+          if (key === 'm') {
+            e.preventDefault();
+            return false;
+          }
+          // Ctrl + Shift + S (Screenshot)
+          if (key === 's') {
+            e.preventDefault();
+            handleWarning('Ctrl+Shift+S - Screenshot');
+            return false;
+          }
+        }
       }
-      // Ctrl/Cmd + U (View Source)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'u') {
-        e.preventDefault();
-        showWarning();
-        return false;
+
+      // Alt combinations
+      if (isAlt) {
+        // Alt + Tab detection (window blur handles this, but block anyway)
+        if (key === 'tab') {
+          e.preventDefault();
+          return false;
+        }
+        // Alt + F4 (Close window)
+        if (e.key === 'F4') {
+          e.preventDefault();
+          handleWarning('Alt+F4 - Close');
+          return false;
+        }
       }
+
       // Windows + Shift + S (Windows screenshot)
-      if (e.shiftKey && e.key === 'S' && (e.metaKey || e.getModifierState('Meta'))) {
+      if (isShift && key === 's' && (e.metaKey || e.getModifierState('Meta'))) {
         e.preventDefault();
-        showWarning();
+        handleWarning('Win+Shift+S - Screenshot');
         return false;
       }
+
       // Cmd + Shift + 3/4/5 (Mac screenshot)
-      if (e.metaKey && e.shiftKey && ['3', '4', '5'].includes(e.key)) {
+      if (e.metaKey && isShift && ['3', '4', '5'].includes(key)) {
         e.preventDefault();
-        showWarning();
+        handleWarning('Cmd+Shift+3/4/5 - Mac Screenshot');
+        return false;
+      }
+
+      // Escape key - block to prevent closing dialogs
+      if (e.key === 'Escape') {
+        e.preventDefault();
         return false;
       }
     };
 
-    // Disable drag
-    const handleDragStart = (e: DragEvent) => {
+    // ============ BEFORE PRINT (additional protection) ============
+    const handleBeforePrint = (e: Event) => {
       e.preventDefault();
+      handleWarning('Print attempt');
       return false;
     };
 
-    // Add event listeners
-    document.addEventListener('contextmenu', handleContextMenu);
-    document.addEventListener('selectstart', handleSelectStart);
-    document.addEventListener('copy', handleCopy);
-    document.addEventListener('cut', handleCut);
-    document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('dragstart', handleDragStart);
+    // ============ ADD ALL EVENT LISTENERS ============
+    
+    // Mouse events
+    document.addEventListener('contextmenu', handleContextMenu, true);
+    document.addEventListener('selectstart', handleSelectStart, true);
+    document.addEventListener('dragstart', handleDragStart, true);
+    
+    // Clipboard events
+    document.addEventListener('copy', handleCopy, true);
+    document.addEventListener('cut', handleCut, true);
+    document.addEventListener('paste', handlePaste, true);
+    
+    // Keyboard events
+    document.addEventListener('keydown', handleKeyDown, true);
+    
+    // Print events
+    window.addEventListener('beforeprint', handleBeforePrint);
 
-    // Apply CSS styles to disable text selection
+    // ============ CSS PROTECTIONS ============
+    
+    // Disable text selection via CSS
+    const originalUserSelect = document.body.style.userSelect;
+    const originalWebkitUserSelect = document.body.style.webkitUserSelect;
+    
     document.body.style.userSelect = 'none';
     document.body.style.webkitUserSelect = 'none';
+    (document.body.style as any).MozUserSelect = 'none';
+    (document.body.style as any).msUserSelect = 'none';
 
-    // Cleanup
+    // Add a style to prevent image dragging
+    const styleSheet = document.createElement('style');
+    styleSheet.id = 'content-protection-styles';
+    styleSheet.textContent = `
+      * {
+        -webkit-user-select: none !important;
+        -moz-user-select: none !important;
+        -ms-user-select: none !important;
+        user-select: none !important;
+        -webkit-touch-callout: none !important;
+      }
+      img {
+        pointer-events: none !important;
+        -webkit-user-drag: none !important;
+        -khtml-user-drag: none !important;
+        -moz-user-drag: none !important;
+        -o-user-drag: none !important;
+        user-drag: none !important;
+      }
+      @media print {
+        body { display: none !important; }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+
+    // ============ CLEANUP ============
     return () => {
-      document.removeEventListener('contextmenu', handleContextMenu);
-      document.removeEventListener('selectstart', handleSelectStart);
-      document.removeEventListener('copy', handleCopy);
-      document.removeEventListener('cut', handleCut);
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('dragstart', handleDragStart);
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
+      // Mouse events
+      document.removeEventListener('contextmenu', handleContextMenu, true);
+      document.removeEventListener('selectstart', handleSelectStart, true);
+      document.removeEventListener('dragstart', handleDragStart, true);
+      
+      // Clipboard events
+      document.removeEventListener('copy', handleCopy, true);
+      document.removeEventListener('cut', handleCut, true);
+      document.removeEventListener('paste', handlePaste, true);
+      
+      // Keyboard events
+      document.removeEventListener('keydown', handleKeyDown, true);
+      
+      // Print events
+      window.removeEventListener('beforeprint', handleBeforePrint);
+
+      // Restore original styles
+      document.body.style.userSelect = originalUserSelect;
+      document.body.style.webkitUserSelect = originalWebkitUserSelect;
+      
+      // Remove injected style sheet
+      const existingStyle = document.getElementById('content-protection-styles');
+      if (existingStyle) {
+        existingStyle.remove();
+      }
     };
-  }, []);
+  }, [handleWarning]);
 };
+
+export default useContentProtection;
