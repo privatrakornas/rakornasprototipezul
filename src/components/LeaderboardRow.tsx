@@ -33,8 +33,8 @@ const getScoreClass = (score: number, type: 'TWK' | 'TIU' | 'TKP', isLightText: 
 const getRowStyle = (rank: number, entry: LeaderboardEntry): { className: string; isLightText: boolean } => {
   const lulus = isLulus(entry);
   
-  // Disqualified entries get a special style
-  if (entry.status === 'disqualified') {
+  // Aborted/Disqualified/Abandoned entries get a special style (should be filtered out, but just in case)
+  if (entry.status === 'aborted' || entry.status === 'disqualified' || entry.status === 'abandoned') {
     return {
       className: 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-400 opacity-60 line-through',
       isLightText: false
@@ -95,8 +95,8 @@ const LeaderboardRow = memo(({ entry, rank }: LeaderboardRowProps) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
   
-  // Don't render disqualified entries (hide them)
-  if (entry.status === 'disqualified') {
+  // Don't render aborted/disqualified/abandoned entries (hide them completely)
+  if (entry.status === 'aborted' || entry.status === 'disqualified' || entry.status === 'abandoned') {
     return null;
   }
   

@@ -236,15 +236,16 @@ export const useExamSession = () => {
     }
   }, []);
 
-  // Update session status (anti-cheat / abandoned) - CRITICAL: Must complete before redirect
-  const setSessionStatus = useCallback(async (status: 'disqualified' | 'abandoned') => {
+  // Update session status (anti-cheat / aborted) - CRITICAL: Must complete before redirect
+  // IMPORTANT: Using 'aborted' consistently end-to-end for disqualification cases
+  const setSessionStatus = useCallback(async (status: 'aborted' | 'finished') => {
     const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
     if (!sessionId) {
-      console.warn('No session ID found for status update');
+      console.warn('[SESSION] No session ID found for status update');
       return false;
     }
 
-    console.log(`[ANTI-CHEAT] Updating session ${sessionId} to status: ${status}`);
+    console.log(`[SESSION] Updating session ${sessionId} to status: ${status}`);
 
     try {
       // CRITICAL: Update with finished_at and duration_minutes for proper cleanup
@@ -269,28 +270,25 @@ export const useExamSession = () => {
         .single();
 
       if (error) {
-        console.error('[ANTI-CHEAT] Failed to update session status:', error);
+        console.error('[SESSION] Failed to update session status:', error);
         return false;
       }
 
-      console.log(`[ANTI-CHEAT] Session ${sessionId} successfully updated to ${data?.status}`);
+      console.log(`[SESSION] Session ${sessionId} successfully updated to ${data?.status}`);
       
       // Clear refs ONLY after successful DB update
       sessionIdRef.current = null;
       
       return true;
     } catch (err) {
-      console.error('[ANTI-CHEAT] Error updating session status:', err);
+      console.error('[SESSION] Error updating session status:', err);
       return false;
     }
   }, []);
 
-  const disqualifySession = useCallback(async () => {
-    return setSessionStatus('disqualified');
-  }, [setSessionStatus]);
-
-  const abandonSession = useCallback(async () => {
-    return setSessionStatus('abandoned');
+  // Abort session - used for anti-cheat violations (tab switch, etc.)
+  const abortSession = useCallback(async () => {
+    return setSessionStatus('aborted');
   }, [setSessionStatus]);
 
   // Cleanup on unmount
@@ -312,8 +310,7 @@ export const useExamSession = () => {
     createSession,
     updateScores,
     finishSession,
-    disqualifySession,
-    abandonSession,
+    abortSession, // Renamed from abandonSession - uses 'aborted' status
     sessionId: sessionIdRef.current,
   };
 };

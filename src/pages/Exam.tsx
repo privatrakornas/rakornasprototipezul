@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
 import { questions } from '@/data/questions';
-import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, ShieldAlert } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
@@ -87,9 +87,11 @@ const Exam = () => {
   const [navOpen, setNavOpen] = useState(false);
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [violationDialogOpen, setViolationDialogOpen] = useState(false);
+  const [isAbortingSession, setIsAbortingSession] = useState(false);
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
-  const { createSession, updateScores, finishSession, abandonSession } = useExamSession();
+  const { createSession, updateScores, finishSession, abortSession } = useExamSession();
   
   const [examStartedAt] = useState<string>(() => {
     // Get or set the exam start time
@@ -129,75 +131,30 @@ const Exam = () => {
     initSession();
   }, [userName, deviceFingerprint, examStartedAt, createSession]);
 
-  // Anti-cheat: detect tab/window switch -> FORCE UPDATE DATABASE BEFORE REDIRECT
+  // Anti-cheat: detect tab/window switch -> Show violation dialog
+  // CRITICAL: Do NOT redirect immediately - wait for user confirmation and DB update
   useEffect(() => {
     const antiCheatTriggeredRef = { current: false };
-    const isProcessingRef = { current: false };
 
-    const markAbandonedAndExit = async () => {
-      // Prevent multiple triggers and skip if already submitting
-      if (antiCheatTriggeredRef.current || isSubmitting || isProcessingRef.current) return;
+    const handleViolation = () => {
+      // Prevent multiple triggers and skip if already submitting or dialog open
+      if (antiCheatTriggeredRef.current || isSubmitting || violationDialogOpen) return;
       
       antiCheatTriggeredRef.current = true;
-      isProcessingRef.current = true;
-
-      console.log('[ANTI-CHEAT] Detected tab/window switch - initiating abandon sequence');
-
-      // STEP 1: FORCE UPDATE DATABASE FIRST - DO NOT REDIRECT YET
-      let updateSuccess = false;
-      let retryCount = 0;
-      const maxRetries = 3;
-
-      while (!updateSuccess && retryCount < maxRetries) {
-        console.log(`[ANTI-CHEAT] Attempt ${retryCount + 1} to update database...`);
-        updateSuccess = await abandonSession();
-        
-        if (!updateSuccess) {
-          retryCount++;
-          if (retryCount < maxRetries) {
-            // Wait 500ms before retry
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-      }
-
-      // STEP 2: Check if update succeeded
-      if (!updateSuccess) {
-        console.error('[ANTI-CHEAT] Failed to update database after retries');
-        antiCheatTriggeredRef.current = false;
-        isProcessingRef.current = false;
-        toast({
-          title: 'Gagal menyimpan status ujian',
-          description: 'Koneksi bermasalah. Mohon coba lagi (jangan tutup halaman dulu).',
-          variant: 'destructive',
-          duration: 6000,
-        });
-        return;
-      }
-
-      console.log('[ANTI-CHEAT] Database updated successfully, now showing alert and redirecting');
-
-      // STEP 3: Show alert ONLY after database update succeeded
-      alert('Anda terdeteksi meninggalkan halaman ujian! Ujian Anda dibatalkan.');
-
-      // STEP 4: Clear local session ONLY AFTER backend status is confirmed updated
-      sessionStorage.removeItem('examSession');
-      sessionStorage.removeItem('userName');
-      sessionStorage.removeItem('examStartedAt');
-      sessionStorage.removeItem('examSessionId');
+      console.log('[ANTI-CHEAT] Detected tab/window switch - showing violation dialog');
       
-      // STEP 5: FINALLY redirect to home
-      navigate('/');
+      // Show the violation dialog - user must click button to proceed
+      setViolationDialogOpen(true);
     };
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        void markAbandonedAndExit();
+        handleViolation();
       }
     };
 
     const handleBlur = () => {
-      void markAbandonedAndExit();
+      handleViolation();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -207,7 +164,55 @@ const Exam = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [navigate, abandonSession, isSubmitting, toast]);
+  }, [isSubmitting, violationDialogOpen]);
+
+  // Handle violation dialog confirmation - AWAIT database update before redirect
+  const handleViolationConfirm = useCallback(async () => {
+    setIsAbortingSession(true);
+    console.log('[ANTI-CHEAT] User confirmed violation, updating database...');
+
+    // STEP 1: FORCE UPDATE DATABASE FIRST - set status to 'aborted'
+    let updateSuccess = false;
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (!updateSuccess && retryCount < maxRetries) {
+      console.log(`[ANTI-CHEAT] Attempt ${retryCount + 1} to update database with status 'aborted'...`);
+      updateSuccess = await abortSession();
+      
+      if (!updateSuccess) {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          // Wait 500ms before retry
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+    }
+
+    // STEP 2: Check if update succeeded
+    if (!updateSuccess) {
+      console.error('[ANTI-CHEAT] Failed to update database after retries');
+      setIsAbortingSession(false);
+      toast({
+        title: 'Gagal menyimpan status ujian',
+        description: 'Koneksi bermasalah. Mohon coba lagi.',
+        variant: 'destructive',
+        duration: 6000,
+      });
+      return;
+    }
+
+    console.log('[ANTI-CHEAT] Database updated successfully with status "aborted", now redirecting');
+
+    // STEP 3: Clear local session ONLY AFTER backend status is confirmed updated
+    sessionStorage.removeItem('examSession');
+    sessionStorage.removeItem('userName');
+    sessionStorage.removeItem('examStartedAt');
+    sessionStorage.removeItem('examSessionId');
+    
+    // STEP 4: FINALLY redirect to home
+    navigate('/');
+  }, [navigate, abortSession, toast]);
 
   // Handle submit function
   const handleSubmit = useCallback(async (isAutoSubmit = false) => {
@@ -632,6 +637,40 @@ const Exam = () => {
           <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white/50 text-xs">
             Ketuk di luar gambar atau tombol X untuk menutup
           </p>
+        </DialogContent>
+      </Dialog>
+
+      {/* Violation Dialog - Shown when anti-cheat detects tab/window switch */}
+      <Dialog open={violationDialogOpen} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="w-5 h-5" />
+              Pelanggaran Terdeteksi!
+            </DialogTitle>
+            <DialogDescription className="text-left pt-2">
+              Anda terdeteksi <strong>meninggalkan halaman ujian</strong>. 
+              Sesuai aturan, ujian Anda akan <strong>dibatalkan</strong> dan status akan dicatat sebagai <strong>"Aborted"</strong>.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 text-sm">
+            <p className="text-destructive font-medium">⚠️ Peringatan:</p>
+            <ul className="list-disc list-inside mt-1 text-muted-foreground text-xs space-y-1">
+              <li>Skor Anda tidak akan masuk ke papan peringkat</li>
+              <li>Anda harus mendaftar ulang untuk mengikuti ujian</li>
+              <li>Aktivitas ini tercatat di sistem</li>
+            </ul>
+          </div>
+          <DialogFooter>
+            <Button 
+              onClick={handleViolationConfirm}
+              disabled={isAbortingSession}
+              variant="destructive"
+              className="w-full"
+            >
+              {isAbortingSession ? 'Menyimpan Status...' : 'Kembali ke Login'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

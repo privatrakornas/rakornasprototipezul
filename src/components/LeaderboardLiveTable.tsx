@@ -158,10 +158,11 @@ const LeaderboardLiveTable = memo(({ data }: LeaderboardLiveTableProps) => {
   
   // Filter ongoing entries with strict zombie/ghost cleanup
   // CRITICAL: Only show entries with status === 'ongoing'
-  // Abandoned/disqualified entries are removed by realtime handler immediately
+  // Aborted/abandoned/disqualified entries are removed by realtime handler immediately
   const liveData = data
     .filter(e => {
-      // FILTER 1: STRICT - Only show 'ongoing' status (NOT finished, NOT abandoned, NOT disqualified)
+      // FILTER 1: STRICT - Only show 'ongoing' status 
+      // NOT finished, NOT aborted, NOT abandoned, NOT disqualified
       if (e.status !== 'ongoing') {
         console.log(`[LIVE TABLE] Filtering out non-ongoing: ${e.name} (status=${e.status})`);
         return false;
