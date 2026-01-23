@@ -123,10 +123,12 @@ export const useRealtimeLeaderboard = () => {
       // NOTE: exam_sessions does NOT have 'name' column!
       // We need to join with profiles table using device_fingerprint
       // IMPORTANT: Only fetch 'ongoing' or 'finished' status - exclude abandoned/disqualified
+      // IMPORTANT: Exclude soft-deleted records (deleted_at IS NULL)
       const { data: newSessions, error: sessionsError } = await supabase
         .from('exam_sessions')
         .select('*')
         .in('status', ['ongoing', 'finished'])
+        .is('deleted_at', null)
         .order('created_at', { ascending: true }); // Order by earliest first
 
       if (sessionsError) {
@@ -306,8 +308,9 @@ export const useRealtimeLeaderboard = () => {
       
       if (eventType === 'INSERT') {
         // CRITICAL: Only add if status is 'ongoing' - ignore aborted/abandoned/disqualified from the start
-        if (newRecord.status === 'aborted' || newRecord.status === 'abandoned' || newRecord.status === 'disqualified') {
-          console.log(`[Leaderboard Realtime] Ignoring INSERT with status: ${newRecord.status}`);
+        // Also ignore soft-deleted records
+        if (newRecord.status === 'aborted' || newRecord.status === 'abandoned' || newRecord.status === 'disqualified' || newRecord.deleted_at) {
+          console.log(`[Leaderboard Realtime] Ignoring INSERT with status: ${newRecord.status} or deleted_at: ${newRecord.deleted_at}`);
           return prevData;
         }
         
@@ -362,10 +365,11 @@ export const useRealtimeLeaderboard = () => {
         const idx = updatedData.findIndex(e => e.id === newRecord.id);
 
         // CRITICAL: Remove IMMEDIATELY if status changed to aborted/abandoned/disqualified
-        // This ensures Live Score table updates instantly when user is kicked out
+        // OR if the record was soft-deleted (deleted_at is set)
+        // This ensures Live Score table updates instantly when user is kicked out or data is soft-deleted
         // Using 'aborted' as the primary status for violations (end-to-end consistency)
-        if (newRecord.status === 'aborted' || newRecord.status === 'disqualified' || newRecord.status === 'abandoned') {
-          console.log(`[Leaderboard Realtime] REMOVING entry due to status: ${newRecord.status}`, newRecord.id);
+        if (newRecord.status === 'aborted' || newRecord.status === 'disqualified' || newRecord.status === 'abandoned' || newRecord.deleted_at) {
+          console.log(`[Leaderboard Realtime] REMOVING entry due to status: ${newRecord.status} or deleted_at: ${newRecord.deleted_at}`, newRecord.id);
           if (idx !== -1) {
             updatedData = updatedData.filter(e => e.id !== newRecord.id);
           }
