@@ -8,6 +8,7 @@ import Rules from "./pages/Rules";
 import Exam from "./pages/Exam";
 import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Watermark from "./components/Watermark";
@@ -30,6 +31,7 @@ const AppContent = () => {
           <Route path="/exam" element={<ProtectedRoute><Exam /></ProtectedRoute>} />
           <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/admin" element={<Admin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
