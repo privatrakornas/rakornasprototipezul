@@ -5,15 +5,18 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar, Ban, Users } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 // Admin PIN - should match the one in edge function if using server validation
 const ADMIN_PIN = 'admin123';
 
-interface DisqualifiedSession {
+interface ExamSession {
   id: string;
   name: string;
   status: string;
@@ -37,8 +40,15 @@ const Admin = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessions, setSessions] = useState<DisqualifiedSession[]>([]);
+  const [disqualifiedSessions, setDisqualifiedSessions] = useState<ExamSession[]>([]);
+  const [ongoingSessions, setOngoingSessions] = useState<ExamSession[]>([]);
   const [isFetching, setIsFetching] = useState(false);
+  
+  // Manual disqualification state
+  const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<ExamSession | null>(null);
+  const [disqualifyReason, setDisqualifyReason] = useState('');
+  const [isDisqualifying, setIsDisqualifying] = useState(false);
 
   // Check if already authenticated
   useEffect(() => {
@@ -48,34 +58,42 @@ const Admin = () => {
     }
   }, []);
 
-  // Fetch disqualified sessions when authenticated
+  // Fetch sessions when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      fetchDisqualifiedSessions();
+      fetchAllSessions();
     }
   }, [isAuthenticated]);
 
-  const fetchDisqualifiedSessions = async () => {
+  const fetchAllSessions = async () => {
     setIsFetching(true);
     try {
-      // Fetch sessions with status 'aborted' or 'abandoned'
-      const { data, error } = await supabase
+      // Fetch disqualified sessions (aborted/abandoned)
+      const { data: disqualifiedData, error: disqualifiedError } = await supabase
         .from('exam_sessions')
         .select('*')
         .in('status', ['aborted', 'abandoned'])
         .order('finished_at', { ascending: false, nullsFirst: false });
 
-      if (error) {
-        console.error('Error fetching sessions:', error);
-        return;
+      // Fetch ongoing sessions for manual disqualification
+      const { data: ongoingData, error: ongoingError } = await supabase
+        .from('exam_sessions')
+        .select('*')
+        .eq('status', 'ongoing')
+        .order('started_at', { ascending: false });
+
+      if (disqualifiedError) {
+        console.error('Error fetching disqualified sessions:', disqualifiedError);
+      }
+      if (ongoingError) {
+        console.error('Error fetching ongoing sessions:', ongoingError);
       }
 
-      // Map to include name from the session itself
-      const sessionsWithNames: DisqualifiedSession[] = (data || []).map(session => ({
+      const mapSession = (session: any): ExamSession => ({
         id: session.id,
         name: session.name,
         status: session.status,
-        disqualification_reason: (session as unknown as { disqualification_reason: string | null }).disqualification_reason,
+        disqualification_reason: session.disqualification_reason,
         started_at: session.started_at,
         finished_at: session.finished_at,
         duration_minutes: session.duration_minutes,
@@ -87,13 +105,63 @@ const Admin = () => {
         total_questions: session.total_questions,
         device_fingerprint: session.device_fingerprint,
         created_at: session.created_at,
-      }));
+      });
 
-      setSessions(sessionsWithNames);
+      setDisqualifiedSessions((disqualifiedData || []).map(mapSession));
+      setOngoingSessions((ongoingData || []).map(mapSession));
     } catch (err) {
       console.error('Error:', err);
     } finally {
       setIsFetching(false);
+    }
+  };
+
+  const handleManualDisqualify = (session: ExamSession) => {
+    setSelectedSession(session);
+    setDisqualifyReason('');
+    setDisqualifyDialogOpen(true);
+  };
+
+  const confirmDisqualify = async () => {
+    if (!selectedSession || !disqualifyReason.trim()) {
+      toast.error('Alasan diskualifikasi harus diisi');
+      return;
+    }
+
+    setIsDisqualifying(true);
+    try {
+      const now = new Date().toISOString();
+      const startedAt = new Date(selectedSession.started_at || now);
+      const durationMinutes = Math.min(
+        Math.round((new Date(now).getTime() - startedAt.getTime()) / (1000 * 60)),
+        100
+      );
+
+      const { error } = await supabase
+        .from('exam_sessions')
+        .update({
+          status: 'aborted',
+          disqualification_reason: `[Admin] ${disqualifyReason.trim()}`,
+          finished_at: now,
+          duration_minutes: durationMinutes,
+        })
+        .eq('id', selectedSession.id);
+
+      if (error) {
+        console.error('Error disqualifying session:', error);
+        toast.error('Gagal mendiskualifikasi peserta');
+        return;
+      }
+
+      toast.success(`${selectedSession.name} berhasil didiskualifikasi`);
+      setDisqualifyDialogOpen(false);
+      setSelectedSession(null);
+      fetchAllSessions();
+    } catch (err) {
+      console.error('Error:', err);
+      toast.error('Terjadi kesalahan');
+    } finally {
+      setIsDisqualifying(false);
     }
   };
 
@@ -229,14 +297,14 @@ const Admin = () => {
             <Shield className="w-6 h-6" />
             <div>
               <h1 className="text-lg font-bold">Admin Panel</h1>
-              <p className="text-xs text-white/70">Monitoring Sesi Diskualifikasi</p>
+              <p className="text-xs text-white/70">Monitoring Sesi Ujian</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={fetchDisqualifiedSessions}
+              onClick={fetchAllSessions}
               disabled={isFetching}
               className="text-white border-white/30 hover:bg-white/10"
             >
@@ -257,9 +325,21 @@ const Admin = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-4 py-6 space-y-6">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="p-4 bg-blue-50 border-blue-200">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-blue-100">
+                <Users className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-blue-600/70">Sedang Ujian</p>
+                <p className="text-2xl font-bold text-blue-700">{ongoingSessions.length}</p>
+              </div>
+            </div>
+          </Card>
+          
           <Card className="p-4 bg-red-50 border-red-200">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-red-100">
@@ -268,7 +348,7 @@ const Admin = () => {
               <div>
                 <p className="text-sm text-red-600/70">Diskualifikasi</p>
                 <p className="text-2xl font-bold text-red-700">
-                  {sessions.filter(s => s.status === 'aborted').length}
+                  {disqualifiedSessions.filter(s => s.status === 'aborted').length}
                 </p>
               </div>
             </div>
@@ -282,7 +362,7 @@ const Admin = () => {
               <div>
                 <p className="text-sm text-orange-600/70">Ditinggalkan</p>
                 <p className="text-2xl font-bold text-orange-700">
-                  {sessions.filter(s => s.status === 'abandoned').length}
+                  {disqualifiedSessions.filter(s => s.status === 'abandoned').length}
                 </p>
               </div>
             </div>
@@ -294,19 +374,20 @@ const Admin = () => {
                 <AlertTriangle className="w-5 h-5 text-slate-600" />
               </div>
               <div>
-                <p className="text-sm text-slate-600/70">Total</p>
-                <p className="text-2xl font-bold text-slate-700">{sessions.length}</p>
+                <p className="text-sm text-slate-600/70">Total Issue</p>
+                <p className="text-2xl font-bold text-slate-700">{disqualifiedSessions.length}</p>
               </div>
             </div>
           </Card>
         </div>
 
-        {/* Sessions Table */}
+        {/* Ongoing Sessions - For Manual Disqualification */}
         <Card className="overflow-hidden">
-          <div className="p-4 border-b bg-slate-50">
+          <div className="p-4 border-b bg-blue-50">
             <h2 className="font-semibold flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              Daftar Sesi Diskualifikasi
+              <Users className="w-5 h-5 text-blue-500" />
+              Peserta Sedang Ujian ({ongoingSessions.length})
+              <span className="text-xs font-normal text-muted-foreground ml-2">Klik tombol untuk diskualifikasi manual</span>
             </h2>
           </div>
           
@@ -314,7 +395,83 @@ const Admin = () => {
             <div className="p-8 flex justify-center">
               <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
             </div>
-          ) : sessions.length === 0 ? (
+          ) : ongoingSessions.length === 0 ? (
+            <div className="p-8 text-center text-slate-500">
+              <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <p>Tidak ada peserta yang sedang ujian</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead className="font-semibold">Nama</TableHead>
+                    <TableHead className="font-semibold text-center">Progress</TableHead>
+                    <TableHead className="font-semibold text-center">Skor Sementara</TableHead>
+                    <TableHead className="font-semibold">Mulai</TableHead>
+                    <TableHead className="font-semibold text-center">Aksi</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ongoingSessions.map((session) => (
+                    <TableRow key={session.id} className="hover:bg-slate-50">
+                      <TableCell className="font-medium">
+                        <div>
+                          <p className="font-semibold">{session.name}</p>
+                          <p className="text-xs text-muted-foreground truncate max-w-[120px]" title={session.device_fingerprint}>
+                            {session.device_fingerprint.slice(0, 8)}...
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <span className="text-sm font-medium">
+                          {session.answered_count}/{session.total_questions}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="text-sm">
+                          <p className="font-semibold">{session.total_score}</p>
+                          <p className="text-xs text-muted-foreground">
+                            TWK:{session.twk_score} TIU:{session.tiu_score} TKP:{session.tkp_score}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{formatDateTime(session.started_at)}</span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => handleManualDisqualify(session)}
+                          className="gap-1"
+                        >
+                          <Ban className="w-3 h-3" />
+                          Diskualifikasi
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </Card>
+
+        {/* Disqualified Sessions Table */}
+        <Card className="overflow-hidden">
+          <div className="p-4 border-b bg-red-50">
+            <h2 className="font-semibold flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-red-500" />
+              Daftar Sesi Diskualifikasi ({disqualifiedSessions.length})
+            </h2>
+          </div>
+          
+          {isFetching ? (
+            <div className="p-8 flex justify-center">
+              <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+            </div>
+          ) : disqualifiedSessions.length === 0 ? (
             <div className="p-8 text-center text-slate-500">
               <Shield className="w-12 h-12 mx-auto mb-3 text-slate-300" />
               <p>Tidak ada sesi yang didiskualifikasi</p>
@@ -336,7 +493,7 @@ const Admin = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions.map((session) => (
+                  {disqualifiedSessions.map((session) => (
                     <TableRow key={session.id} className="hover:bg-slate-50">
                       <TableCell className="font-medium">
                         <div>
@@ -382,6 +539,61 @@ const Admin = () => {
           )}
         </Card>
       </main>
+
+      {/* Manual Disqualification Dialog */}
+      <Dialog open={disqualifyDialogOpen} onOpenChange={setDisqualifyDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Ban className="w-5 h-5" />
+              Diskualifikasi Peserta
+            </DialogTitle>
+            <DialogDescription>
+              Anda akan mendiskualifikasi <strong>{selectedSession?.name}</strong>. 
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Alasan Diskualifikasi *</label>
+              <Textarea
+                value={disqualifyReason}
+                onChange={(e) => setDisqualifyReason(e.target.value)}
+                placeholder="Masukkan alasan diskualifikasi..."
+                rows={3}
+              />
+            </div>
+            
+            {selectedSession && (
+              <div className="bg-slate-50 p-3 rounded-md text-sm space-y-1">
+                <p><strong>Progress:</strong> {selectedSession.answered_count}/{selectedSession.total_questions}</p>
+                <p><strong>Skor:</strong> TWK:{selectedSession.twk_score} TIU:{selectedSession.tiu_score} TKP:{selectedSession.tkp_score}</p>
+                <p><strong>Mulai:</strong> {formatDateTime(selectedSession.started_at)}</p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDisqualifyDialogOpen(false)} disabled={isDisqualifying}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={confirmDisqualify} disabled={isDisqualifying || !disqualifyReason.trim()}>
+              {isDisqualifying ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <Ban className="w-4 h-4 mr-2" />
+                  Diskualifikasi
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
