@@ -245,6 +245,7 @@ const Exam = () => {
     console.log('[ANTI-CHEAT] Attempting DIRECT database update to status "aborted"...');
 
     let updateSuccess = false;
+    const violationReason = 'Pelanggaran: Pindah tab/window terdeteksi';
 
     // STEP 1: Direct database update with retry (bypass abortSession to ensure execution)
     if (sessionId) {
@@ -268,6 +269,7 @@ const Exam = () => {
               status: 'aborted',
               finished_at: now.toISOString(),
               duration_minutes: durationMinutes,
+              disqualification_reason: violationReason,
             })
             .eq('id', sessionId)
             .select('id, status')

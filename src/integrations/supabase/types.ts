@@ -64,6 +64,7 @@ export type Database = {
           answered_count: number
           created_at: string
           device_fingerprint: string
+          disqualification_reason: string | null
           duration_minutes: number | null
           finished_at: string | null
           id: string
@@ -81,6 +82,7 @@ export type Database = {
           answered_count?: number
           created_at?: string
           device_fingerprint: string
+          disqualification_reason?: string | null
           duration_minutes?: number | null
           finished_at?: string | null
           id?: string
@@ -98,6 +100,7 @@ export type Database = {
           answered_count?: number
           created_at?: string
           device_fingerprint?: string
+          disqualification_reason?: string | null
           duration_minutes?: number | null
           finished_at?: string | null
           id?: string
