@@ -63,6 +63,7 @@ export type Database = {
         Row: {
           answered_count: number
           created_at: string
+          deleted_at: string | null
           device_fingerprint: string
           disqualification_reason: string | null
           duration_minutes: number | null
@@ -81,6 +82,7 @@ export type Database = {
         Insert: {
           answered_count?: number
           created_at?: string
+          deleted_at?: string | null
           device_fingerprint: string
           disqualification_reason?: string | null
           duration_minutes?: number | null
@@ -99,6 +101,7 @@ export type Database = {
         Update: {
           answered_count?: number
           created_at?: string
+          deleted_at?: string | null
           device_fingerprint?: string
           disqualification_reason?: string | null
           duration_minutes?: number | null
