@@ -1,9 +1,12 @@
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, RefreshCw, FileText, Download } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, RefreshCw, FileText, Download, X, Filter } from 'lucide-react';
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -54,29 +57,58 @@ const getActionLabel = (action: string) => {
 };
 
 export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProps) => {
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [actionFilter, setActionFilter] = useState('all');
+
+  // Filter logs based on date range and action
+  const filteredLogs = useMemo(() => {
+    return logs.filter(log => {
+      const logDate = new Date(log.created_at);
+      const matchesDateFrom = !dateFrom || logDate >= new Date(dateFrom);
+      const matchesDateTo = !dateTo || logDate <= new Date(dateTo + 'T23:59:59');
+      const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+      return matchesDateFrom && matchesDateTo && matchesAction;
+    });
+  }, [logs, dateFrom, dateTo, actionFilter]);
+
+  const hasActiveFilters = dateFrom !== '' || dateTo !== '' || actionFilter !== 'all';
+
+  const clearFilters = () => {
+    setDateFrom('');
+    setDateTo('');
+    setActionFilter('all');
+  };
+
   const handleExport = () => {
-    if (logs.length === 0) {
+    if (filteredLogs.length === 0) {
       toast.error('Tidak ada data untuk diexport');
       return;
     }
-    exportAuditLogsToCSV(logs);
-    toast.success(`${logs.length} log berhasil diexport ke CSV`);
+    exportAuditLogsToCSV(filteredLogs);
+    toast.success(`${filteredLogs.length} log berhasil diexport ke CSV`);
   };
+
+  // Get unique actions for filter dropdown
+  const uniqueActions = useMemo(() => {
+    const actions = new Set(logs.map(log => log.action));
+    return Array.from(actions).sort();
+  }, [logs]);
 
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b bg-slate-100">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-600" />
-            Riwayat Aksi Admin ({logs.length})
+            Riwayat Aksi Admin ({filteredLogs.length}/{logs.length})
           </h2>
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={handleExport}
-              disabled={logs.length === 0}
+              disabled={filteredLogs.length === 0}
               className="gap-1"
             >
               <Download className="w-4 h-4" />
@@ -93,19 +125,83 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
             </Button>
           </div>
         </div>
+
+        {/* Filter Section */}
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Filter Audit Log</span>
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="ml-auto text-muted-foreground hover:text-foreground h-7 px-2"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Reset
+              </Button>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Action Filter */}
+            <Select value={actionFilter} onValueChange={setActionFilter}>
+              <SelectTrigger className="bg-white">
+                <SelectValue placeholder="Semua Aksi" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Aksi</SelectItem>
+                {uniqueActions.map(action => (
+                  <SelectItem key={action} value={action}>
+                    {getActionLabel(action)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Date From */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Dari:</span>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="flex-1 bg-white"
+              />
+            </div>
+            
+            {/* Date To */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">Sampai:</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="flex-1 bg-white"
+              />
+            </div>
+          </div>
+
+          {hasActiveFilters && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span>Menampilkan {filteredLogs.length} dari {logs.length} log</span>
+            </div>
+          )}
+        </div>
       </div>
       
       {isFetching ? (
         <div className="p-8 flex justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
         </div>
-      ) : logs.length === 0 ? (
+      ) : filteredLogs.length === 0 ? (
         <div className="p-8 text-center text-slate-500">
           <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-          <p>Belum ada riwayat aksi</p>
+          <p>{hasActiveFilters ? 'Tidak ada log sesuai filter' : 'Belum ada riwayat aksi'}</p>
         </div>
       ) : (
-        <ScrollArea className="h-[500px]">
+        <ScrollArea className="h-[400px]">
           <Table>
             <TableHeader>
               <TableRow className="bg-slate-50">
@@ -116,7 +212,7 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
               </TableRow>
             </TableHeader>
             <TableBody>
-              {logs.map((log) => (
+              {filteredLogs.map((log) => (
                 <TableRow key={log.id} className="hover:bg-slate-50">
                   <TableCell className="whitespace-nowrap">
                     <span className="text-sm">{formatDateTime(log.created_at)}</span>
