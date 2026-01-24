@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar, Ban, Users, Trash2, RotateCcw, Search, X, Filter } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar, Ban, Users, Trash2, RotateCcw, Search, X, Filter, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -34,6 +35,17 @@ interface ExamSession {
   device_fingerprint: string;
   created_at: string;
   deleted_at: string | null;
+}
+
+interface AuditLog {
+  id: string;
+  action: string;
+  target_id: string | null;
+  target_name: string | null;
+  details: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
 }
 
 const Admin = () => {
@@ -68,6 +80,10 @@ const Admin = () => {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [sessionToRestore, setSessionToRestore] = useState<ExamSession | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  // Audit logs state
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [isFetchingLogs, setIsFetchingLogs] = useState(false);
 
   // Filter function for sessions
   const filterSessions = (sessions: ExamSession[]) => {
@@ -122,10 +138,11 @@ const Admin = () => {
     }
   }, []);
 
-  // Fetch sessions when authenticated
+  // Fetch sessions and logs when authenticated
   useEffect(() => {
     if (isAuthenticated) {
       fetchAllSessions();
+      fetchAuditLogs();
     }
   }, [isAuthenticated]);
 
@@ -194,6 +211,50 @@ const Admin = () => {
     }
   };
 
+  // Fetch audit logs
+  const fetchAuditLogs = async () => {
+    setIsFetchingLogs(true);
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Error fetching audit logs:', error);
+        return;
+      }
+
+      setAuditLogs(data || []);
+    } catch (err) {
+      console.error('Error:', err);
+    } finally {
+      setIsFetchingLogs(false);
+    }
+  };
+  };
+
+  // Helper function to log admin actions
+  const logAuditAction = async (
+    action: string, 
+    targetId: string | null, 
+    targetName: string | null, 
+    details: string
+  ) => {
+    try {
+      await supabase.from('audit_logs').insert({
+        action,
+        target_id: targetId,
+        target_name: targetName,
+        details,
+        user_agent: navigator.userAgent,
+      });
+    } catch (err) {
+      console.error('Failed to log audit action:', err);
+    }
+  };
+
   const handleManualDisqualify = (session: ExamSession) => {
     setSelectedSession(session);
     setDisqualifyReason('');
@@ -231,6 +292,14 @@ const Admin = () => {
         return;
       }
 
+      // Log audit action
+      await logAuditAction(
+        'DISQUALIFY',
+        selectedSession.id,
+        selectedSession.name,
+        `Alasan: ${disqualifyReason.trim()}, Skor: TWK=${selectedSession.twk_score} TIU=${selectedSession.tiu_score} TKP=${selectedSession.tkp_score}`
+      );
+
       toast.success(`${selectedSession.name} berhasil didiskualifikasi`);
       setDisqualifyDialogOpen(false);
       setSelectedSession(null);
@@ -264,6 +333,14 @@ const Admin = () => {
         toast.error('Gagal menghapus data');
         return;
       }
+
+      // Log audit action
+      await logAuditAction(
+        'SOFT_DELETE',
+        sessionToDelete.id,
+        sessionToDelete.name,
+        `Status: ${sessionToDelete.status}, Skor: ${sessionToDelete.total_score}`
+      );
 
       toast.success(`Data ${sessionToDelete.name} berhasil dipindahkan ke Sampah`);
       setDeleteDialogOpen(false);
@@ -299,6 +376,14 @@ const Admin = () => {
         return;
       }
 
+      // Log audit action
+      await logAuditAction(
+        'RESTORE',
+        sessionToRestore.id,
+        sessionToRestore.name,
+        `Status: ${sessionToRestore.status}, Skor: ${sessionToRestore.total_score}`
+      );
+
       toast.success(`Data ${sessionToRestore.name} berhasil dipulihkan`);
       setRestoreDialogOpen(false);
       setSessionToRestore(null);
@@ -333,10 +418,15 @@ const Admin = () => {
       const data = await response.json();
 
       if (!response.ok || !data.authorized) {
+        // Log failed login attempt
+        await logAuditAction('ADMIN_LOGIN_FAILED', null, null, 'Invalid PIN attempt');
         setError(data.error || 'PIN admin tidak valid');
         setIsLoading(false);
         return;
       }
+
+      // Log successful login
+      await logAuditAction('ADMIN_LOGIN', null, null, 'Admin login successful');
 
       sessionStorage.setItem('adminAuth', 'true');
       setIsAuthenticated(true);
@@ -349,7 +439,9 @@ const Admin = () => {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Log logout action
+    await logAuditAction('ADMIN_LOGOUT', null, null, 'Admin logged out');
     sessionStorage.removeItem('adminAuth');
     setIsAuthenticated(false);
     navigate('/');
@@ -645,7 +737,7 @@ const Admin = () => {
 
         {/* Tabs for different views */}
         <Tabs defaultValue="monitoring" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
             <TabsTrigger value="monitoring" className="gap-2">
               <Users className="w-4 h-4" />
               Monitoring
@@ -653,6 +745,10 @@ const Admin = () => {
             <TabsTrigger value="trash" className="gap-2">
               <Trash2 className="w-4 h-4" />
               Sampah ({filteredDeletedSessions.length})
+            </TabsTrigger>
+            <TabsTrigger value="audit" className="gap-2">
+              <FileText className="w-4 h-4" />
+              Audit Log ({auditLogs.length})
             </TabsTrigger>
           </TabsList>
 
@@ -909,6 +1005,94 @@ const Admin = () => {
                     </TableBody>
                   </Table>
                 </div>
+              )}
+            </Card>
+          </TabsContent>
+
+          {/* Audit Log Tab */}
+          <TabsContent value="audit">
+            <Card className="overflow-hidden">
+              <div className="p-4 border-b bg-slate-100">
+                <div className="flex items-center justify-between">
+                  <h2 className="font-semibold flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-slate-600" />
+                    Riwayat Aksi Admin ({auditLogs.length})
+                  </h2>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchAuditLogs}
+                    disabled={isFetchingLogs}
+                  >
+                    {isFetchingLogs ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                    <span className="ml-2">Refresh</span>
+                  </Button>
+                </div>
+              </div>
+              
+              {isFetchingLogs ? (
+                <div className="p-8 flex justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+                </div>
+              ) : auditLogs.length === 0 ? (
+                <div className="p-8 text-center text-slate-500">
+                  <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p>Belum ada riwayat aksi</p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[500px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-slate-50">
+                        <TableHead className="font-semibold">Waktu</TableHead>
+                        <TableHead className="font-semibold">Aksi</TableHead>
+                        <TableHead className="font-semibold">Target</TableHead>
+                        <TableHead className="font-semibold">Detail</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {auditLogs.map((log) => (
+                        <TableRow key={log.id} className="hover:bg-slate-50">
+                          <TableCell className="whitespace-nowrap">
+                            <span className="text-sm">{formatDateTime(log.created_at)}</span>
+                          </TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={
+                                log.action === 'ADMIN_LOGIN' ? 'secondary' :
+                                log.action === 'ADMIN_LOGIN_FAILED' ? 'destructive' :
+                                log.action === 'DISQUALIFY' ? 'destructive' :
+                                log.action === 'SOFT_DELETE' ? 'outline' :
+                                log.action === 'RESTORE' ? 'default' :
+                                'secondary'
+                              }
+                            >
+                              {log.action === 'ADMIN_LOGIN' && 'Login'}
+                              {log.action === 'ADMIN_LOGIN_FAILED' && 'Login Gagal'}
+                              {log.action === 'ADMIN_LOGOUT' && 'Logout'}
+                              {log.action === 'DISQUALIFY' && 'Diskualifikasi'}
+                              {log.action === 'SOFT_DELETE' && 'Hapus'}
+                              {log.action === 'RESTORE' && 'Pulihkan'}
+                              {!['ADMIN_LOGIN', 'ADMIN_LOGIN_FAILED', 'ADMIN_LOGOUT', 'DISQUALIFY', 'SOFT_DELETE', 'RESTORE'].includes(log.action) && log.action}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {log.target_name ? (
+                              <span className="font-medium">{log.target_name}</span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="max-w-[300px]">
+                            <p className="text-sm text-muted-foreground truncate" title={log.details || ''}>
+                              {log.details || '-'}
+                            </p>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
               )}
             </Card>
           </TabsContent>
