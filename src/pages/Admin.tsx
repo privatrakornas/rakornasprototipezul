@@ -15,8 +15,7 @@ import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { toast } from 'sonner';
 
-// Admin PIN - should match the one in edge function if using server validation
-const ADMIN_PIN = 'admin123';
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface ExamSession {
   id: string;
@@ -312,21 +311,42 @@ const Admin = () => {
     }
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Simple PIN validation
-    if (pin.trim() !== ADMIN_PIN) {
-      setError('PIN admin tidak valid');
-      setIsLoading(false);
-      return;
-    }
+    try {
+      // Validate PIN via edge function
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/verify-pin`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          action: 'verify-admin',
+          pin: pin.trim(),
+          type: 'admin'
+        }),
+      });
 
-    sessionStorage.setItem('adminAuth', 'true');
-    setIsAuthenticated(true);
-    setIsLoading(false);
+      const data = await response.json();
+
+      if (!response.ok || !data.authorized) {
+        setError(data.error || 'PIN admin tidak valid');
+        setIsLoading(false);
+        return;
+      }
+
+      sessionStorage.setItem('adminAuth', 'true');
+      setIsAuthenticated(true);
+      toast.success('Berhasil login sebagai admin');
+    } catch (err) {
+      console.error('Admin login error:', err);
+      setError('Gagal memverifikasi PIN. Silakan coba lagi.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLogout = () => {
