@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, RefreshCw, FileText, Download, X, Filter } from 'lucide-react';
+import { Loader2, RefreshCw, FileText, Download, X, Filter, Search } from 'lucide-react';
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -60,24 +60,30 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Filter logs based on date range and action
+  // Filter logs based on date range, action, and search query
   const filteredLogs = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
     return logs.filter(log => {
       const logDate = new Date(log.created_at);
       const matchesDateFrom = !dateFrom || logDate >= new Date(dateFrom);
       const matchesDateTo = !dateTo || logDate <= new Date(dateTo + 'T23:59:59');
       const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-      return matchesDateFrom && matchesDateTo && matchesAction;
+      const matchesSearch = !query || 
+        (log.target_name?.toLowerCase().includes(query)) ||
+        (log.details?.toLowerCase().includes(query));
+      return matchesDateFrom && matchesDateTo && matchesAction && matchesSearch;
     });
-  }, [logs, dateFrom, dateTo, actionFilter]);
+  }, [logs, dateFrom, dateTo, actionFilter, searchQuery]);
 
-  const hasActiveFilters = dateFrom !== '' || dateTo !== '' || actionFilter !== 'all';
+  const hasActiveFilters = dateFrom !== '' || dateTo !== '' || actionFilter !== 'all' || searchQuery !== '';
 
   const clearFilters = () => {
     setDateFrom('');
     setDateTo('');
     setActionFilter('all');
+    setSearchQuery('');
   };
 
   const handleExport = () => {
@@ -144,6 +150,18 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
             )}
           </div>
           
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Cari berdasarkan nama target atau detail..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 bg-white"
+            />
+          </div>
+
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {/* Action Filter */}
             <Select value={actionFilter} onValueChange={setActionFilter}>
