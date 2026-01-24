@@ -132,8 +132,9 @@ serve(async (req) => {
   }
 
   try {
-    const { action, pin, name, token } = await req.json();
+    const { action, pin, name, token, type } = await req.json();
     const VALID_PIN = Deno.env.get('EXAM_PIN');
+    const ADMIN_PIN = Deno.env.get('ADMIN_PIN');
 
     if (!VALID_PIN) {
       console.error('EXAM_PIN not configured');
@@ -155,6 +156,44 @@ serve(async (req) => {
       console.log('Session validation:', result.valid ? 'valid' : 'invalid');
       return new Response(
         JSON.stringify(result),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Admin PIN verification
+    if (action === 'verify-admin' || type === 'admin') {
+      const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+      
+      if (!checkRateLimit(clientIp)) {
+        console.log('Rate limit exceeded for admin PIN attempt from IP:', clientIp);
+        return new Response(
+          JSON.stringify({ authorized: false, error: 'Terlalu banyak percobaan. Silakan tunggu 1 menit.' }),
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '60' } 
+          }
+        );
+      }
+
+      if (!ADMIN_PIN) {
+        console.error('ADMIN_PIN not configured');
+        return new Response(
+          JSON.stringify({ authorized: false, error: 'Admin PIN tidak dikonfigurasi' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if (!pin || pin !== ADMIN_PIN) {
+        console.log('Invalid admin PIN attempt from IP:', clientIp);
+        return new Response(
+          JSON.stringify({ authorized: false, error: 'PIN admin tidak valid' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Admin login successful from IP:', clientIp);
+      return new Response(
+        JSON.stringify({ authorized: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
