@@ -230,9 +230,8 @@ const Admin = () => {
     } catch (err) {
       console.error('Error:', err);
     } finally {
-      setIsFetchingLogs(false);
+    setIsFetchingLogs(false);
     }
-  };
   };
 
   // Helper function to log admin actions
@@ -1253,3 +1252,4 @@ const Admin = () => {
 };
 
 export default Admin;
+
