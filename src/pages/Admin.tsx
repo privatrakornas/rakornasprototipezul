@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar, Ban, Users, Trash2, RotateCcw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Loader2, Shield, LogOut, RefreshCw, AlertTriangle, UserX, Clock, Calendar, Ban, Users, Trash2, RotateCcw, Search, X, Filter } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -47,6 +48,12 @@ const Admin = () => {
   const [deletedSessions, setDeletedSessions] = useState<ExamSession[]>([]);
   const [isFetching, setIsFetching] = useState(false);
   
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  
   // Manual disqualification state
   const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ExamSession | null>(null);
@@ -62,6 +69,51 @@ const Admin = () => {
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [sessionToRestore, setSessionToRestore] = useState<ExamSession | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  // Filter function for sessions
+  const filterSessions = (sessions: ExamSession[]) => {
+    return sessions.filter(session => {
+      // Search by name
+      const matchesSearch = searchQuery === '' || 
+        session.name.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Filter by status
+      const matchesStatus = statusFilter === 'all' || session.status === statusFilter;
+      
+      // Filter by date range
+      const sessionDate = new Date(session.created_at);
+      const matchesDateFrom = !dateFrom || sessionDate >= new Date(dateFrom);
+      const matchesDateTo = !dateTo || sessionDate <= new Date(dateTo + 'T23:59:59');
+      
+      return matchesSearch && matchesStatus && matchesDateFrom && matchesDateTo;
+    });
+  };
+
+  // Filtered sessions using useMemo for performance
+  const filteredOngoingSessions = useMemo(() => 
+    filterSessions(ongoingSessions), 
+    [ongoingSessions, searchQuery, statusFilter, dateFrom, dateTo]
+  );
+  
+  const filteredDisqualifiedSessions = useMemo(() => 
+    filterSessions(disqualifiedSessions), 
+    [disqualifiedSessions, searchQuery, statusFilter, dateFrom, dateTo]
+  );
+  
+  const filteredDeletedSessions = useMemo(() => 
+    filterSessions(deletedSessions), 
+    [deletedSessions, searchQuery, statusFilter, dateFrom, dateTo]
+  );
+
+  // Clear all filters
+  const clearFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const hasActiveFilters = searchQuery !== '' || statusFilter !== 'all' || dateFrom !== '' || dateTo !== '';
 
   // Check if already authenticated
   useEffect(() => {
@@ -492,6 +544,85 @@ const Admin = () => {
           </Card>
         </div>
 
+        {/* Search and Filter Section */}
+        <Card className="p-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="w-5 h-5 text-muted-foreground" />
+              <h3 className="font-semibold">Filter & Pencarian</h3>
+              {hasActiveFilters && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="ml-auto text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Reset Filter
+                </Button>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Search by Name */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Cari nama peserta..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              
+              {/* Filter by Status */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="ongoing">Sedang Ujian</SelectItem>
+                  <SelectItem value="finished">Selesai</SelectItem>
+                  <SelectItem value="aborted">Diskualifikasi</SelectItem>
+                  <SelectItem value="abandoned">Ditinggalkan</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              {/* Date From */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Dari:</span>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+              
+              {/* Date To */}
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-muted-foreground whitespace-nowrap">Sampai:</span>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            
+            {hasActiveFilters && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Hasil:</span>
+                <Badge variant="secondary">{filteredOngoingSessions.length} Sedang Ujian</Badge>
+                <Badge variant="secondary">{filteredDisqualifiedSessions.length} Diskualifikasi</Badge>
+                <Badge variant="secondary">{filteredDeletedSessions.length} Di Sampah</Badge>
+              </div>
+            )}
+          </div>
+        </Card>
+
         {/* Tabs for different views */}
         <Tabs defaultValue="monitoring" className="space-y-4">
           <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
@@ -501,7 +632,7 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="trash" className="gap-2">
               <Trash2 className="w-4 h-4" />
-              Sampah ({deletedSessions.length})
+              Sampah ({filteredDeletedSessions.length})
             </TabsTrigger>
           </TabsList>
 
@@ -512,7 +643,7 @@ const Admin = () => {
               <div className="p-4 border-b bg-blue-50">
                 <h2 className="font-semibold flex items-center gap-2">
                   <Users className="w-5 h-5 text-blue-500" />
-                  Peserta Sedang Ujian ({ongoingSessions.length})
+                  Peserta Sedang Ujian ({filteredOngoingSessions.length})
                   <span className="text-xs font-normal text-muted-foreground ml-2">Klik tombol untuk diskualifikasi manual</span>
                 </h2>
               </div>
@@ -521,10 +652,10 @@ const Admin = () => {
                 <div className="p-8 flex justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
-              ) : ongoingSessions.length === 0 ? (
+              ) : filteredOngoingSessions.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>Tidak ada peserta yang sedang ujian</p>
+                  <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada peserta yang sedang ujian'}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -539,7 +670,7 @@ const Admin = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {ongoingSessions.map((session) => (
+                      {filteredOngoingSessions.map((session) => (
                         <TableRow key={session.id} className="hover:bg-slate-50">
                           <TableCell className="font-medium">
                             <div>
@@ -599,7 +730,7 @@ const Admin = () => {
               <div className="p-4 border-b bg-red-50">
                 <h2 className="font-semibold flex items-center gap-2">
                   <AlertTriangle className="w-5 h-5 text-red-500" />
-                  Daftar Sesi Diskualifikasi ({disqualifiedSessions.length})
+                  Daftar Sesi Diskualifikasi ({filteredDisqualifiedSessions.length})
                 </h2>
               </div>
               
@@ -607,10 +738,10 @@ const Admin = () => {
                 <div className="p-8 flex justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
-              ) : disqualifiedSessions.length === 0 ? (
+              ) : filteredDisqualifiedSessions.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <Shield className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>Tidak ada sesi yang didiskualifikasi</p>
+                  <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada sesi yang didiskualifikasi'}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -630,7 +761,7 @@ const Admin = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {disqualifiedSessions.map((session) => (
+                      {filteredDisqualifiedSessions.map((session) => (
                         <TableRow key={session.id} className="hover:bg-slate-50">
                           <TableCell className="font-medium">
                             <div>
@@ -693,7 +824,7 @@ const Admin = () => {
               <div className="p-4 border-b bg-amber-50">
                 <h2 className="font-semibold flex items-center gap-2">
                   <Trash2 className="w-5 h-5 text-amber-500" />
-                  Data Terhapus ({deletedSessions.length})
+                  Data Terhapus ({filteredDeletedSessions.length})
                   <span className="text-xs font-normal text-muted-foreground ml-2">Klik "Pulihkan" untuk mengembalikan data</span>
                 </h2>
               </div>
@@ -702,10 +833,10 @@ const Admin = () => {
                 <div className="p-8 flex justify-center">
                   <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
                 </div>
-              ) : deletedSessions.length === 0 ? (
+              ) : filteredDeletedSessions.length === 0 ? (
                 <div className="p-8 text-center text-slate-500">
                   <Trash2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p>Tidak ada data di tempat sampah</p>
+                  <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada data di tempat sampah'}</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -720,7 +851,7 @@ const Admin = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {deletedSessions.map((session) => (
+                      {filteredDeletedSessions.map((session) => (
                         <TableRow key={session.id} className="hover:bg-slate-50">
                           <TableCell className="font-medium">
                             <div>
