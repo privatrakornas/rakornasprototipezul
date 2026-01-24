@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, RefreshCw, FileText, Download, X, Filter, Search } from 'lucide-react';
+import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown } from 'lucide-react';
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -17,6 +17,9 @@ interface AdminAuditLogProps {
   logs: AuditLog[];
   isFetching: boolean;
   onRefresh: () => void;
+  totalCount: number;
+  hasMore: boolean;
+  onLoadMore: () => void;
 }
 
 const formatDateTime = (dateStr: string | null) => {
@@ -56,7 +59,7 @@ const getActionLabel = (action: string) => {
   return labels[action] || action;
 };
 
-export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProps) => {
+export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore, onLoadMore }: AdminAuditLogProps) => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
@@ -107,7 +110,7 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold flex items-center gap-2">
             <FileText className="w-5 h-5 text-slate-600" />
-            Riwayat Aksi Admin ({filteredLogs.length}/{logs.length})
+            Riwayat Aksi Admin ({filteredLogs.length}/{logs.length} dimuat, {totalCount} total)
           </h2>
           <div className="flex items-center gap-2">
             <Button
@@ -203,7 +206,7 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
 
           {hasActiveFilters && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Menampilkan {filteredLogs.length} dari {logs.length} log</span>
+              <span>Menampilkan {filteredLogs.length} dari {logs.length} log yang dimuat ({totalCount} total)</span>
             </div>
           )}
         </div>
@@ -219,44 +222,65 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
           <p>{hasActiveFilters ? 'Tidak ada log sesuai filter' : 'Belum ada riwayat aksi'}</p>
         </div>
       ) : (
-        <ScrollArea className="h-[400px]">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-slate-50">
-                <TableHead className="font-semibold">Waktu</TableHead>
-                <TableHead className="font-semibold">Aksi</TableHead>
-                <TableHead className="font-semibold">Target</TableHead>
-                <TableHead className="font-semibold">Detail</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredLogs.map((log) => (
-                <TableRow key={log.id} className="hover:bg-slate-50">
-                  <TableCell className="whitespace-nowrap">
-                    <span className="text-sm">{formatDateTime(log.created_at)}</span>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getActionBadgeVariant(log.action)}>
-                      {getActionLabel(log.action)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {log.target_name ? (
-                      <span className="font-medium">{log.target_name}</span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell className="max-w-[300px]">
-                    <p className="text-sm text-muted-foreground truncate" title={log.details || ''}>
-                      {log.details || '-'}
-                    </p>
-                  </TableCell>
+        <>
+          <ScrollArea className="h-[400px]">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="font-semibold">Waktu</TableHead>
+                  <TableHead className="font-semibold">Aksi</TableHead>
+                  <TableHead className="font-semibold">Target</TableHead>
+                  <TableHead className="font-semibold">Detail</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </ScrollArea>
+              </TableHeader>
+              <TableBody>
+                {filteredLogs.map((log) => (
+                  <TableRow key={log.id} className="hover:bg-slate-50">
+                    <TableCell className="whitespace-nowrap">
+                      <span className="text-sm">{formatDateTime(log.created_at)}</span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getActionBadgeVariant(log.action)}>
+                        {getActionLabel(log.action)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {log.target_name ? (
+                        <span className="font-medium">{log.target_name}</span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[300px]">
+                      <p className="text-sm text-muted-foreground truncate" title={log.details || ''}>
+                        {log.details || '-'}
+                      </p>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </ScrollArea>
+          
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="p-4 border-t bg-slate-50">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={onLoadMore}
+                disabled={isFetching}
+              >
+                {isFetching ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 mr-2" />
+                )}
+                Muat Lebih Banyak ({logs.length} dari {totalCount})
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </Card>
   );

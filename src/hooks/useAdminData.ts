@@ -2,11 +2,16 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ExamSession, AuditLog, FilterState } from '@/components/admin/types';
 
+const AUDIT_LOG_PAGE_SIZE = 50;
+
 export const useAdminData = (isAuthenticated: boolean) => {
   const [disqualifiedSessions, setDisqualifiedSessions] = useState<ExamSession[]>([]);
   const [ongoingSessions, setOngoingSessions] = useState<ExamSession[]>([]);
   const [deletedSessions, setDeletedSessions] = useState<ExamSession[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [auditLogPage, setAuditLogPage] = useState(0);
+  const [auditLogTotalCount, setAuditLogTotalCount] = useState(0);
+  const [hasMoreAuditLogs, setHasMoreAuditLogs] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
   const [isFetchingLogs, setIsFetchingLogs] = useState(false);
 
@@ -111,21 +116,37 @@ export const useAdminData = (isAuthenticated: boolean) => {
     }
   }, []);
 
-  const fetchAuditLogs = useCallback(async () => {
+  const fetchAuditLogs = useCallback(async (page: number = 0, append: boolean = false) => {
     setIsFetchingLogs(true);
     try {
+      // First get total count
+      const { count } = await supabase
+        .from('audit_logs')
+        .select('*', { count: 'exact', head: true });
+
+      setAuditLogTotalCount(count || 0);
+
+      // Then fetch paginated data
       const { data, error } = await supabase
         .from('audit_logs')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .range(page * AUDIT_LOG_PAGE_SIZE, (page + 1) * AUDIT_LOG_PAGE_SIZE - 1);
 
       if (error) {
         console.error('Error fetching audit logs:', error);
         return;
       }
 
-      setAuditLogs(data || []);
+      const newLogs = data || [];
+      setHasMoreAuditLogs(newLogs.length === AUDIT_LOG_PAGE_SIZE);
+      
+      if (append) {
+        setAuditLogs(prev => [...prev, ...newLogs]);
+      } else {
+        setAuditLogs(newLogs);
+      }
+      setAuditLogPage(page);
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -133,10 +154,21 @@ export const useAdminData = (isAuthenticated: boolean) => {
     }
   }, []);
 
+  const loadMoreAuditLogs = useCallback(() => {
+    if (!isFetchingLogs && hasMoreAuditLogs) {
+      fetchAuditLogs(auditLogPage + 1, true);
+    }
+  }, [auditLogPage, fetchAuditLogs, hasMoreAuditLogs, isFetchingLogs]);
+
+  const refreshAuditLogs = useCallback(() => {
+    setAuditLogPage(0);
+    fetchAuditLogs(0, false);
+  }, [fetchAuditLogs]);
+
   useEffect(() => {
     if (isAuthenticated) {
       fetchAllSessions();
-      fetchAuditLogs();
+      fetchAuditLogs(0, false);
     }
   }, [isAuthenticated, fetchAllSessions, fetchAuditLogs]);
 
@@ -161,6 +193,13 @@ export const useAdminData = (isAuthenticated: boolean) => {
     // Loading states
     isFetching,
     isFetchingLogs,
+    
+    // Audit log pagination
+    auditLogPage,
+    auditLogTotalCount,
+    hasMoreAuditLogs,
+    loadMoreAuditLogs,
+    refreshAuditLogs,
     
     // Actions
     fetchAllSessions,

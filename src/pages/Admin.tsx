@@ -39,7 +39,10 @@ const Admin = () => {
     isFetching,
     isFetchingLogs,
     fetchAllSessions,
-    fetchAuditLogs,
+    auditLogTotalCount,
+    hasMoreAuditLogs,
+    loadMoreAuditLogs,
+    refreshAuditLogs,
   } = useAdminData(isAuthenticated);
 
   // Dialog states
@@ -317,7 +320,10 @@ const Admin = () => {
             <AdminAuditLog
               logs={auditLogs}
               isFetching={isFetchingLogs}
-              onRefresh={fetchAuditLogs}
+              onRefresh={refreshAuditLogs}
+              totalCount={auditLogTotalCount}
+              hasMore={hasMoreAuditLogs}
+              onLoadMore={loadMoreAuditLogs}
             />
           </TabsContent>
         </Tabs>
