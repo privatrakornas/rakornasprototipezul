@@ -3,10 +3,12 @@ import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, RefreshCw, FileText } from 'lucide-react';
+import { Loader2, RefreshCw, FileText, Download } from 'lucide-react';
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { exportAuditLogsToCSV } from '@/utils/exportCSV';
+import { toast } from 'sonner';
 
 interface AdminAuditLogProps {
   logs: AuditLog[];
@@ -52,6 +54,15 @@ const getActionLabel = (action: string) => {
 };
 
 export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProps) => {
+  const handleExport = () => {
+    if (logs.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    exportAuditLogsToCSV(logs);
+    toast.success(`${logs.length} log berhasil diexport ke CSV`);
+  };
+
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b bg-slate-100">
@@ -60,15 +71,27 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh }: AdminAuditLogProp
             <FileText className="w-5 h-5 text-slate-600" />
             Riwayat Aksi Admin ({logs.length})
           </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onRefresh}
-            disabled={isFetching}
-          >
-            {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-            <span className="ml-2">Refresh</span>
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={logs.length === 0}
+              className="gap-1"
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export CSV</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefresh}
+              disabled={isFetching}
+            >
+              {isFetching ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              <span className="ml-2 hidden sm:inline">Refresh</span>
+            </Button>
+          </div>
         </div>
       </div>
       
