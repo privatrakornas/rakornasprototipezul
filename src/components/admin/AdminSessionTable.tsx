@@ -2,10 +2,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, UserX, Clock, Shield, AlertTriangle, Calendar, Ban, Trash2, RotateCcw } from 'lucide-react';
+import { Loader2, Users, UserX, Clock, Shield, AlertTriangle, Calendar, Ban, Trash2, RotateCcw, Download } from 'lucide-react';
 import { ExamSession } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import { exportSessionsToCSV } from '@/utils/exportCSV';
+import { toast } from 'sonner';
 
 interface AdminSessionTableProps {
   sessions: ExamSession[];
@@ -72,6 +74,7 @@ export const AdminSessionTable = ({
           bgClass: 'bg-blue-50',
           emptyIcon: <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />,
           emptyText: hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada peserta yang sedang ujian',
+          exportFilename: 'peserta-ongoing',
         };
       case 'disqualified':
         return {
@@ -81,6 +84,7 @@ export const AdminSessionTable = ({
           bgClass: 'bg-red-50',
           emptyIcon: <Shield className="w-12 h-12 mx-auto mb-3 text-slate-300" />,
           emptyText: hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada sesi yang didiskualifikasi',
+          exportFilename: 'peserta-diskualifikasi',
         };
       case 'deleted':
         return {
@@ -90,8 +94,18 @@ export const AdminSessionTable = ({
           bgClass: 'bg-amber-50',
           emptyIcon: <Trash2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />,
           emptyText: hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Tidak ada data di sampah',
+          exportFilename: 'peserta-sampah',
         };
     }
+  };
+
+  const handleExport = () => {
+    if (sessions.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    exportSessionsToCSV(sessions, config.exportFilename);
+    toast.success(`${sessions.length} data berhasil diexport ke CSV`);
   };
 
   const config = getTableConfig();
@@ -132,13 +146,25 @@ export const AdminSessionTable = ({
   return (
     <Card className="overflow-hidden">
       <div className={`p-4 border-b ${config.bgClass}`}>
-        <h2 className="font-semibold flex items-center gap-2">
-          {config.icon}
-          {config.title}
-          {config.subtitle && (
-            <span className="text-xs font-normal text-muted-foreground ml-2">{config.subtitle}</span>
-          )}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold flex items-center gap-2">
+            {config.icon}
+            {config.title}
+            {config.subtitle && (
+              <span className="text-xs font-normal text-muted-foreground ml-2">{config.subtitle}</span>
+            )}
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={sessions.length === 0}
+            className="gap-1"
+          >
+            <Download className="w-4 h-4" />
+            <span className="hidden sm:inline">Export CSV</span>
+          </Button>
+        </div>
       </div>
       
       <div className="overflow-x-auto">
