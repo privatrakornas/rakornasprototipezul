@@ -48,7 +48,7 @@ const Admin = () => {
   } = useAdminData(isAuthenticated);
 
   // Admin stats hook for dashboard
-  const { scoreStats, passingStats, dailyTrends, isLoading: isLoadingStats } = useAdminStats(isAuthenticated);
+  const { scoreStats, passingStats, dailyTrends, scoreDistribution, isLoading: isLoadingStats } = useAdminStats(isAuthenticated);
 
   // Dialog states
   const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
@@ -301,6 +301,7 @@ const Admin = () => {
               scoreStats={scoreStats}
               passingStats={passingStats}
               dailyTrends={dailyTrends}
+              scoreDistribution={scoreDistribution}
               isLoading={isLoadingStats}
             />
           </TabsContent>

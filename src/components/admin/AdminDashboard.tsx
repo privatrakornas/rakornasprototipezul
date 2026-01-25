@@ -55,10 +55,24 @@ interface PassingStats {
   passRate: number;
 }
 
+interface ScoreDistribution {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+interface CategoryDistribution {
+  twk: ScoreDistribution[];
+  tiu: ScoreDistribution[];
+  tkp: ScoreDistribution[];
+  total: ScoreDistribution[];
+}
+
 interface AdminDashboardProps {
   scoreStats: ScoreStats;
   passingStats: PassingStats;
   dailyTrends: DailyTrendData[];
+  scoreDistribution: CategoryDistribution;
   isLoading: boolean;
 }
 
@@ -74,11 +88,13 @@ const CHART_COLORS = {
 export const AdminDashboard = ({ 
   scoreStats, 
   passingStats, 
-  dailyTrends, 
+  dailyTrends,
+  scoreDistribution,
   isLoading 
 }: AdminDashboardProps) => {
   const dashboardRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedDistribution, setSelectedDistribution] = useState<'total' | 'twk' | 'tiu' | 'tkp'>('total');
 
   // Format daily trends for chart
   const formattedTrends = useMemo(() => {
@@ -432,6 +448,76 @@ export const AdminDashboard = ({
             </BarChart>
           </ResponsiveContainer>
         )}
+      </Card>
+
+      {/* Score Distribution Histogram */}
+      <Card className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-muted-foreground" />
+            <h3 className="font-semibold">Distribusi Skor (Histogram)</h3>
+          </div>
+          <div className="flex gap-1">
+            {(['total', 'twk', 'tiu', 'tkp'] as const).map((key) => (
+              <Button
+                key={key}
+                variant={selectedDistribution === key ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSelectedDistribution(key)}
+                className="text-xs"
+              >
+                {key.toUpperCase()}
+              </Button>
+            ))}
+          </div>
+        </div>
+        {passingStats.totalFinished === 0 ? (
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            Belum ada data
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={scoreDistribution[selectedDistribution]}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="range" />
+              <YAxis yAxisId="left" orientation="left" />
+              <YAxis yAxisId="right" orientation="right" unit="%" />
+              <Tooltip 
+                formatter={(value: number, name: string) => {
+                  if (name === 'count') return [`${value} peserta`, 'Jumlah'];
+                  if (name === 'percentage') return [`${value}%`, 'Persentase'];
+                  return [value, name];
+                }}
+              />
+              <Legend 
+                formatter={(value) => {
+                  const labels: Record<string, string> = {
+                    count: 'Jumlah Peserta',
+                    percentage: 'Persentase',
+                  };
+                  return labels[value] || value;
+                }}
+              />
+              <Bar 
+                yAxisId="left" 
+                dataKey="count" 
+                fill={
+                  selectedDistribution === 'twk' ? CHART_COLORS.twk :
+                  selectedDistribution === 'tiu' ? CHART_COLORS.tiu :
+                  selectedDistribution === 'tkp' ? CHART_COLORS.tkp :
+                  CHART_COLORS.total
+                } 
+                radius={[4, 4, 0, 0]} 
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
+        <div className="mt-4 text-sm text-muted-foreground text-center">
+          {selectedDistribution === 'total' && 'Distribusi skor total (TWK + TIU + TKP)'}
+          {selectedDistribution === 'twk' && 'Distribusi skor TWK (Passing Grade: 65)'}
+          {selectedDistribution === 'tiu' && 'Distribusi skor TIU (Passing Grade: 80)'}
+          {selectedDistribution === 'tkp' && 'Distribusi skor TKP (Passing Grade: 166)'}
+        </div>
       </Card>
       </div>
     </div>
