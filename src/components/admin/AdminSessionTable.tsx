@@ -2,11 +2,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Users, UserX, Clock, Shield, AlertTriangle, Calendar, Ban, Trash2, RotateCcw, Download } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Loader2, Users, UserX, Clock, Shield, AlertTriangle, Calendar, Ban, Trash2, RotateCcw, Download, FileText } from 'lucide-react';
 import { ExamSession } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { exportSessionsToCSV } from '@/utils/exportCSV';
+import { exportSessionsToCSV, exportSessionsToExcel } from '@/utils/exportCSV';
 import { toast } from 'sonner';
 
 interface AdminSessionTableProps {
@@ -99,13 +105,22 @@ export const AdminSessionTable = ({
     }
   };
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     if (sessions.length === 0) {
       toast.error('Tidak ada data untuk diexport');
       return;
     }
     exportSessionsToCSV(sessions, config.exportFilename);
     toast.success(`${sessions.length} data berhasil diexport ke CSV`);
+  };
+
+  const handleExportExcel = () => {
+    if (sessions.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    exportSessionsToExcel(sessions, config.exportFilename);
+    toast.success(`${sessions.length} data berhasil diexport ke Excel`);
   };
 
   const config = getTableConfig();
@@ -154,16 +169,29 @@ export const AdminSessionTable = ({
               <span className="text-xs font-normal text-muted-foreground ml-2">{config.subtitle}</span>
             )}
           </h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            disabled={sessions.length === 0}
-            className="gap-1"
-          >
-            <Download className="w-4 h-4" />
-            <span className="hidden sm:inline">Export CSV</span>
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={sessions.length === 0}
+                className="gap-1"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Export</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportExcel}>
+                <FileText className="w-4 h-4 mr-2" />
+                Export Excel (.xlsx)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       

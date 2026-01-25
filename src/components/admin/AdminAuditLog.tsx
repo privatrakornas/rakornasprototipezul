@@ -10,8 +10,14 @@ import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown 
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { exportAuditLogsToCSV } from '@/utils/exportCSV';
+import { exportAuditLogsToCSV, exportAuditLogsToExcel } from '@/utils/exportCSV';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 interface AdminAuditLogProps {
   logs: AuditLog[];
@@ -89,13 +95,22 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
     setSearchQuery('');
   };
 
-  const handleExport = () => {
+  const handleExportCSV = () => {
     if (filteredLogs.length === 0) {
       toast.error('Tidak ada data untuk diexport');
       return;
     }
     exportAuditLogsToCSV(filteredLogs);
     toast.success(`${filteredLogs.length} log berhasil diexport ke CSV`);
+  };
+
+  const handleExportExcel = () => {
+    if (filteredLogs.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    exportAuditLogsToExcel(filteredLogs);
+    toast.success(`${filteredLogs.length} log berhasil diexport ke Excel`);
   };
 
   // Get unique actions for filter dropdown
@@ -113,16 +128,29 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
             Riwayat Aksi Admin ({filteredLogs.length}/{logs.length} dimuat, {totalCount} total)
           </h2>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              disabled={filteredLogs.length === 0}
-              className="gap-1"
-            >
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Export CSV</span>
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={filteredLogs.length === 0}
+                  className="gap-1"
+                >
+                  <Download className="w-4 h-4" />
+                  <span className="hidden sm:inline">Export</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Export Excel (.xlsx)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="outline"
               size="sm"
