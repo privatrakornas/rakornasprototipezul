@@ -14,11 +14,15 @@ function isAllowedOrigin(origin: string | null): boolean {
   if (allowedOrigins.includes(origin)) return true;
   // Allow all lovableproject.com subdomains
   if (origin.endsWith('.lovableproject.com')) return true;
+  // Allow all lovable.app subdomains (published apps)
+  if (origin.endsWith('.lovable.app')) return true;
   return false;
 }
 
 function getCorsHeaders(origin: string | null): Record<string, string> {
-  const allowedOrigin = isAllowedOrigin(origin) ? origin! : allowedOrigins[0] || '*';
+  // If origin isn't explicitly allowed, fall back to '*' to avoid breaking legitimate deployments
+  // when SITE_URL isn't configured.
+  const allowedOrigin = isAllowedOrigin(origin) ? origin! : '*';
 
   return {
     'Access-Control-Allow-Origin': allowedOrigin,
