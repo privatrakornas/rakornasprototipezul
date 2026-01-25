@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   BarChart, 
@@ -13,21 +14,23 @@ import {
   PieChart,
   Pie,
   Cell,
-  LineChart,
-  Line,
 } from 'recharts';
 import { 
   TrendingUp, 
-  Award, 
-  Target, 
   Users, 
   CheckCircle, 
   XCircle,
   BarChart3,
   PieChart as PieChartIcon,
+  Download,
+  Loader2,
+  FileText,
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 interface DailyTrendData {
   date: string;
@@ -74,6 +77,9 @@ export const AdminDashboard = ({
   dailyTrends, 
   isLoading 
 }: AdminDashboardProps) => {
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
   // Format daily trends for chart
   const formattedTrends = useMemo(() => {
     return dailyTrends.map(d => ({
@@ -110,6 +116,78 @@ export const AdminDashboard = ({
     },
   ], [scoreStats]);
 
+  const handleExportPDF = async () => {
+    if (!dashboardRef.current) return;
+
+    setIsExporting(true);
+    toast.info('Mempersiapkan PDF...');
+
+    try {
+      const element = dashboardRef.current;
+      
+      // Create canvas from the dashboard
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+
+      // Calculate PDF dimensions (A4 landscape for better fit)
+      const pdf = new jsPDF({
+        orientation: imgWidth > imgHeight ? 'landscape' : 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      // Add header
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Laporan Dashboard Statistik Ujian', pdfWidth / 2, 15, { align: 'center' });
+      
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Digenerate: ${format(new Date(), 'dd MMMM yyyy HH:mm', { locale: localeId })}`, pdfWidth / 2, 22, { align: 'center' });
+
+      // Calculate image dimensions to fit page
+      const marginTop = 30;
+      const marginX = 10;
+      const availableWidth = pdfWidth - (marginX * 2);
+      const availableHeight = pdfHeight - marginTop - 10;
+
+      const ratio = Math.min(availableWidth / imgWidth, availableHeight / imgHeight);
+      const scaledWidth = imgWidth * ratio;
+      const scaledHeight = imgHeight * ratio;
+
+      const xOffset = (pdfWidth - scaledWidth) / 2;
+
+      pdf.addImage(imgData, 'PNG', xOffset, marginTop, scaledWidth, scaledHeight);
+
+      // Add footer
+      pdf.setFontSize(8);
+      pdf.setTextColor(128);
+      pdf.text('Laporan ini digenerate otomatis dari sistem Admin Panel', pdfWidth / 2, pdfHeight - 5, { align: 'center' });
+
+      // Download PDF
+      const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
+      pdf.save(`laporan-statistik-${timestamp}.pdf`);
+
+      toast.success('PDF berhasil diexport');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Gagal mengexport PDF');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -137,7 +215,33 @@ export const AdminDashboard = ({
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats Cards */}
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <Button
+          onClick={handleExportPDF}
+          disabled={isExporting || passingStats.totalFinished === 0}
+          className="gap-2"
+        >
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <FileText className="w-4 h-4" />
+          )}
+          Export PDF
+        </Button>
+      </div>
+
+      {/* Dashboard Content - wrapped in ref for PDF export */}
+      <div ref={dashboardRef} className="space-y-6 bg-white p-4 rounded-lg">
+        {/* Report Title for PDF */}
+        <div className="text-center pb-2 border-b print:block hidden">
+          <h1 className="text-xl font-bold">Laporan Statistik Ujian</h1>
+          <p className="text-sm text-muted-foreground">
+            {format(new Date(), 'dd MMMM yyyy', { locale: localeId })}
+          </p>
+        </div>
+
+        {/* Summary Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
           <div className="flex items-center gap-3">
@@ -329,6 +433,7 @@ export const AdminDashboard = ({
           </ResponsiveContainer>
         )}
       </Card>
+      </div>
     </div>
   );
 };
