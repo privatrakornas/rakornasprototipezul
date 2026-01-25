@@ -24,10 +24,24 @@ interface PassingStats {
   passRate: number;
 }
 
+interface ScoreDistribution {
+  range: string;
+  count: number;
+  percentage: number;
+}
+
+interface CategoryDistribution {
+  twk: ScoreDistribution[];
+  tiu: ScoreDistribution[];
+  tkp: ScoreDistribution[];
+  total: ScoreDistribution[];
+}
+
 interface AdminStats {
   scoreStats: ScoreStats;
   passingStats: PassingStats;
   dailyTrends: DailyTrendData[];
+  scoreDistribution: CategoryDistribution;
   isLoading: boolean;
 }
 
@@ -35,6 +49,62 @@ interface AdminStats {
 const PASSING_TWK = 65;
 const PASSING_TIU = 80;
 const PASSING_TKP = 166;
+
+// Score distribution bins
+const TOTAL_SCORE_BINS = [
+  { min: 0, max: 199, label: '0-199' },
+  { min: 200, max: 249, label: '200-249' },
+  { min: 250, max: 299, label: '250-299' },
+  { min: 300, max: 349, label: '300-349' },
+  { min: 350, max: 399, label: '350-399' },
+  { min: 400, max: 449, label: '400-449' },
+  { min: 450, max: 500, label: '450-500' },
+];
+
+const TWK_BINS = [
+  { min: 0, max: 39, label: '0-39' },
+  { min: 40, max: 54, label: '40-54' },
+  { min: 55, max: 64, label: '55-64' },
+  { min: 65, max: 79, label: '65-79' },
+  { min: 80, max: 100, label: '80-100' },
+];
+
+const TIU_BINS = [
+  { min: 0, max: 49, label: '0-49' },
+  { min: 50, max: 69, label: '50-69' },
+  { min: 70, max: 79, label: '70-79' },
+  { min: 80, max: 99, label: '80-99' },
+  { min: 100, max: 150, label: '100+' },
+];
+
+const TKP_BINS = [
+  { min: 0, max: 125, label: '0-125' },
+  { min: 126, max: 150, label: '126-150' },
+  { min: 151, max: 165, label: '151-165' },
+  { min: 166, max: 185, label: '166-185' },
+  { min: 186, max: 225, label: '186+' },
+];
+
+const calculateDistribution = (
+  sessions: any[],
+  scoreKey: string,
+  bins: { min: number; max: number; label: string }[]
+): ScoreDistribution[] => {
+  const total = sessions.length;
+  
+  return bins.map(bin => {
+    const count = sessions.filter(s => {
+      const score = s[scoreKey];
+      return score >= bin.min && score <= bin.max;
+    }).length;
+    
+    return {
+      range: bin.label,
+      count,
+      percentage: total > 0 ? Math.round((count / total) * 100) : 0,
+    };
+  });
+};
 
 export const useAdminStats = (isAuthenticated: boolean): AdminStats => {
   const [finishedSessions, setFinishedSessions] = useState<any[]>([]);
@@ -118,7 +188,6 @@ export const useAdminStats = (isAuthenticated: boolean): AdminStats => {
   const dailyTrends = useMemo<DailyTrendData[]>(() => {
     if (finishedSessions.length === 0) return [];
 
-    // Group by date
     const dateMap = new Map<string, { total: number; lulus: number; tidakLulus: number }>();
 
     finishedSessions.forEach(session => {
@@ -140,7 +209,6 @@ export const useAdminStats = (isAuthenticated: boolean): AdminStats => {
       dateMap.set(dateStr, existing);
     });
 
-    // Convert to array and sort by date
     const result: DailyTrendData[] = [];
     dateMap.forEach((value, date) => {
       result.push({
@@ -151,13 +219,23 @@ export const useAdminStats = (isAuthenticated: boolean): AdminStats => {
       });
     });
 
-    return result.sort((a, b) => a.date.localeCompare(b.date)).slice(-14); // Last 14 days
+    return result.sort((a, b) => a.date.localeCompare(b.date)).slice(-14);
+  }, [finishedSessions]);
+
+  const scoreDistribution = useMemo<CategoryDistribution>(() => {
+    return {
+      twk: calculateDistribution(finishedSessions, 'twk_score', TWK_BINS),
+      tiu: calculateDistribution(finishedSessions, 'tiu_score', TIU_BINS),
+      tkp: calculateDistribution(finishedSessions, 'tkp_score', TKP_BINS),
+      total: calculateDistribution(finishedSessions, 'total_score', TOTAL_SCORE_BINS),
+    };
   }, [finishedSessions]);
 
   return {
     scoreStats,
     passingStats,
     dailyTrends,
+    scoreDistribution,
     isLoading,
   };
 };
