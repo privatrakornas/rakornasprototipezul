@@ -6,7 +6,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown, Settings2 } from 'lucide-react';
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -70,6 +72,8 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
   const [dateTo, setDateTo] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [showIpAddress, setShowIpAddress] = useState(false);
+  const [showUserAgent, setShowUserAgent] = useState(false);
 
   // Filter logs based on date range, action, and search query
   const filteredLogs = useMemo(() => {
@@ -121,10 +125,10 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
 
   return (
     <Card className="overflow-hidden">
-      <div className="p-4 border-b bg-slate-100">
+      <div className="p-4 border-b bg-muted">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold flex items-center gap-2">
-            <FileText className="w-5 h-5 text-slate-600" />
+            <FileText className="w-5 h-5 text-muted-foreground" />
             Riwayat Aksi Admin ({filteredLogs.length}/{logs.length} dimuat, {totalCount} total)
           </h2>
           <div className="flex items-center gap-2">
@@ -237,16 +241,40 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
               <span>Menampilkan {filteredLogs.length} dari {logs.length} log yang dimuat ({totalCount} total)</span>
             </div>
           )}
+
+          {/* Column visibility toggles */}
+          <div className="flex items-center gap-4 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Settings2 className="w-4 h-4" />
+              <span>Kolom:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="show-ip" 
+                checked={showIpAddress} 
+                onCheckedChange={(checked) => setShowIpAddress(checked === true)}
+              />
+              <Label htmlFor="show-ip" className="text-sm cursor-pointer">IP Address</Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox 
+                id="show-ua" 
+                checked={showUserAgent} 
+                onCheckedChange={(checked) => setShowUserAgent(checked === true)}
+              />
+              <Label htmlFor="show-ua" className="text-sm cursor-pointer">User Agent</Label>
+            </div>
+          </div>
         </div>
       </div>
       
       {isFetching ? (
         <div className="p-8 flex justify-center">
-          <Loader2 className="w-8 h-8 animate-spin text-slate-400" />
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
       ) : filteredLogs.length === 0 ? (
-        <div className="p-8 text-center text-slate-500">
-          <FileText className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+        <div className="p-8 text-center text-muted-foreground">
+          <FileText className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
           <p>{hasActiveFilters ? 'Tidak ada log sesuai filter' : 'Belum ada riwayat aksi'}</p>
         </div>
       ) : (
@@ -254,16 +282,18 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
           <ScrollArea className="h-[400px]">
             <Table>
               <TableHeader>
-                <TableRow className="bg-slate-50">
+                <TableRow className="bg-muted/50">
                   <TableHead className="font-semibold">Waktu</TableHead>
                   <TableHead className="font-semibold">Aksi</TableHead>
                   <TableHead className="font-semibold">Target</TableHead>
                   <TableHead className="font-semibold">Detail</TableHead>
+                  {showIpAddress && <TableHead className="font-semibold">IP Address</TableHead>}
+                  {showUserAgent && <TableHead className="font-semibold min-w-[200px]">User Agent</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredLogs.map((log) => (
-                  <TableRow key={log.id} className="hover:bg-slate-50">
+                  <TableRow key={log.id} className="hover:bg-muted/30">
                     <TableCell className="whitespace-nowrap">
                       <span className="text-sm">{formatDateTime(log.created_at)}</span>
                     </TableCell>
@@ -284,6 +314,18 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
                         {log.details || '-'}
                       </p>
                     </TableCell>
+                    {showIpAddress && (
+                      <TableCell className="whitespace-nowrap">
+                        <span className="text-sm font-mono">{log.ip_address || '-'}</span>
+                      </TableCell>
+                    )}
+                    {showUserAgent && (
+                      <TableCell className="max-w-[250px]">
+                        <p className="text-xs text-muted-foreground truncate" title={log.user_agent || ''}>
+                          {log.user_agent || '-'}
+                        </p>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -292,7 +334,7 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
           
           {/* Load More Button */}
           {hasMore && (
-            <div className="p-4 border-t bg-slate-50">
+            <div className="p-4 border-t bg-muted/50">
               <Button
                 variant="outline"
                 className="w-full"
