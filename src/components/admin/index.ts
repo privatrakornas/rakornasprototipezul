@@ -6,3 +6,4 @@ export * from './AdminFilters';
 export * from './AdminSessionTable';
 export * from './AdminAuditLog';
 export * from './AdminDialogs';
+export * from './AdminDashboard';

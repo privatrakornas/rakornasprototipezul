@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 import { useAdminData } from '@/hooks/useAdminData';
+import { useAdminStats } from '@/hooks/useAdminStats';
 import {
   ExamSession,
   AdminLogin,
@@ -14,6 +15,7 @@ import {
   AdminFilters,
   AdminSessionTable,
   AdminAuditLog,
+  AdminDashboard,
   DisqualifyDialog,
   DeleteDialog,
   RestoreDialog,
@@ -44,6 +46,9 @@ const Admin = () => {
     loadMoreAuditLogs,
     refreshAuditLogs,
   } = useAdminData(isAuthenticated);
+
+  // Admin stats hook for dashboard
+  const { scoreStats, passingStats, dailyTrends, isLoading: isLoadingStats } = useAdminStats(isAuthenticated);
 
   // Dialog states
   const [disqualifyDialogOpen, setDisqualifyDialogOpen] = useState(false);
@@ -271,8 +276,12 @@ const Admin = () => {
           }}
         />
 
-        <Tabs defaultValue="monitoring" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+        <Tabs defaultValue="dashboard" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+            <TabsTrigger value="dashboard" className="gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </TabsTrigger>
             <TabsTrigger value="monitoring" className="gap-2">
               <Users className="w-4 h-4" />
               Monitoring
@@ -286,6 +295,15 @@ const Admin = () => {
               Audit Log ({auditLogs.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="dashboard">
+            <AdminDashboard
+              scoreStats={scoreStats}
+              passingStats={passingStats}
+              dailyTrends={dailyTrends}
+              isLoading={isLoadingStats}
+            />
+          </TabsContent>
 
           <TabsContent value="monitoring" className="space-y-6">
             <AdminSessionTable
