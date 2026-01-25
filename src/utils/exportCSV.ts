@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
+import * as XLSX from 'xlsx';
 import { ExamSession, AuditLog } from '@/components/admin/types';
 
 const formatDateTime = (dateStr: string | null): string => {
@@ -14,7 +15,6 @@ const formatDateTime = (dateStr: string | null): string => {
 const escapeCSV = (value: string | number | null | undefined): string => {
   if (value === null || value === undefined) return '';
   const str = String(value);
-  // Escape quotes and wrap in quotes if contains comma, newline, or quotes
   if (str.includes(',') || str.includes('\n') || str.includes('"')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
@@ -22,7 +22,7 @@ const escapeCSV = (value: string | number | null | undefined): string => {
 };
 
 const downloadCSV = (content: string, filename: string) => {
-  const BOM = '\uFEFF'; // UTF-8 BOM for Excel compatibility
+  const BOM = '\uFEFF';
   const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -34,39 +34,49 @@ const downloadCSV = (content: string, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
+const downloadExcel = (workbook: XLSX.WorkBook, filename: string) => {
+  XLSX.writeFile(workbook, filename);
+};
+
+// Session export functions
+const getSessionHeaders = () => [
+  'Nama',
+  'Status',
+  'TWK',
+  'TIU',
+  'TKP',
+  'Total Skor',
+  'Progress',
+  'Durasi (menit)',
+  'Alasan Diskualifikasi',
+  'Mulai',
+  'Selesai',
+  'Device ID',
+];
+
+const mapSessionToRow = (session: ExamSession) => [
+  session.name,
+  session.status,
+  session.twk_score,
+  session.tiu_score,
+  session.tkp_score,
+  session.total_score,
+  `${session.answered_count}/${session.total_questions}`,
+  session.duration_minutes ?? '-',
+  session.disqualification_reason ?? '-',
+  formatDateTime(session.started_at),
+  formatDateTime(session.finished_at),
+  session.device_fingerprint,
+];
+
 export const exportSessionsToCSV = (
   sessions: ExamSession[],
   filename: string = 'data-peserta'
 ) => {
-  const headers = [
-    'Nama',
-    'Status',
-    'TWK',
-    'TIU',
-    'TKP',
-    'Total Skor',
-    'Progress',
-    'Durasi (menit)',
-    'Alasan Diskualifikasi',
-    'Mulai',
-    'Selesai',
-    'Device ID',
-  ];
-
-  const rows = sessions.map(session => [
-    escapeCSV(session.name),
-    escapeCSV(session.status),
-    escapeCSV(session.twk_score),
-    escapeCSV(session.tiu_score),
-    escapeCSV(session.tkp_score),
-    escapeCSV(session.total_score),
-    escapeCSV(`${session.answered_count}/${session.total_questions}`),
-    escapeCSV(session.duration_minutes),
-    escapeCSV(session.disqualification_reason),
-    escapeCSV(formatDateTime(session.started_at)),
-    escapeCSV(formatDateTime(session.finished_at)),
-    escapeCSV(session.device_fingerprint),
-  ]);
+  const headers = getSessionHeaders();
+  const rows = sessions.map(session => 
+    mapSessionToRow(session).map(v => escapeCSV(v))
+  );
 
   const csvContent = [
     headers.join(','),
@@ -77,29 +87,67 @@ export const exportSessionsToCSV = (
   downloadCSV(csvContent, `${filename}-${timestamp}.csv`);
 };
 
+export const exportSessionsToExcel = (
+  sessions: ExamSession[],
+  filename: string = 'data-peserta'
+) => {
+  const headers = getSessionHeaders();
+  const rows = sessions.map(mapSessionToRow);
+  
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  
+  // Set column widths
+  worksheet['!cols'] = [
+    { wch: 25 }, // Nama
+    { wch: 15 }, // Status
+    { wch: 8 },  // TWK
+    { wch: 8 },  // TIU
+    { wch: 8 },  // TKP
+    { wch: 12 }, // Total Skor
+    { wch: 10 }, // Progress
+    { wch: 15 }, // Durasi
+    { wch: 30 }, // Alasan
+    { wch: 20 }, // Mulai
+    { wch: 20 }, // Selesai
+    { wch: 15 }, // Device ID
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Data Peserta');
+
+  const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
+  downloadExcel(workbook, `${filename}-${timestamp}.xlsx`);
+};
+
+// Audit log export functions
+const getAuditLogHeaders = () => [
+  'Waktu',
+  'Aksi',
+  'Target ID',
+  'Target Nama',
+  'Detail',
+  'IP Address',
+  'User Agent',
+];
+
+const mapAuditLogToRow = (log: AuditLog) => [
+  formatDateTime(log.created_at),
+  log.action,
+  log.target_id ?? '-',
+  log.target_name ?? '-',
+  log.details ?? '-',
+  log.ip_address ?? '-',
+  log.user_agent ?? '-',
+];
+
 export const exportAuditLogsToCSV = (
   logs: AuditLog[],
   filename: string = 'audit-log'
 ) => {
-  const headers = [
-    'Waktu',
-    'Aksi',
-    'Target ID',
-    'Target Nama',
-    'Detail',
-    'IP Address',
-    'User Agent',
-  ];
-
-  const rows = logs.map(log => [
-    escapeCSV(formatDateTime(log.created_at)),
-    escapeCSV(log.action),
-    escapeCSV(log.target_id),
-    escapeCSV(log.target_name),
-    escapeCSV(log.details),
-    escapeCSV(log.ip_address),
-    escapeCSV(log.user_agent),
-  ]);
+  const headers = getAuditLogHeaders();
+  const rows = logs.map(log => 
+    mapAuditLogToRow(log).map(v => escapeCSV(v))
+  );
 
   const csvContent = [
     headers.join(','),
@@ -108,4 +156,31 @@ export const exportAuditLogsToCSV = (
 
   const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
   downloadCSV(csvContent, `${filename}-${timestamp}.csv`);
+};
+
+export const exportAuditLogsToExcel = (
+  logs: AuditLog[],
+  filename: string = 'audit-log'
+) => {
+  const headers = getAuditLogHeaders();
+  const rows = logs.map(mapAuditLogToRow);
+  
+  const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+  
+  // Set column widths
+  worksheet['!cols'] = [
+    { wch: 20 }, // Waktu
+    { wch: 20 }, // Aksi
+    { wch: 36 }, // Target ID
+    { wch: 25 }, // Target Nama
+    { wch: 40 }, // Detail
+    { wch: 15 }, // IP Address
+    { wch: 50 }, // User Agent
+  ];
+
+  const workbook = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Audit Log');
+
+  const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
+  downloadExcel(workbook, `${filename}-${timestamp}.xlsx`);
 };
