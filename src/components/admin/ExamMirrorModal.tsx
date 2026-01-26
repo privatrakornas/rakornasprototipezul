@@ -12,6 +12,7 @@ import {
   Eye, 
   Radio, 
   CheckCircle, 
+  XCircle,
   User,
   ZoomIn,
   BookOpen,
@@ -364,6 +365,7 @@ const ExamMirrorModal = ({
                     )}
 
                     {/* Answer Options - Read Only with Visual Indicator */}
+                    {/* In Review Mode: Show correct (green) / incorrect (red) highlights */}
                     <div className="flex-1 min-h-0 overflow-y-auto">
                       {question.optionImageUrls ? (
                         // Image-based options
@@ -371,22 +373,61 @@ const ExamMirrorModal = ({
                           {question.options.map((opt) => {
                             const isSelected = answers[question.id] === opt.key;
                             const optionImage = question.optionImageUrls?.[opt.key as 'A' | 'B' | 'C' | 'D' | 'E'];
+                            
+                            // Review mode highlighting logic
+                            const isTKP = question.category === 'TKP';
+                            const isCorrectAnswer = isTKP 
+                              ? opt.score === 5 // TKP: best answer has 5 points
+                              : question.correctAnswer === opt.key; // TWK/TIU: check correctAnswer
+                            const isWrongSelection = isReviewMode && isSelected && !isCorrectAnswer && !isTKP;
+                            const showCorrectHighlight = isReviewMode && isCorrectAnswer;
+                            
+                            // Determine styling based on review state
+                            let borderClass = 'border-border';
+                            let bgClass = '';
+                            let badgeClass = 'bg-muted';
+                            
+                            if (isReviewMode) {
+                              if (isWrongSelection) {
+                                // Wrong answer selected - red
+                                borderClass = 'border-red-500';
+                                bgClass = 'bg-red-50 dark:bg-red-900/30';
+                                badgeClass = 'bg-red-500 text-white';
+                              } else if (isSelected && (isCorrectAnswer || isTKP)) {
+                                // Correct answer selected - green
+                                borderClass = 'border-green-500';
+                                bgClass = 'bg-green-50 dark:bg-green-900/30';
+                                badgeClass = 'bg-green-500 text-white';
+                              } else if (showCorrectHighlight && !isSelected) {
+                                // Show correct answer (not selected) - subtle green outline
+                                borderClass = 'border-green-400 border-dashed';
+                                bgClass = 'bg-green-50/50 dark:bg-green-900/20';
+                              }
+                            } else if (isSelected) {
+                              // Live mode - just show selection
+                              borderClass = 'border-green-500';
+                              bgClass = 'bg-green-50 dark:bg-green-900/30';
+                              badgeClass = 'bg-green-500 text-white';
+                            }
+                            
                             return (
                               <div 
                                 key={opt.key} 
-                                className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${
-                                  isSelected 
-                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-500/30' 
-                                    : 'border-border'
-                                }`}
+                                className={`relative flex flex-col items-center p-2 rounded-lg border-2 transition-all ${borderClass} ${bgClass} ${
+                                  isSelected && !isWrongSelection ? 'ring-2 ring-green-500/30' : ''
+                                } ${isWrongSelection ? 'ring-2 ring-red-500/30' : ''}`}
                               >
-                                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center font-semibold text-[10px] ${
-                                  isSelected ? 'bg-green-500 text-white' : 'bg-muted'
-                                }`}>
+                                <span className={`absolute top-1 left-1 w-5 h-5 rounded-full flex items-center justify-center font-semibold text-[10px] ${badgeClass}`}>
                                   {opt.key}
                                 </span>
-                                {isSelected && (
+                                {isSelected && !isWrongSelection && (
                                   <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-green-500" />
+                                )}
+                                {isWrongSelection && (
+                                  <XCircle className="absolute top-1 right-1 w-4 h-4 text-red-500" />
+                                )}
+                                {showCorrectHighlight && !isSelected && (
+                                  <CheckCircle className="absolute top-1 right-1 w-4 h-4 text-green-400" />
                                 )}
                                 {optionImage && (
                                   <img 
@@ -394,6 +435,14 @@ const ExamMirrorModal = ({
                                     alt={`Pilihan ${opt.key}`}
                                     className="w-full h-auto rounded mt-4 max-h-20 object-contain"
                                   />
+                                )}
+                                {/* TKP score badge in review mode */}
+                                {isReviewMode && isTKP && opt.score !== undefined && (
+                                  <span className={`absolute bottom-1 right-1 text-[9px] font-bold px-1 rounded ${
+                                    opt.score === 5 ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+                                  }`}>
+                                    {opt.score}p
+                                  </span>
                                 )}
                               </div>
                             );
@@ -404,25 +453,65 @@ const ExamMirrorModal = ({
                         <div className="space-y-2">
                           {question.options.map((opt) => {
                             const isSelected = answers[question.id] === opt.key;
+                            
+                            // Review mode highlighting logic
+                            const isTKP = question.category === 'TKP';
+                            const isCorrectAnswer = isTKP 
+                              ? opt.score === 5 // TKP: best answer has 5 points
+                              : question.correctAnswer === opt.key; // TWK/TIU: check correctAnswer
+                            const isWrongSelection = isReviewMode && isSelected && !isCorrectAnswer && !isTKP;
+                            const showCorrectHighlight = isReviewMode && isCorrectAnswer;
+                            
+                            // Determine styling based on review state
+                            let borderClass = 'border-border bg-card';
+                            let badgeClass = 'bg-muted';
+                            
+                            if (isReviewMode) {
+                              if (isWrongSelection) {
+                                // Wrong answer selected - red
+                                borderClass = 'border-red-500 bg-red-50 dark:bg-red-900/30 ring-2 ring-red-500/30';
+                                badgeClass = 'bg-red-500 text-white';
+                              } else if (isSelected && (isCorrectAnswer || isTKP)) {
+                                // Correct answer selected - green
+                                borderClass = 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-500/30';
+                                badgeClass = 'bg-green-500 text-white';
+                              } else if (showCorrectHighlight && !isSelected) {
+                                // Show correct answer (not selected) - subtle green outline
+                                borderClass = 'border-green-400 border-dashed bg-green-50/50 dark:bg-green-900/20';
+                              }
+                            } else if (isSelected) {
+                              // Live mode - just show selection
+                              borderClass = 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-500/30';
+                              badgeClass = 'bg-green-500 text-white';
+                            }
+                            
                             return (
                               <div
                                 key={opt.key}
-                                className={`flex items-start gap-3 p-2.5 md:p-3 rounded-lg border-2 transition-all ${
-                                  isSelected 
-                                    ? 'border-green-500 bg-green-50 dark:bg-green-900/30 ring-2 ring-green-500/30' 
-                                    : 'border-border bg-card'
-                                }`}
+                                className={`flex items-start gap-3 p-2.5 md:p-3 rounded-lg border-2 transition-all ${borderClass}`}
                               >
-                                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold flex-shrink-0 text-sm ${
-                                  isSelected ? 'bg-green-500 text-white' : 'bg-muted'
-                                }`}>
+                                <span className={`w-6 h-6 rounded-full flex items-center justify-center font-semibold flex-shrink-0 text-sm ${badgeClass}`}>
                                   {opt.key}
                                 </span>
                                 <span className="text-sm md:text-base flex-1">
                                   <LatexText>{opt.text}</LatexText>
+                                  {/* TKP score in review mode */}
+                                  {isReviewMode && isTKP && opt.score !== undefined && (
+                                    <span className={`ml-2 text-xs font-bold px-1.5 py-0.5 rounded ${
+                                      opt.score === 5 ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+                                    }`}>
+                                      {opt.score} poin
+                                    </span>
+                                  )}
                                 </span>
-                                {isSelected && (
+                                {isSelected && !isWrongSelection && (
                                   <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                                )}
+                                {isWrongSelection && (
+                                  <XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                                )}
+                                {showCorrectHighlight && !isSelected && (
+                                  <CheckCircle className="w-5 h-5 text-green-400 flex-shrink-0" />
                                 )}
                               </div>
                             );
