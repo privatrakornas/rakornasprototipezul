@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { questions } from '@/data/questions';
 
 const TOTAL_QUESTIONS = 110;
+const QUESTION_POSITION_DEBOUNCE_MS = 800; // Debounce for question position sync
 
 interface ScoreUpdate {
   twk_score: number;
@@ -50,6 +51,11 @@ export const useExamSession = () => {
   const updateQueueRef = useRef<ScoreUpdate | null>(null);
   const isUpdatingRef = useRef(false);
   const updateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Question position tracking refs
+  const questionPositionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingQuestionPositionRef = useRef<number | null>(null);
+  const isUpdatingPositionRef = useRef(false);
 
   // Create session when exam starts
   const createSession = useCallback(async (name: string, deviceFingerprint: string, startedAt: string) => {
@@ -291,6 +297,49 @@ export const useExamSession = () => {
     return setSessionStatus('aborted');
   }, [setSessionStatus]);
 
+  // Debounced question position sync - Non-blocking background update
+  const syncQuestionPosition = useCallback(async (questionIndex: number) => {
+    const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
+    if (!sessionId) return;
+
+    // Store the pending position
+    pendingQuestionPositionRef.current = questionIndex + 1; // 1-indexed for DB
+
+    // Clear existing timeout (debounce)
+    if (questionPositionTimeoutRef.current) {
+      clearTimeout(questionPositionTimeoutRef.current);
+    }
+
+    // Debounce the update - wait for user to stop navigating
+    questionPositionTimeoutRef.current = setTimeout(async () => {
+      // Skip if already updating or no pending position
+      if (isUpdatingPositionRef.current || pendingQuestionPositionRef.current === null) return;
+
+      isUpdatingPositionRef.current = true;
+      const positionToSync = pendingQuestionPositionRef.current;
+      pendingQuestionPositionRef.current = null;
+
+      try {
+        // Silent background update - no error toasts to participant
+        await supabase
+          .from('exam_sessions')
+          .update({ current_question_index: positionToSync })
+          .eq('id', sessionId);
+        
+        // Don't log to avoid console spam
+      } catch {
+        // Silently ignore - this is non-critical background sync
+      } finally {
+        isUpdatingPositionRef.current = false;
+
+        // Process any queued position updates
+        if (pendingQuestionPositionRef.current !== null) {
+          syncQuestionPosition(pendingQuestionPositionRef.current - 1);
+        }
+      }
+    }, QUESTION_POSITION_DEBOUNCE_MS);
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     // Check for existing session
@@ -303,6 +352,9 @@ export const useExamSession = () => {
       if (updateTimeoutRef.current) {
         clearTimeout(updateTimeoutRef.current);
       }
+      if (questionPositionTimeoutRef.current) {
+        clearTimeout(questionPositionTimeoutRef.current);
+      }
     };
   }, []);
 
@@ -310,7 +362,8 @@ export const useExamSession = () => {
     createSession,
     updateScores,
     finishSession,
-    abortSession, // Renamed from abandonSession - uses 'aborted' status
+    abortSession,
+    syncQuestionPosition, // New: debounced question position sync
     sessionId: sessionIdRef.current,
   };
 };

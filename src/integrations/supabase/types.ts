@@ -96,6 +96,7 @@ export type Database = {
         Row: {
           answered_count: number
           created_at: string
+          current_question_index: number
           deleted_at: string | null
           device_fingerprint: string
           disqualification_reason: string | null
@@ -115,6 +116,7 @@ export type Database = {
         Insert: {
           answered_count?: number
           created_at?: string
+          current_question_index?: number
           deleted_at?: string | null
           device_fingerprint: string
           disqualification_reason?: string | null
@@ -134,6 +136,7 @@ export type Database = {
         Update: {
           answered_count?: number
           created_at?: string
+          current_question_index?: number
           deleted_at?: string | null
           device_fingerprint?: string
           disqualification_reason?: string | null
