@@ -247,46 +247,69 @@ const ExamMirrorModal = ({
   isLive = false 
 }: ExamMirrorModalProps) => {
   const [localQuestion, setLocalQuestion] = useState(0); // Admin's viewing position
-  const [isFollowingParticipant, setIsFollowingParticipant] = useState(true); // Auto-follow toggle
+  const [isFollowingParticipant, setIsFollowingParticipant] = useState(true); // Auto-follow toggle (default ON)
   const [zoomImage, setZoomImage] = useState<string | null>(null);
-  const prevQuestionIndexRef = useRef<number>(0);
+  const [hasInitializedPosition, setHasInitializedPosition] = useState(false); // Track if initial sync done
   
   const { 
     session, 
     answers, 
     isLoading, 
-    currentQuestionIndex, // Realtime synced from participant
+    currentQuestionIndex, // Realtime synced from participant (0-indexed)
     setCurrentQuestionIndex 
   } = useExamMirror(open ? sessionId : null);
   
   // Determine if this is review mode (finished session)
   const isReviewMode = session?.status !== 'ongoing';
   
-  // For live mode with auto-follow, sync admin's view to participant's position
+  // CRITICAL FIX: Force sync admin view to participant's position in live mode
+  // This effect runs whenever currentQuestionIndex changes from realtime subscription
   useEffect(() => {
-    if (!isReviewMode && isFollowingParticipant && currentQuestionIndex !== prevQuestionIndexRef.current) {
-      console.log('[ExamMirror] Auto-syncing to participant position:', currentQuestionIndex);
+    // Skip if modal is closed, loading, or review mode
+    if (!open || isLoading || isReviewMode) return;
+    
+    // Auto-follow is ON: immediately sync to participant's position
+    if (isFollowingParticipant) {
+      console.log('[ExamMirror] FORCE SYNC to participant position:', currentQuestionIndex);
       setLocalQuestion(currentQuestionIndex);
-      prevQuestionIndexRef.current = currentQuestionIndex;
     }
-  }, [currentQuestionIndex, isReviewMode, isFollowingParticipant]);
+    
+    // Mark as initialized after first data load
+    if (!hasInitializedPosition && !isLoading) {
+      setHasInitializedPosition(true);
+    }
+  }, [currentQuestionIndex, open, isLoading, isReviewMode, isFollowingParticipant, hasInitializedPosition]);
+  
+  // Initial sync when modal opens and data first loads
+  useEffect(() => {
+    if (open && !isLoading && !hasInitializedPosition && session) {
+      console.log('[ExamMirror] Initial sync to position:', currentQuestionIndex);
+      setLocalQuestion(currentQuestionIndex);
+      setHasInitializedPosition(true);
+    }
+  }, [open, isLoading, hasInitializedPosition, session, currentQuestionIndex]);
   
   const question = questions[localQuestion];
 
   const handleNavClick = useCallback((idx: number) => {
     setLocalQuestion(idx);
-    // If admin manually navigates, temporarily disable auto-follow in live mode
+    // If admin manually navigates, disable auto-follow in live mode
     if (!isReviewMode && isFollowingParticipant) {
+      console.log('[ExamMirror] Admin manually navigated - disabling auto-follow');
       setIsFollowingParticipant(false);
     }
   }, [isReviewMode, isFollowingParticipant]);
 
-  // Reset state when modal opens
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {
-      setLocalQuestion(0);
+      // Modal opened - reset to follow mode, wait for data to initialize position
       setIsFollowingParticipant(true);
-      prevQuestionIndexRef.current = 0;
+      setHasInitializedPosition(false);
+      setLocalQuestion(0); // Temporary until data loads
+    } else {
+      // Modal closed - reset everything
+      setHasInitializedPosition(false);
     }
   }, [open]);
 
@@ -294,9 +317,11 @@ const ExamMirrorModal = ({
   const toggleFollowParticipant = useCallback(() => {
     if (!isFollowingParticipant) {
       // Re-enable and immediately sync to participant's current position
+      console.log('[ExamMirror] Re-enabling auto-follow, syncing to:', currentQuestionIndex);
       setIsFollowingParticipant(true);
       setLocalQuestion(currentQuestionIndex);
     } else {
+      console.log('[ExamMirror] Disabling auto-follow');
       setIsFollowingParticipant(false);
     }
   }, [isFollowingParticipant, currentQuestionIndex]);

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { questions } from '@/data/questions';
 
 const TOTAL_QUESTIONS = 110;
-const QUESTION_POSITION_DEBOUNCE_MS = 800; // Debounce for question position sync
+const QUESTION_POSITION_DEBOUNCE_MS = 300; // Reduced debounce for faster admin sync (was 800ms)
 
 interface ScoreUpdate {
   twk_score: number;
@@ -320,13 +320,15 @@ export const useExamSession = () => {
       pendingQuestionPositionRef.current = null;
 
       try {
-        // Silent background update - no error toasts to participant
-        await supabase
+        // Background update - logs for debugging
+        const { error } = await supabase
           .from('exam_sessions')
           .update({ current_question_index: positionToSync })
           .eq('id', sessionId);
         
-        // Don't log to avoid console spam
+        if (!error) {
+          console.log('[ExamSession] Question position synced to DB:', positionToSync);
+        }
       } catch {
         // Silently ignore - this is non-critical background sync
       } finally {
