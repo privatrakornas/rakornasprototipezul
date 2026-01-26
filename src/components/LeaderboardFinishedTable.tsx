@@ -1,7 +1,27 @@
-import { memo } from 'react';
+import { memo, useState, useMemo, useCallback } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
-import { Trophy, Medal, Award, CheckCircle, XCircle, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Trophy, 
+  Medal, 
+  Award, 
+  CheckCircle, 
+  XCircle, 
+  Users, 
+  Search, 
+  Filter, 
+  X,
+  ChevronDown 
+} from 'lucide-react';
 import { format } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import type { LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import { isLulus } from '@/hooks/useRealtimeLeaderboard';
 
@@ -129,30 +149,57 @@ const FinishedRow = memo(({ entry, rank }: { entry: LeaderboardEntry; rank: numb
 
 FinishedRow.displayName = 'FinishedRow';
 
+type StatusFilter = 'all' | 'lulus' | 'tidak_lulus';
+
 const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) => {
-  // Filter ONLY finished entries - explicitly check for 'finished' status
-  // This excludes: 'ongoing' (Live Score), 'aborted', 'abandoned', 'disqualified'
-  // Sort by: lulus first, then total_score desc, then duration_minutes asc (faster is better)
-  const finishedData = data
-    .filter(e => {
-      // CRITICAL: Only show 'finished' status in history table
-      // This ensures aborted/abandoned/disqualified entries don't appear here either
-      return e.status === 'finished';
-    })
-    .sort((a, b) => {
-      const aLulus = isLulus(a);
-      const bLulus = isLulus(b);
-      if (aLulus !== bLulus) return aLulus ? -1 : 1;
-      if (b.total_score !== a.total_score) return b.total_score - a.total_score;
-      // Same score: faster duration wins
-      const aDur = a.duration_minutes ?? 999;
-      const bDur = b.duration_minutes ?? 999;
-      if (aDur !== bDur) return aDur - bDur;
-      // Fallback to sub-scores
-      if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
-      if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
-      return b.twk_score - a.twk_score;
-    });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+
+  // Filter and sort data
+  const finishedData = useMemo(() => {
+    return data
+      .filter(e => {
+        // Status filter: Only 'finished'
+        if (e.status !== 'finished') return false;
+        
+        // Search filter
+        if (searchQuery) {
+          const query = searchQuery.toLowerCase();
+          if (!e.name.toLowerCase().includes(query)) return false;
+        }
+        
+        // Passing status filter
+        if (statusFilter !== 'all') {
+          const lulus = isLulus(e);
+          if (statusFilter === 'lulus' && !lulus) return false;
+          if (statusFilter === 'tidak_lulus' && lulus) return false;
+        }
+        
+        return true;
+      })
+      .sort((a, b) => {
+        const aLulus = isLulus(a);
+        const bLulus = isLulus(b);
+        if (aLulus !== bLulus) return aLulus ? -1 : 1;
+        if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+        const aDur = a.duration_minutes ?? 999;
+        const bDur = b.duration_minutes ?? 999;
+        if (aDur !== bDur) return aDur - bDur;
+        if (b.tkp_score !== a.tkp_score) return b.tkp_score - a.tkp_score;
+        if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
+        return b.twk_score - a.twk_score;
+      });
+  }, [data, searchQuery, statusFilter]);
+
+  // Total finished count (before filters)
+  const totalFinished = useMemo(() => data.filter(e => e.status === 'finished').length, [data]);
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('all');
+  }, []);
+
+  const hasActiveFilters = searchQuery || statusFilter !== 'all';
 
   return (
     <div className="flex flex-col h-full">
@@ -163,15 +210,78 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
           <h3 className="font-bold text-sm">Riwayat Selesai</h3>
         </div>
         <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
-          {finishedData.length} peserta
+          {finishedData.length}{hasActiveFilters ? `/${totalFinished}` : ''} peserta
         </span>
       </div>
       
-      {/* Table with fixed height and scroll - 80vh for large datasets */}
-      <div className="flex-1 overflow-y-auto border border-t-0 rounded-b-lg bg-background" style={{ maxHeight: '80vh' }}>
+      {/* Search and Filter Bar */}
+      <div className="px-2 py-2 border-x bg-muted/30 flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[120px]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Cari nama..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-7 pl-7 text-xs"
+          />
+        </div>
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+              <Filter className="w-3 h-3" />
+              {statusFilter === 'all' ? 'Semua' : statusFilter === 'lulus' ? 'Lulus' : 'Tidak Lulus'}
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === 'all'}
+              onCheckedChange={() => setStatusFilter('all')}
+            >
+              Semua Status
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === 'lulus'}
+              onCheckedChange={() => setStatusFilter('lulus')}
+            >
+              <CheckCircle className="w-3 h-3 mr-1.5 text-green-600" />
+              Lulus
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={statusFilter === 'tidak_lulus'}
+              onCheckedChange={() => setStatusFilter('tidak_lulus')}
+            >
+              <XCircle className="w-3 h-3 mr-1.5 text-red-600" />
+              Tidak Lulus
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {hasActiveFilters && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+            onClick={clearFilters}
+          >
+            <X className="w-3 h-3" />
+            Reset
+          </Button>
+        )}
+      </div>
+      
+      {/* Table with fixed height and scroll */}
+      <div className="flex-1 overflow-y-auto border border-t-0 bg-background" style={{ maxHeight: '70vh' }}>
         {finishedData.length === 0 ? (
-          <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-            Belum ada peserta selesai
+          <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
+            <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Belum ada peserta selesai'}</p>
+            {hasActiveFilters && (
+              <Button variant="link" size="sm" onClick={clearFilters} className="text-xs">
+                Reset Filter
+              </Button>
+            )}
           </div>
         ) : (
           <Table>
