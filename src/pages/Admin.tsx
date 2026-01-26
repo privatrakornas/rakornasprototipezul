@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText, BarChart3 } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3, Monitor } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -16,6 +16,7 @@ import {
   AdminSessionTable,
   AdminAuditLog,
   AdminDashboard,
+  AdminLeaderboardMirror,
   DisqualifyDialog,
   DeleteDialog,
   RestoreDialog,
@@ -276,15 +277,19 @@ const Admin = () => {
           }}
         />
 
-        <Tabs defaultValue="dashboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-4 lg:w-[800px]">
+        <Tabs defaultValue="leaderboard" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-5 lg:w-[1000px]">
+            <TabsTrigger value="leaderboard" className="gap-2">
+              <Monitor className="w-4 h-4" />
+              Leaderboard
+            </TabsTrigger>
             <TabsTrigger value="dashboard" className="gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="gap-2">
               <Users className="w-4 h-4" />
-              Monitoring
+              Sesi Aktif
             </TabsTrigger>
             <TabsTrigger value="trash" className="gap-2">
               <Trash2 className="w-4 h-4" />
@@ -295,6 +300,10 @@ const Admin = () => {
               Audit Log ({auditLogs.length})
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="leaderboard">
+            <AdminLeaderboardMirror />
+          </TabsContent>
 
           <TabsContent value="dashboard">
             <AdminDashboard
