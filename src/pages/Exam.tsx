@@ -95,7 +95,7 @@ const Exam = () => {
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
   const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { createSession, updateScores, finishSession, abortSession } = useExamSession();
+  const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition } = useExamSession();
   
   // ============ CONTENT PROTECTION - ANTI-CHEAT ============
   // Disable right-click, copy-paste, keyboard shortcuts, etc.
@@ -426,7 +426,9 @@ const Exam = () => {
   const handleNavClick = useCallback((idx: number) => {
     setCurrentQuestion(idx);
     setNavOpen(false);
-  }, []);
+    // Sync question position to database (debounced, non-blocking)
+    syncQuestionPosition(idx);
+  }, [syncQuestionPosition]);
 
   const question = questions[currentQuestion];
 
@@ -655,7 +657,11 @@ const Exam = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                onClick={() => {
+                  const newIdx = Math.max(0, currentQuestion - 1);
+                  setCurrentQuestion(newIdx);
+                  syncQuestionPosition(newIdx);
+                }}
                 disabled={currentQuestion === 0}
                 className="border-primary text-primary hover:bg-primary/10 h-8 text-xs"
               >
@@ -663,7 +669,11 @@ const Exam = () => {
               </Button>
               <Button
                 size="sm"
-                onClick={() => setCurrentQuestion(currentQuestion === 109 ? 0 : currentQuestion + 1)}
+                onClick={() => {
+                  const newIdx = currentQuestion === 109 ? 0 : currentQuestion + 1;
+                  setCurrentQuestion(newIdx);
+                  syncQuestionPosition(newIdx);
+                }}
                 className="bg-primary hover:bg-primary/90 h-8 text-xs"
               >
                 Next <ChevronRight className="w-3 h-3 ml-0.5" />

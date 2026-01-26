@@ -15,6 +15,7 @@ export interface MirrorSession {
   answered_count: number;
   total_questions: number;
   duration_minutes: number | null;
+  current_question_index: number; // Track participant's current question
 }
 
 export interface UserAnswer {
@@ -29,6 +30,7 @@ export const useExamMirror = (sessionId: string | null) => {
   const [session, setSession] = useState<MirrorSession | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0); // 0-indexed for UI
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
 
   // Fetch session data and answers
@@ -65,6 +67,10 @@ export const useExamMirror = (sessionId: string | null) => {
         name = profile?.name || `Peserta (${sessionData.device_fingerprint.slice(0, 8)})`;
       }
 
+      // Get current_question_index (1-indexed in DB, convert to 0-indexed)
+      const dbQuestionIndex = (sessionData as any).current_question_index || 1;
+      setCurrentQuestionIndex(dbQuestionIndex - 1);
+
       setSession({
         id: sessionData.id,
         name,
@@ -78,6 +84,7 @@ export const useExamMirror = (sessionId: string | null) => {
         answered_count: sessionData.answered_count || 0,
         total_questions: sessionData.total_questions || 110,
         duration_minutes: sessionData.duration_minutes,
+        current_question_index: dbQuestionIndex,
       });
 
       // Fetch all answers for this session
@@ -117,12 +124,16 @@ export const useExamMirror = (sessionId: string | null) => {
     }));
   }, [sessionId]);
 
-  // Handle realtime session updates
+  // Handle realtime session updates (including current_question_index)
   const handleSessionChange = useCallback((payload: any) => {
     const { new: newRecord } = payload;
     if (!newRecord || newRecord.id !== sessionId) return;
 
-    console.log('[ExamMirror] Session update:', newRecord.status, 'Score:', newRecord.total_score);
+    // Check if question position changed
+    if (newRecord.current_question_index !== undefined) {
+      console.log('[ExamMirror] Question position update:', newRecord.current_question_index);
+      setCurrentQuestionIndex(newRecord.current_question_index - 1); // Convert to 0-indexed
+    }
 
     setSession(prev => prev ? {
       ...prev,
@@ -134,6 +145,7 @@ export const useExamMirror = (sessionId: string | null) => {
       answered_count: newRecord.answered_count ?? prev.answered_count,
       finished_at: newRecord.finished_at ?? prev.finished_at,
       duration_minutes: newRecord.duration_minutes ?? prev.duration_minutes,
+      current_question_index: newRecord.current_question_index ?? prev.current_question_index,
     } : null);
   }, [sessionId]);
 
@@ -184,6 +196,8 @@ export const useExamMirror = (sessionId: string | null) => {
     answers,
     isLoading,
     questions,
+    currentQuestionIndex, // Realtime synced question position (0-indexed)
+    setCurrentQuestionIndex, // Allow manual override for review mode
     refetch: fetchSessionData,
   };
 };

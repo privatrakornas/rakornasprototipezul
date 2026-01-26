@@ -1,4 +1,4 @@
-import { useState, memo, useEffect, useCallback } from 'react';
+import { useState, memo, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,13 +13,14 @@ import {
   Radio, 
   CheckCircle, 
   User,
-  ZoomIn 
+  ZoomIn,
+  BookOpen,
+  MousePointer
 } from 'lucide-react';
 import { useExamMirror } from '@/hooks/useExamMirror';
 import LatexText from '@/components/LatexText';
 import { Skeleton } from '@/components/ui/skeleton';
 import { questions } from '@/data/questions';
-import { format } from 'date-fns';
 
 interface ExamMirrorModalProps {
   open: boolean;
@@ -29,21 +30,25 @@ interface ExamMirrorModalProps {
   isLive?: boolean;
 }
 
-// Memoized Question Nav Grid for Mirror View (read-only)
+// Memoized Question Nav Grid for Mirror View
 interface MirrorNavGridProps {
   answers: Record<number, string>;
   currentQuestion: number;
+  participantQuestion?: number; // The question participant is viewing (for live mode)
   onNavClick: (idx: number) => void;
+  isReviewMode?: boolean;
 }
 
-const MirrorNavGrid = memo(({ answers, currentQuestion, onNavClick }: MirrorNavGridProps) => {
+const MirrorNavGrid = memo(({ answers, currentQuestion, participantQuestion, onNavClick, isReviewMode }: MirrorNavGridProps) => {
   const isAnswered = (id: number) => answers[id] !== undefined;
 
   return (
     <div className="flex flex-col h-full">
       <div className="px-2 py-1.5 border-b flex-shrink-0">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="font-semibold text-xs">Navigasi Soal</h3>
+          <h3 className="font-semibold text-xs">
+            {isReviewMode ? 'Review Mode' : 'Live Tracking'}
+          </h3>
           <div className="flex items-center gap-2 text-[10px]">
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded bg-green-500" />
@@ -62,28 +67,51 @@ const MirrorNavGrid = memo(({ answers, currentQuestion, onNavClick }: MirrorNavG
           {questions.map((q, idx) => {
             const answered = isAnswered(q.id);
             const selectedLetter = answers[q.id];
+            const isParticipantViewing = !isReviewMode && participantQuestion === idx;
+            const isAdminViewing = currentQuestion === idx;
+            
             return (
               <button
                 key={q.id}
                 onClick={() => onNavClick(idx)}
-                className={`w-full h-full min-h-[24px] max-h-[36px] rounded font-bold border transition-all flex flex-col items-center justify-center hover:opacity-80 ${
-                  currentQuestion === idx
-                    ? 'bg-primary text-primary-foreground border-primary'
+                className={`w-full h-full min-h-[24px] max-h-[36px] rounded font-bold border transition-all flex flex-col items-center justify-center hover:opacity-80 relative ${
+                  isAdminViewing
+                    ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/50'
+                    : isParticipantViewing
+                    ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
                     : answered
                     ? 'bg-green-500 text-white border-green-500'
                     : 'bg-muted border-border text-muted-foreground'
                 }`}
-                title={selectedLetter ? `Soal ${q.id}: ${selectedLetter}` : `Soal ${q.id}`}
+                title={`Soal ${q.id}${selectedLetter ? `: ${selectedLetter}` : ''}${isParticipantViewing ? ' (Peserta di sini)' : ''}`}
               >
                 <span className="text-[8px] leading-none opacity-70">{q.id}</span>
                 {answered && (
                   <span className="text-xs leading-none font-extrabold">{selectedLetter}</span>
+                )}
+                {/* Indicator for participant's current position */}
+                {isParticipantViewing && !isAdminViewing && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border border-white flex items-center justify-center">
+                    <MousePointer className="w-2 h-2 text-amber-900" />
+                  </div>
                 )}
               </button>
             );
           })}
         </div>
       </div>
+      
+      {/* Legend for live mode */}
+      {!isReviewMode && (
+        <div className="px-2 py-1.5 border-t flex-shrink-0 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <div className="w-2.5 h-2.5 rounded bg-amber-500 animate-pulse" />
+              <span>Posisi Peserta</span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
@@ -130,23 +158,60 @@ const ExamMirrorModal = ({
   sessionName,
   isLive = false 
 }: ExamMirrorModalProps) => {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
+  const [localQuestion, setLocalQuestion] = useState(0); // Admin's viewing position
+  const [isFollowingParticipant, setIsFollowingParticipant] = useState(true); // Auto-follow toggle
   const [zoomImage, setZoomImage] = useState<string | null>(null);
+  const prevQuestionIndexRef = useRef<number>(0);
   
-  const { session, answers, isLoading } = useExamMirror(open ? sessionId : null);
+  const { 
+    session, 
+    answers, 
+    isLoading, 
+    currentQuestionIndex, // Realtime synced from participant
+    setCurrentQuestionIndex 
+  } = useExamMirror(open ? sessionId : null);
   
-  const question = questions[currentQuestion];
+  // Determine if this is review mode (finished session)
+  const isReviewMode = session?.status !== 'ongoing';
+  
+  // For live mode with auto-follow, sync admin's view to participant's position
+  useEffect(() => {
+    if (!isReviewMode && isFollowingParticipant && currentQuestionIndex !== prevQuestionIndexRef.current) {
+      console.log('[ExamMirror] Auto-syncing to participant position:', currentQuestionIndex);
+      setLocalQuestion(currentQuestionIndex);
+      prevQuestionIndexRef.current = currentQuestionIndex;
+    }
+  }, [currentQuestionIndex, isReviewMode, isFollowingParticipant]);
+  
+  const question = questions[localQuestion];
 
   const handleNavClick = useCallback((idx: number) => {
-    setCurrentQuestion(idx);
-  }, []);
+    setLocalQuestion(idx);
+    // If admin manually navigates, temporarily disable auto-follow in live mode
+    if (!isReviewMode && isFollowingParticipant) {
+      setIsFollowingParticipant(false);
+    }
+  }, [isReviewMode, isFollowingParticipant]);
 
-  // Reset to first question when modal opens
+  // Reset state when modal opens
   useEffect(() => {
     if (open) {
-      setCurrentQuestion(0);
+      setLocalQuestion(0);
+      setIsFollowingParticipant(true);
+      prevQuestionIndexRef.current = 0;
     }
   }, [open]);
+
+  // Toggle auto-follow function
+  const toggleFollowParticipant = useCallback(() => {
+    if (!isFollowingParticipant) {
+      // Re-enable and immediately sync to participant's current position
+      setIsFollowingParticipant(true);
+      setLocalQuestion(currentQuestionIndex);
+    } else {
+      setIsFollowingParticipant(false);
+    }
+  }, [isFollowingParticipant, currentQuestionIndex]);
 
   return (
     <>
@@ -184,20 +249,35 @@ const ExamMirrorModal = ({
                       </div>
                       <div className="flex items-center gap-2 text-white/70 text-xs">
                         <span>{session?.answered_count || 0}/{session?.total_questions || 110} soal</span>
-                        {isLive && session?.status === 'ongoing' && (
+                        {!isReviewMode && session?.status === 'ongoing' && (
                           <Badge variant="destructive" className="animate-pulse text-[10px] py-0 px-1.5 gap-1">
                             <Radio className="w-2.5 h-2.5" />
                             LIVE
                           </Badge>
                         )}
-                        {session?.status === 'finished' && (
-                          <Badge variant="secondary" className="bg-green-500/20 text-green-100 text-[10px] py-0 px-1.5 gap-1">
-                            <CheckCircle className="w-2.5 h-2.5" />
-                            Selesai
+                        {isReviewMode && (
+                          <Badge variant="secondary" className="bg-accent/20 text-accent-foreground text-[10px] py-0 px-1.5 gap-1">
+                            <BookOpen className="w-2.5 h-2.5" />
+                            Review Mode
                           </Badge>
                         )}
                       </div>
                     </div>
+                    
+                    {/* Auto-follow toggle for live mode */}
+                    {!isReviewMode && session?.status === 'ongoing' && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={toggleFollowParticipant}
+                        className={`text-white hover:bg-white/20 text-xs h-7 px-2 ${
+                          isFollowingParticipant ? 'bg-white/20' : 'opacity-70'
+                        }`}
+                      >
+                        <MousePointer className="w-3 h-3 mr-1" />
+                        {isFollowingParticipant ? 'Mengikuti' : 'Tidak Mengikuti'}
+                      </Button>
+                    )}
                   </div>
                   
                   {/* Center: Score Display */}
@@ -351,23 +431,29 @@ const ExamMirrorModal = ({
                       )}
                     </div>
 
-                    {/* Navigation Buttons */}
+                    {/* Navigation Buttons - Admin controls for review or manual navigation */}
                     <div className="flex justify-between gap-2 mt-3 pt-3 border-t flex-shrink-0">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
-                        disabled={currentQuestion === 0}
+                        onClick={() => {
+                          setLocalQuestion(Math.max(0, localQuestion - 1));
+                          if (!isReviewMode) setIsFollowingParticipant(false);
+                        }}
+                        disabled={localQuestion === 0}
                         className="h-9"
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" /> Prev
                       </Button>
                       <span className="flex items-center text-sm text-muted-foreground">
-                        {currentQuestion + 1} / 110
+                        {localQuestion + 1} / 110
                       </span>
                       <Button
                         size="sm"
-                        onClick={() => setCurrentQuestion(currentQuestion === 109 ? 0 : currentQuestion + 1)}
+                        onClick={() => {
+                          setLocalQuestion(localQuestion === 109 ? 0 : localQuestion + 1);
+                          if (!isReviewMode) setIsFollowingParticipant(false);
+                        }}
                         className="h-9"
                       >
                         Next <ChevronRight className="w-4 h-4 ml-1" />
@@ -380,8 +466,10 @@ const ExamMirrorModal = ({
                 <aside className="hidden lg:flex w-64 bg-card border-l flex-col flex-shrink-0">
                   <MirrorNavGrid 
                     answers={answers} 
-                    currentQuestion={currentQuestion} 
-                    onNavClick={handleNavClick} 
+                    currentQuestion={localQuestion}
+                    participantQuestion={isReviewMode ? undefined : currentQuestionIndex}
+                    onNavClick={handleNavClick}
+                    isReviewMode={isReviewMode}
                   />
                 </aside>
               </div>
