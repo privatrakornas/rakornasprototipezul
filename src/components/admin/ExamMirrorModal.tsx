@@ -1,4 +1,4 @@
-import { useState, memo, useEffect, useCallback, useRef } from 'react';
+import { useState, memo, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import { useExamMirror } from '@/hooks/useExamMirror';
 import LatexText from '@/components/LatexText';
 import { Skeleton } from '@/components/ui/skeleton';
 import { questions } from '@/data/questions';
+import ReviewStatsPanel from './ReviewStatsPanel';
 
 interface ExamMirrorModalProps {
   open: boolean;
@@ -31,17 +32,43 @@ interface ExamMirrorModalProps {
   isLive?: boolean;
 }
 
+// Helper function to check if answer is correct for a question
+const isAnswerCorrect = (questionId: number, answerKey: string | undefined): boolean | null => {
+  if (!answerKey) return null;
+  const q = questions.find(q => q.id === questionId);
+  if (!q) return null;
+  
+  if (q.category === 'TKP') {
+    // TKP: Check if it's the best answer (5 points)
+    const selectedOption = q.options.find(opt => opt.key === answerKey);
+    return selectedOption?.score === 5;
+  } else {
+    // TWK/TIU: Check correctAnswer
+    return q.correctAnswer === answerKey;
+  }
+};
+
 // Memoized Question Nav Grid for Mirror View
 interface MirrorNavGridProps {
   answers: Record<number, string>;
   currentQuestion: number;
-  participantQuestion?: number; // The question participant is viewing (for live mode)
+  participantQuestion?: number;
   onNavClick: (idx: number) => void;
   isReviewMode?: boolean;
 }
 
 const MirrorNavGrid = memo(({ answers, currentQuestion, participantQuestion, onNavClick, isReviewMode }: MirrorNavGridProps) => {
   const isAnswered = (id: number) => answers[id] !== undefined;
+
+  // Pre-compute correctness for review mode
+  const correctnessMap = useMemo(() => {
+    if (!isReviewMode) return new Map<number, boolean | null>();
+    const map = new Map<number, boolean | null>();
+    questions.forEach(q => {
+      map.set(q.id, isAnswerCorrect(q.id, answers[q.id]));
+    });
+    return map;
+  }, [answers, isReviewMode]);
 
   return (
     <div className="flex flex-col h-full">
@@ -51,14 +78,39 @@ const MirrorNavGrid = memo(({ answers, currentQuestion, participantQuestion, onN
             {isReviewMode ? 'Review Mode' : 'Live Tracking'}
           </h3>
           <div className="flex items-center gap-2 text-[10px]">
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-green-500" />
-              <span className="font-medium">{Object.keys(answers).length}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2.5 h-2.5 rounded bg-muted border" />
-              <span className="font-medium">{110 - Object.keys(answers).length}</span>
-            </div>
+            {isReviewMode ? (
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded bg-primary" />
+                  <span className="font-medium">
+                    {Array.from(correctnessMap.values()).filter(v => v === true).length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded bg-destructive" />
+                  <span className="font-medium">
+                    {Array.from(correctnessMap.values()).filter(v => v === false).length}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded bg-muted border" />
+                  <span className="font-medium">
+                    {Array.from(correctnessMap.values()).filter(v => v === null).length}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded bg-primary" />
+                  <span className="font-medium">{Object.keys(answers).length}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-2.5 h-2.5 rounded bg-muted border" />
+                  <span className="font-medium">{110 - Object.keys(answers).length}</span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -70,21 +122,31 @@ const MirrorNavGrid = memo(({ answers, currentQuestion, participantQuestion, onN
             const selectedLetter = answers[q.id];
             const isParticipantViewing = !isReviewMode && participantQuestion === idx;
             const isAdminViewing = currentQuestion === idx;
+            const correctness = correctnessMap.get(q.id);
+            
+            // Determine button color based on mode and correctness
+            let bgClass = 'bg-muted border-border text-muted-foreground';
+            
+            if (isAdminViewing) {
+              bgClass = 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/50';
+            } else if (isParticipantViewing) {
+              bgClass = 'bg-amber-500 text-white border-amber-500 animate-pulse';
+            } else if (isReviewMode && answered) {
+              if (correctness === true) {
+                bgClass = 'bg-primary text-primary-foreground border-primary';
+              } else if (correctness === false) {
+                bgClass = 'bg-destructive text-destructive-foreground border-destructive';
+              }
+            } else if (answered) {
+              bgClass = 'bg-primary text-primary-foreground border-primary';
+            }
             
             return (
               <button
                 key={q.id}
                 onClick={() => onNavClick(idx)}
-                className={`w-full h-full min-h-[24px] max-h-[36px] rounded font-bold border transition-all flex flex-col items-center justify-center hover:opacity-80 relative ${
-                  isAdminViewing
-                    ? 'bg-primary text-primary-foreground border-primary ring-2 ring-primary/50'
-                    : isParticipantViewing
-                    ? 'bg-amber-500 text-white border-amber-500 animate-pulse'
-                    : answered
-                    ? 'bg-green-500 text-white border-green-500'
-                    : 'bg-muted border-border text-muted-foreground'
-                }`}
-                title={`Soal ${q.id}${selectedLetter ? `: ${selectedLetter}` : ''}${isParticipantViewing ? ' (Peserta di sini)' : ''}`}
+                className={`w-full h-full min-h-[24px] max-h-[36px] rounded font-bold border transition-all flex flex-col items-center justify-center hover:opacity-80 relative ${bgClass}`}
+                title={`Soal ${q.id}${selectedLetter ? `: ${selectedLetter}` : ''}${isParticipantViewing ? ' (Peserta di sini)' : ''}${isReviewMode && correctness !== null ? (correctness ? ' ✓' : ' ✗') : ''}`}
               >
                 <span className="text-[8px] leading-none opacity-70">{q.id}</span>
                 {answered && (
@@ -96,23 +158,47 @@ const MirrorNavGrid = memo(({ answers, currentQuestion, participantQuestion, onN
                     <MousePointer className="w-2 h-2 text-amber-900" />
                   </div>
                 )}
+                {/* Review mode: small correctness indicator */}
+                {isReviewMode && answered && !isAdminViewing && (
+                  <div className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${
+                    correctness ? 'bg-primary' : 'bg-destructive'
+                  } flex items-center justify-center`}>
+                    {correctness ? (
+                      <CheckCircle className="w-2 h-2 text-primary-foreground" />
+                    ) : (
+                      <XCircle className="w-2 h-2 text-destructive-foreground" />
+                    )}
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
       </div>
       
-      {/* Legend for live mode */}
-      {!isReviewMode && (
-        <div className="px-2 py-1.5 border-t flex-shrink-0 text-[10px] text-muted-foreground">
-          <div className="flex items-center gap-2">
+      {/* Legend */}
+      <div className="px-2 py-1.5 border-t flex-shrink-0 text-[10px] text-muted-foreground">
+        <div className="flex items-center gap-2 flex-wrap">
+          {!isReviewMode && (
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded bg-amber-500 animate-pulse" />
               <span>Posisi Peserta</span>
             </div>
-          </div>
+          )}
+          {isReviewMode && (
+            <>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded bg-primary" />
+                <span>Benar</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2.5 h-2.5 rounded bg-destructive" />
+                <span>Salah</span>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 });
@@ -519,6 +605,11 @@ const ExamMirrorModal = ({
                         </div>
                       )}
                     </div>
+                    
+                    {/* Review Stats Panel - Only in Review Mode */}
+                    {isReviewMode && (
+                      <ReviewStatsPanel answers={answers} />
+                    )}
 
                     {/* Navigation Buttons - Admin controls for review or manual navigation */}
                     <div className="flex justify-between gap-2 mt-3 pt-3 border-t flex-shrink-0">
