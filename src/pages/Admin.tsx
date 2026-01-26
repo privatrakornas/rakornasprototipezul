@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText, BarChart3, Monitor } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -21,14 +21,18 @@ import {
   DisqualifyDialog,
   DeleteDialog,
   RestoreDialog,
+  NotificationHistoryPanel,
+  ExamConfigPanel,
 } from '@/components/admin';
+import { BatchActionsPanel } from '@/components/admin/BatchActionsPanel';
 
 const Admin = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   
   // Enable admin notifications when authenticated
-  useAdminNotifications({ enabled: isAuthenticated });
+  const { notifications, clearNotifications, notificationCount } = useAdminNotifications({ enabled: isAuthenticated });
 
   // Admin data hook
   const {
@@ -282,26 +286,39 @@ const Admin = () => {
         />
 
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-5 lg:w-[1000px]">
+          <TabsList className="grid w-full grid-cols-7 lg:w-[1200px]">
             <TabsTrigger value="leaderboard" className="gap-2">
               <Monitor className="w-4 h-4" />
-              Leaderboard
+              <span className="hidden sm:inline">Leaderboard</span>
             </TabsTrigger>
             <TabsTrigger value="dashboard" className="gap-2">
               <BarChart3 className="w-4 h-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="gap-2">
               <Users className="w-4 h-4" />
-              Sesi Aktif
+              <span className="hidden sm:inline">Sesi Aktif</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-2 relative">
+              <Bell className="w-4 h-4" />
+              <span className="hidden sm:inline">Notifikasi</span>
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-[10px] rounded-full w-4 h-4 flex items-center justify-center">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings className="w-4 h-4" />
+              <span className="hidden sm:inline">Pengaturan</span>
             </TabsTrigger>
             <TabsTrigger value="trash" className="gap-2">
               <Trash2 className="w-4 h-4" />
-              Sampah ({filteredDeletedSessions.length})
+              <span className="hidden sm:inline">Sampah</span>
             </TabsTrigger>
             <TabsTrigger value="audit" className="gap-2">
               <FileText className="w-4 h-4" />
-              Audit Log ({auditLogs.length})
+              <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
           </TabsList>
 
@@ -320,6 +337,14 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="monitoring" className="space-y-6">
+            {/* Batch Actions Panel */}
+            <BatchActionsPanel
+              sessions={filteredOngoingSessions}
+              selectedIds={selectedSessionIds}
+              onSelectionChange={setSelectedSessionIds}
+              onActionComplete={fetchAllSessions}
+            />
+
             <AdminSessionTable
               sessions={filteredOngoingSessions}
               type="ongoing"
@@ -336,6 +361,21 @@ const Admin = () => {
               hasActiveFilters={hasActiveFilters}
               onDelete={handleSoftDelete}
             />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <div className="max-w-2xl mx-auto">
+              <NotificationHistoryPanel
+                notifications={notifications}
+                onClearAll={clearNotifications}
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="settings">
+            <div className="max-w-2xl mx-auto">
+              <ExamConfigPanel />
+            </div>
           </TabsContent>
 
           <TabsContent value="trash">

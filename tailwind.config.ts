@@ -96,11 +96,22 @@ export default {
           "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--cyan) / 0.4)" },
           "50%": { boxShadow: "0 0 20px 10px hsl(var(--cyan) / 0.2)" },
         },
+        "flash-highlight": {
+          "0%": { backgroundColor: "hsl(var(--primary) / 0.3)", transform: "scale(1.02)" },
+          "50%": { backgroundColor: "hsl(var(--primary) / 0.5)", transform: "scale(1.01)" },
+          "100%": { backgroundColor: "transparent", transform: "scale(1)" },
+        },
+        "border-pulse": {
+          "0%, 100%": { borderColor: "hsl(var(--primary))", boxShadow: "0 0 0 0 hsl(var(--primary) / 0.4)" },
+          "50%": { borderColor: "hsl(var(--primary) / 0.7)", boxShadow: "0 0 8px 2px hsl(var(--primary) / 0.3)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        "flash-highlight": "flash-highlight 0.5s ease-out",
+        "border-pulse": "border-pulse 1s ease-in-out infinite",
       },
     },
   },

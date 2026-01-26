@@ -1,6 +1,16 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+export interface NotificationItem {
+  id: string;
+  type: 'start' | 'finish' | 'disqualify';
+  name: string;
+  message: string;
+  description?: string;
+  isLulus?: boolean;
+  timestamp: Date;
+}
 
 interface NotificationOptions {
   enabled?: boolean;
@@ -18,6 +28,22 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
   const { enabled = true, onNewParticipant, onParticipantFinished } = options;
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const processedSessionsRef = useRef<Set<string>>(new Set());
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+
+  // Add notification to history
+  const addNotification = useCallback((notification: Omit<NotificationItem, 'id' | 'timestamp'>) => {
+    const newNotif: NotificationItem = {
+      ...notification,
+      id: `${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      timestamp: new Date(),
+    };
+    setNotifications(prev => [newNotif, ...prev].slice(0, 100)); // Keep last 100
+  }, []);
+
+  // Clear all notifications
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
 
   // Fetch profiles for name lookup
   const fetchProfiles = useCallback(async () => {
@@ -73,11 +99,19 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
       processedSessionsRef.current.add(`start-${newRecord.id}`);
       
       const name = await getParticipantName(newRecord.device_fingerprint, newRecord.name);
+      const message = `${name} mulai mengerjakan ujian`;
       
       // Show toast notification
-      toast.info(`🆕 ${name} mulai mengerjakan ujian`, {
+      toast.info(`🆕 ${message}`, {
         duration: 4000,
         position: 'top-right',
+      });
+      
+      // Add to history
+      addNotification({
+        type: 'start',
+        name,
+        message,
       });
       
       // Call callback if provided
@@ -103,20 +137,32 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
           (newRecord.tkp_score || 0) >= PASSING_GRADES.TKP
         );
         
+        const message = `${name} menyelesaikan ujian`;
+        const description = `Skor: ${newRecord.total_score || 0} - ${isLulus ? 'LULUS' : 'Tidak Lulus'}`;
+        
         // Show toast notification with appropriate styling
         if (isLulus) {
-          toast.success(`✅ ${name} menyelesaikan ujian - LULUS!`, {
+          toast.success(`✅ ${message} - LULUS!`, {
             duration: 5000,
             position: 'top-right',
             description: `Skor: ${newRecord.total_score || 0}`,
           });
         } else {
-          toast(`❌ ${name} menyelesaikan ujian`, {
+          toast(`❌ ${message}`, {
             duration: 5000,
             position: 'top-right',
             description: `Skor: ${newRecord.total_score || 0} - Tidak Lulus`,
           });
         }
+        
+        // Add to history
+        addNotification({
+          type: 'finish',
+          name,
+          message,
+          description,
+          isLulus,
+        });
         
         // Call callback if provided
         onParticipantFinished?.(name, isLulus);
@@ -128,15 +174,25 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
         processedSessionsRef.current.add(`abort-${newRecord.id}`);
         
         const name = await getParticipantName(newRecord.device_fingerprint, newRecord.name);
+        const message = `${name} didiskualifikasi`;
+        const description = newRecord.disqualification_reason || 'Melanggar aturan ujian';
         
-        toast.warning(`⚠️ ${name} didiskualifikasi`, {
+        toast.warning(`⚠️ ${message}`, {
           duration: 5000,
           position: 'top-right',
-          description: newRecord.disqualification_reason || 'Melanggar aturan ujian',
+          description,
+        });
+        
+        // Add to history
+        addNotification({
+          type: 'disqualify',
+          name,
+          message,
+          description,
         });
       }
     }
-  }, [enabled, getParticipantName, onNewParticipant, onParticipantFinished]);
+  }, [enabled, getParticipantName, onNewParticipant, onParticipantFinished, addNotification]);
 
   // Setup realtime subscription
   useEffect(() => {
@@ -183,6 +239,8 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
   }, []);
 
   return {
-    // Can be extended with additional notification controls
+    notifications,
+    clearNotifications,
+    notificationCount: notifications.length,
   };
 };

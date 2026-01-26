@@ -9,3 +9,6 @@ export * from './AdminDialogs';
 export * from './AdminDashboard';
 export { default as AdminLeaderboardMirror } from './AdminLeaderboardMirror';
 export { default as ExamMirrorModal } from './ExamMirrorModal';
+export { default as NotificationHistoryPanel } from './NotificationHistoryPanel';
+export { default as BatchActionsPanel, BatchSelectCell } from './BatchActionsPanel';
+export { default as ExamConfigPanel, useExamConfig } from './ExamConfigPanel';

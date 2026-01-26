@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { 
   X, 
@@ -16,9 +18,12 @@ import {
   User,
   ZoomIn,
   BookOpen,
-  MousePointer
+  MousePointer,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useExamMirror } from '@/hooks/useExamMirror';
+import { useMirrorSoundEffects } from '@/hooks/useMirrorSoundEffects';
 import LatexText from '@/components/LatexText';
 import { Skeleton } from '@/components/ui/skeleton';
 import { questions } from '@/data/questions';
@@ -250,6 +255,10 @@ const ExamMirrorModal = ({
   const [isFollowingParticipant, setIsFollowingParticipant] = useState(true); // Auto-follow toggle (default ON)
   const [zoomImage, setZoomImage] = useState<string | null>(null);
   const [hasInitializedPosition, setHasInitializedPosition] = useState(false); // Track if initial sync done
+  const [soundEnabled, setSoundEnabled] = useState(true); // Sound notification toggle
+  const [showFlashAnimation, setShowFlashAnimation] = useState(false); // Flash animation state
+  const prevAnswerCountRef = useRef(0);
+  const prevQuestionIndexRef = useRef(0);
   
   const { 
     session, 
@@ -259,14 +268,34 @@ const ExamMirrorModal = ({
     setCurrentQuestionIndex 
   } = useExamMirror(open ? sessionId : null);
   
+  // Sound effects hook
+  const { playAnswerSound, playNavigationSound, reset: resetSounds } = useMirrorSoundEffects({
+    enabled: soundEnabled && !isLoading,
+  });
+  
   // Determine if this is review mode (finished session)
   const isReviewMode = session?.status !== 'ongoing';
+  
+  // Trigger flash animation when question changes
+  const triggerFlashAnimation = useCallback(() => {
+    setShowFlashAnimation(true);
+    setTimeout(() => setShowFlashAnimation(false), 500);
+  }, []);
   
   // CRITICAL FIX: Force sync admin view to participant's position in live mode
   // This effect runs whenever currentQuestionIndex changes from realtime subscription
   useEffect(() => {
     // Skip if modal is closed, loading, or review mode
     if (!open || isLoading || isReviewMode) return;
+    
+    // Check if question position changed and play navigation sound + flash
+    if (currentQuestionIndex !== prevQuestionIndexRef.current && prevQuestionIndexRef.current !== 0) {
+      playNavigationSound();
+      if (isFollowingParticipant) {
+        triggerFlashAnimation();
+      }
+    }
+    prevQuestionIndexRef.current = currentQuestionIndex;
     
     // Auto-follow is ON: immediately sync to participant's position
     if (isFollowingParticipant) {
@@ -278,7 +307,18 @@ const ExamMirrorModal = ({
     if (!hasInitializedPosition && !isLoading) {
       setHasInitializedPosition(true);
     }
-  }, [currentQuestionIndex, open, isLoading, isReviewMode, isFollowingParticipant, hasInitializedPosition]);
+  }, [currentQuestionIndex, open, isLoading, isReviewMode, isFollowingParticipant, hasInitializedPosition, playNavigationSound, triggerFlashAnimation]);
+  
+  // Sound effect when answer count changes
+  useEffect(() => {
+    if (!open || isLoading || isReviewMode) return;
+    
+    const currentAnswerCount = Object.keys(answers).length;
+    if (currentAnswerCount > prevAnswerCountRef.current && prevAnswerCountRef.current !== 0) {
+      playAnswerSound();
+    }
+    prevAnswerCountRef.current = currentAnswerCount;
+  }, [answers, open, isLoading, isReviewMode, playAnswerSound]);
   
   // Initial sync when modal opens and data first loads
   useEffect(() => {
@@ -286,8 +326,10 @@ const ExamMirrorModal = ({
       console.log('[ExamMirror] Initial sync to position:', currentQuestionIndex);
       setLocalQuestion(currentQuestionIndex);
       setHasInitializedPosition(true);
+      prevAnswerCountRef.current = Object.keys(answers).length;
+      prevQuestionIndexRef.current = currentQuestionIndex;
     }
-  }, [open, isLoading, hasInitializedPosition, session, currentQuestionIndex]);
+  }, [open, isLoading, hasInitializedPosition, session, currentQuestionIndex, answers]);
   
   const question = questions[localQuestion];
 
@@ -307,11 +349,14 @@ const ExamMirrorModal = ({
       setIsFollowingParticipant(true);
       setHasInitializedPosition(false);
       setLocalQuestion(0); // Temporary until data loads
+      prevAnswerCountRef.current = 0;
+      prevQuestionIndexRef.current = 0;
+      resetSounds();
     } else {
       // Modal closed - reset everything
       setHasInitializedPosition(false);
     }
-  }, [open]);
+  }, [open, resetSounds]);
 
   // Toggle auto-follow function
   const toggleFollowParticipant = useCallback(() => {
@@ -320,11 +365,12 @@ const ExamMirrorModal = ({
       console.log('[ExamMirror] Re-enabling auto-follow, syncing to:', currentQuestionIndex);
       setIsFollowingParticipant(true);
       setLocalQuestion(currentQuestionIndex);
+      triggerFlashAnimation();
     } else {
       console.log('[ExamMirror] Disabling auto-follow');
       setIsFollowingParticipant(false);
     }
-  }, [isFollowingParticipant, currentQuestionIndex]);
+  }, [isFollowingParticipant, currentQuestionIndex, triggerFlashAnimation]);
 
   return (
     <>
@@ -379,17 +425,36 @@ const ExamMirrorModal = ({
                     
                     {/* Auto-follow toggle for live mode */}
                     {!isReviewMode && session?.status === 'ongoing' && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={toggleFollowParticipant}
-                        className={`text-white hover:bg-white/20 text-xs h-7 px-2 ${
-                          isFollowingParticipant ? 'bg-white/20' : 'opacity-70'
-                        }`}
-                      >
-                        <MousePointer className="w-3 h-3 mr-1" />
-                        {isFollowingParticipant ? 'Mengikuti' : 'Tidak Mengikuti'}
-                      </Button>
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={toggleFollowParticipant}
+                          className={`text-white hover:bg-white/20 text-xs h-7 px-2 ${
+                            isFollowingParticipant ? 'bg-white/20' : 'opacity-70'
+                          }`}
+                        >
+                          <MousePointer className="w-3 h-3 mr-1" />
+                          {isFollowingParticipant ? 'Mengikuti' : 'Tidak Mengikuti'}
+                        </Button>
+                        
+                        {/* Sound toggle button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSoundEnabled(!soundEnabled)}
+                          className={`text-white hover:bg-white/20 text-xs h-7 px-2 ${
+                            soundEnabled ? 'bg-white/20' : 'opacity-70'
+                          }`}
+                          title={soundEnabled ? 'Matikan suara notifikasi' : 'Nyalakan suara notifikasi'}
+                        >
+                          {soundEnabled ? (
+                            <Volume2 className="w-3.5 h-3.5" />
+                          ) : (
+                            <VolumeX className="w-3.5 h-3.5" />
+                          )}
+                        </Button>
+                      </>
                     )}
                   </div>
                   
@@ -446,9 +511,13 @@ const ExamMirrorModal = ({
 
               {/* Main Content */}
               <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-                {/* Question Panel */}
-                <main className="flex-1 p-2 md:p-4 min-h-0 overflow-y-auto">
-                  <Card className="p-3 md:p-4 h-full flex flex-col">
+                {/* Question Panel with Flash Animation */}
+                <main className={`flex-1 p-2 md:p-4 min-h-0 overflow-y-auto transition-all duration-200 ${
+                  showFlashAnimation ? 'animate-flash-highlight' : ''
+                }`}>
+                  <Card className={`p-3 md:p-4 h-full flex flex-col ${
+                    showFlashAnimation ? 'ring-2 ring-primary animate-border-pulse' : ''
+                  }`}>
                     {/* Question Header */}
                     <div className="flex items-center justify-between gap-2 mb-2 flex-shrink-0">
                       <span className="text-muted-foreground text-sm">Soal {question.id}/110</span>
