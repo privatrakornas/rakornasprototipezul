@@ -1,8 +1,8 @@
-import { useState, memo } from 'react';
+import { useState, memo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Trophy, 
   Medal, 
@@ -13,11 +13,13 @@ import {
   Radio,
   Eye,
   Clock,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import ExamMirrorModal from './ExamMirrorModal';
+import LeaderboardExportPanel from './LeaderboardExportPanel';
 
 const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
 const TOTAL_EXAM_TIME = 100 * 60; // 100 minutes in seconds
@@ -181,9 +183,10 @@ LiveRow.displayName = 'LiveRow';
 
 // Main Component
 const AdminLeaderboardMirror = () => {
-  const { data, isLoading } = useRealtimeLeaderboard();
+  const { data, isLoading, refetch } = useRealtimeLeaderboard();
   const [mirrorModalOpen, setMirrorModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<LeaderboardEntry | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Split data
   const finishedData = data
@@ -201,10 +204,16 @@ const AdminLeaderboardMirror = () => {
 
   const liveData = data.filter(e => e.status === 'ongoing');
 
-  const handleNameClick = (entry: LeaderboardEntry) => {
+  const handleNameClick = useCallback((entry: LeaderboardEntry) => {
     setSelectedSession(entry);
     setMirrorModalOpen(true);
-  };
+  }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await refetch();
+    setIsRefreshing(false);
+  }, [refetch]);
 
   if (isLoading) {
     return (
@@ -217,17 +226,37 @@ const AdminLeaderboardMirror = () => {
 
   return (
     <>
+      {/* Header with Refresh Button */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="text-sm text-muted-foreground">
+          Total: <span className="font-semibold text-foreground">{data.length}</span> peserta
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="gap-1.5"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Memuat...' : 'Refresh'}
+        </Button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Finished Table */}
-        <Card className="p-0 overflow-hidden shadow-lg border-2 border-green-500/30">
-          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white">
+        <Card className="p-0 overflow-hidden shadow-lg border-2 border-primary/30">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <h3 className="font-bold text-sm">Riwayat Selesai</h3>
             </div>
-            <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
-              {finishedData.length} peserta
-            </span>
+            <div className="flex items-center gap-2">
+              <LeaderboardExportPanel data={finishedData} type="finished" />
+              <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
+                {finishedData.length} peserta
+              </span>
+            </div>
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
@@ -270,15 +299,18 @@ const AdminLeaderboardMirror = () => {
         </Card>
 
         {/* Right: Live Table */}
-        <Card className="p-0 overflow-hidden shadow-lg border-2 border-blue-500/50">
-          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+        <Card className="p-0 overflow-hidden shadow-lg border-2 border-accent/50">
+          <div className="flex items-center justify-between gap-2 px-3 py-2 bg-gradient-to-r from-accent to-accent/80 text-accent-foreground">
             <div className="flex items-center gap-2">
               <Radio className="w-4 h-4 animate-pulse" />
               <h3 className="font-bold text-sm">Live Score</h3>
             </div>
-            <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
-              {liveData.length} aktif
-            </span>
+            <div className="flex items-center gap-2">
+              <LeaderboardExportPanel data={liveData} type="live" />
+              <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
+                {liveData.length} aktif
+              </span>
+            </div>
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
