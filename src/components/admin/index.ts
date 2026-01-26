@@ -7,3 +7,5 @@ export * from './AdminSessionTable';
 export * from './AdminAuditLog';
 export * from './AdminDialogs';
 export * from './AdminDashboard';
+export { default as AdminLeaderboardMirror } from './AdminLeaderboardMirror';
+export { default as ExamMirrorModal } from './ExamMirrorModal';
