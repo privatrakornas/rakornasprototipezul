@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { useAdminData } from '@/hooks/useAdminData';
 import { useAdminStats } from '@/hooks/useAdminStats';
+import { useAdminNotifications } from '@/hooks/useAdminNotifications';
 import {
   ExamSession,
   AdminLogin,
@@ -25,6 +26,9 @@ import {
 const Admin = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Enable admin notifications when authenticated
+  useAdminNotifications({ enabled: isAuthenticated });
 
   // Admin data hook
   const {

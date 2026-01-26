@@ -23,6 +23,7 @@ import LatexText from '@/components/LatexText';
 import { Skeleton } from '@/components/ui/skeleton';
 import { questions } from '@/data/questions';
 import ReviewStatsPanel from './ReviewStatsPanel';
+import ReviewPDFExport from './ReviewPDFExport';
 
 interface ExamMirrorModalProps {
   open: boolean;
@@ -387,8 +388,13 @@ const ExamMirrorModal = ({
                     </div>
                   </div>
 
-                  {/* Right: Timer & Close Button */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
+                  {/* Right: Timer, PDF Export & Close Button */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* PDF Export for Review Mode */}
+                    {isReviewMode && (
+                      <ReviewPDFExport session={session} answers={answers} />
+                    )}
+                    
                     {isLive && session?.status === 'ongoing' && (
                       <div className="flex items-center gap-1.5 text-white">
                         <Clock className="w-4 h-4" />
