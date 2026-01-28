@@ -24,10 +24,12 @@ import {
   List,
   Flame,
   BarChart3,
+  ShieldAlert,
 } from 'lucide-react';
 import { exportTimelineToExcel, exportTimelineToPDF } from '@/utils/exportTimeline';
 import TimelineChart from './TimelineChart';
 import TimelineHeatmap from './TimelineHeatmap';
+import AnomalyAnalysisPanel from './AnomalyAnalysisPanel';
 
 interface NavigationEvent {
   timestamp: string;
@@ -270,9 +272,9 @@ export const TimelineLogModal = ({
               </div>
             )}
             
-            {/* Tabs for Timeline, Chart, and Heatmap */}
+            {/* Tabs for Timeline, Chart, Heatmap, and Anomaly */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="timeline" className="flex items-center gap-1 text-xs">
                   <List className="w-4 h-4" />
                   <span className="hidden sm:inline">Timeline</span>
@@ -284,6 +286,10 @@ export const TimelineLogModal = ({
                 <TabsTrigger value="chart" className="flex items-center gap-1 text-xs">
                   <BarChart3 className="w-4 h-4" />
                   <span className="hidden sm:inline">Grafik</span>
+                </TabsTrigger>
+                <TabsTrigger value="anomaly" className="flex items-center gap-1 text-xs">
+                  <ShieldAlert className="w-4 h-4" />
+                  <span className="hidden sm:inline">Anomali</span>
                 </TabsTrigger>
               </TabsList>
               
@@ -363,6 +369,12 @@ export const TimelineLogModal = ({
               <TabsContent value="chart" className="flex-1 min-h-0 mt-3">
                 <ScrollArea className="h-[350px]">
                   <TimelineChart navigationLog={navigationLog} />
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="anomaly" className="flex-1 min-h-0 mt-3">
+                <ScrollArea className="h-[350px]">
+                  <AnomalyAnalysisPanel navigationLog={navigationLog} />
                 </ScrollArea>
               </TabsContent>
             </Tabs>
