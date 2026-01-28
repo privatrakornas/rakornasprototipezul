@@ -146,6 +146,7 @@ export type Database = {
           finished_at: string | null
           id: string
           name: string
+          navigation_log: Json | null
           started_at: string
           status: string
           tiu_score: number
@@ -166,6 +167,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           name: string
+          navigation_log?: Json | null
           started_at?: string
           status?: string
           tiu_score?: number
@@ -186,6 +188,7 @@ export type Database = {
           finished_at?: string | null
           id?: string
           name?: string
+          navigation_log?: Json | null
           started_at?: string
           status?: string
           tiu_score?: number
