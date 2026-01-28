@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.verify-pin]
 verify_jwt = false
+
+[functions.scheduled-backup]
+verify_jwt = false

@@ -47,6 +47,48 @@ export type Database = {
         }
         Relationships: []
       }
+      backup_history: {
+        Row: {
+          answers_count: number
+          audit_logs_count: number
+          backup_type: string
+          created_at: string
+          error_message: string | null
+          file_size: number
+          filename: string
+          id: string
+          profiles_count: number
+          sessions_count: number
+          status: string
+        }
+        Insert: {
+          answers_count?: number
+          audit_logs_count?: number
+          backup_type?: string
+          created_at?: string
+          error_message?: string | null
+          file_size?: number
+          filename: string
+          id?: string
+          profiles_count?: number
+          sessions_count?: number
+          status?: string
+        }
+        Update: {
+          answers_count?: number
+          audit_logs_count?: number
+          backup_type?: string
+          created_at?: string
+          error_message?: string | null
+          file_size?: number
+          filename?: string
+          id?: string
+          profiles_count?: number
+          sessions_count?: number
+          status?: string
+        }
+        Relationships: []
+      }
       exam_results: {
         Row: {
           created_at: string
