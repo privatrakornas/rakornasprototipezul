@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Trophy } from 'lucide-react';
 import logoRakornas from '@/assets/logo-rakornas.jpg';
 
 // Hardcoded PIN for public access (client-side)
@@ -136,6 +136,16 @@ const Index = () => {
               Hak Cipta Materi ini dilindungi Undang-Undang, tidak boleh diunduh atau digandakan 
               dan disebarluaskan melalui cara apapun tanpa izin tertulis dari Privat RAKORNAS.
             </p>
+          </div>
+
+          <div className="mt-4 text-center">
+            <Link 
+              to="/leaderboard" 
+              className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 underline underline-offset-4 transition-colors"
+            >
+              <Trophy className="w-4 h-4" />
+              Lihat Leaderboard
+            </Link>
           </div>
         </Card>
       </main>
