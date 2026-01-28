@@ -13,3 +13,4 @@ export { default as NotificationHistoryPanel } from './NotificationHistoryPanel'
 export { default as BatchActionsPanel, BatchSelectCell } from './BatchActionsPanel';
 export { default as ExamConfigPanel, useExamConfig } from './ExamConfigPanel';
 export { default as BackupRestorePanel } from './BackupRestorePanel';
+export { default as BackupSchedulePanel } from './BackupSchedulePanel';
