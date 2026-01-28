@@ -17,3 +17,4 @@ export { default as BackupSchedulePanel } from './BackupSchedulePanel';
 export { default as TimelineLogModal } from './TimelineLogModal';
 export { default as TimelineChart } from './TimelineChart';
 export { default as TimelineHeatmap } from './TimelineHeatmap';
+export { default as AnomalyAnalysisPanel } from './AnomalyAnalysisPanel';
