@@ -32,8 +32,12 @@ import TimelineHeatmap from './TimelineHeatmap';
 interface NavigationEvent {
   timestamp: string;
   remainingTimeSeconds: number;
-  questionNumber: number;
+  remainingTimeFormatted?: string; // New: pre-formatted time "MM:SS"
   action: string;
+  fromQuestion: number;   // Question BEFORE navigation (new format)
+  toQuestion: number;     // Question AFTER navigation (new format)
+  // Legacy fields (for backward compatibility with old data)
+  questionNumber?: number;
   previousQuestion?: number;
 }
 
@@ -41,10 +45,10 @@ interface TimelineEntry {
   startTime: string;
   endTime: string;
   durationSeconds: number;
-  questionNumber: number;
+  fromQuestion: number;
+  toQuestion: number;
   action: string;
   actionLabel: string;
-  previousQuestion?: number;
 }
 
 interface TimelineLogModalProps {
@@ -93,20 +97,20 @@ const getActionIcon = (action: string) => {
   }
 };
 
-const getActionLabel = (action: string, prevQ?: number): string => {
+const getActionLabel = (action: string, fromQ?: number, toQ?: number): string => {
   switch (action) {
     case 'next':
-      return 'Klik Next';
+      return fromQ && toQ ? `Next: ${fromQ} → ${toQ}` : 'Klik Next';
     case 'prev':
-      return 'Klik Previous';
+      return fromQ && toQ ? `Prev: ${fromQ} → ${toQ}` : 'Klik Previous';
     case 'jump':
-      return prevQ ? `Lompat dari Soal ${prevQ}` : 'Lompat Navigasi';
+      return fromQ && toQ ? `Jump: ${fromQ} → ${toQ}` : 'Lompat Navigasi';
     case 'submit':
-      return 'Submit Ujian';
+      return '🏁 Selesai & Submit';
     case 'auto_submit':
-      return 'Auto-Submit (Waktu Habis)';
+      return '⏰ Auto-Submit (Waktu Habis)';
     case 'start':
-      return 'Mulai Ujian';
+      return '🚀 Mulai Ujian';
     default:
       return action;
   }
@@ -156,14 +160,18 @@ export const TimelineLogModal = ({
         ? current.remainingTimeSeconds - next.remainingTimeSeconds
         : current.remainingTimeSeconds; // Last event - duration until 0
       
+      // Support both new format (fromQuestion/toQuestion) and legacy format (questionNumber/previousQuestion)
+      const fromQ = current.fromQuestion ?? current.previousQuestion ?? current.questionNumber ?? 0;
+      const toQ = current.toQuestion ?? current.questionNumber ?? 0;
+      
       entries.push({
-        startTime: formatRemainingTime(current.remainingTimeSeconds),
-        endTime: formatRemainingTime(next?.remainingTimeSeconds ?? 0),
+        startTime: current.remainingTimeFormatted ?? formatRemainingTime(current.remainingTimeSeconds),
+        endTime: next?.remainingTimeFormatted ?? formatRemainingTime(next?.remainingTimeSeconds ?? 0),
         durationSeconds: Math.max(0, durationSeconds),
-        questionNumber: current.questionNumber,
+        fromQuestion: fromQ,
+        toQuestion: toQ,
         action: current.action,
-        actionLabel: getActionLabel(current.action, current.previousQuestion),
-        previousQuestion: current.previousQuestion,
+        actionLabel: getActionLabel(current.action, fromQ, toQ),
       });
     }
     
@@ -178,11 +186,15 @@ export const TimelineLogModal = ({
     const nextCount = navigationLog.filter(e => e.action === 'next').length;
     const prevCount = navigationLog.filter(e => e.action === 'prev').length;
     const jumpCount = navigationLog.filter(e => e.action === 'jump').length;
+    const submitCount = navigationLog.filter(e => e.action === 'submit' || e.action === 'auto_submit').length;
     
-    // Find most visited questions
+    // Find most visited questions (using toQuestion for new format, questionNumber for legacy)
     const questionVisits: Record<number, number> = {};
     navigationLog.forEach(e => {
-      questionVisits[e.questionNumber] = (questionVisits[e.questionNumber] || 0) + 1;
+      const q = e.toQuestion ?? e.questionNumber ?? 0;
+      if (q > 0) {
+        questionVisits[q] = (questionVisits[q] || 0) + 1;
+      }
     });
     
     const mostVisited = Object.entries(questionVisits)
@@ -195,6 +207,7 @@ export const TimelineLogModal = ({
       nextCount,
       prevCount,
       jumpCount,
+      submitCount,
       mostVisited,
     };
   }, [navigationLog]);
@@ -308,12 +321,20 @@ export const TimelineLogModal = ({
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-sm">
-                                Soal No. {entry.questionNumber}
+                                {entry.action === 'start' || entry.action === 'submit' || entry.action === 'auto_submit' 
+                                  ? `Soal No. ${entry.toQuestion}` 
+                                  : `Q${entry.fromQuestion} → Q${entry.toQuestion}`
+                                }
                               </span>
                               <Badge variant={getActionBadgeVariant(entry.action)} className="text-xs">
-                                {entry.actionLabel}
+                                {entry.action === 'next' ? 'Next' : 
+                                 entry.action === 'prev' ? 'Prev' : 
+                                 entry.action === 'jump' ? 'Jump' :
+                                 entry.action === 'submit' ? '🏁 Submit' :
+                                 entry.action === 'auto_submit' ? '⏰ Auto' :
+                                 entry.action === 'start' ? '🚀 Start' : entry.action}
                               </Badge>
                             </div>
                             <span className="text-xs font-medium text-primary whitespace-nowrap">
@@ -323,7 +344,7 @@ export const TimelineLogModal = ({
                           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
                             <Clock className="w-3 h-3" />
                             <span>
-                              {entry.startTime} → {entry.endTime}
+                              Sisa waktu: {entry.startTime} → {entry.endTime}
                             </span>
                           </div>
                         </div>
