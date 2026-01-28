@@ -7,6 +7,14 @@ interface UseContentProtectionOptions {
   onViolation?: () => void;
 }
 
+/**
+ * This hook handles ONLY content protection (right-click, copy, keyboard shortcuts, etc.)
+ * 
+ * NOTE: Tab switch / focus detection is now handled separately in Exam.tsx
+ * using the Page Visibility API for smarter detection that doesn't trigger
+ * on browser pop-ups like "Save Password".
+ */
+
 const defaultWarningMessage = "⚠️ Aktivitas mencurigakan terdeteksi! Tindakan ini tercatat di sistem.";
 
 export const useContentProtection = (options: UseContentProtectionOptions = {}) => {

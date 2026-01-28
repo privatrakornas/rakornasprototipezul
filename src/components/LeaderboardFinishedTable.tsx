@@ -13,7 +13,8 @@ import {
   Search, 
   Filter, 
   X,
-  ChevronDown 
+  ChevronDown,
+  Timer,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -22,8 +23,15 @@ import {
   DropdownMenuCheckboxItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import type { LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import { isLulus } from '@/hooks/useRealtimeLeaderboard';
+import TimelineLogModal from '@/components/admin/TimelineLogModal';
 
 const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
 
@@ -88,9 +96,16 @@ const getRowStyle = (rank: number, entry: LeaderboardEntry): { className: string
   }
 };
 
-const FinishedRow = memo(({ entry, rank }: { entry: LeaderboardEntry; rank: number }) => {
+interface FinishedRowProps {
+  entry: LeaderboardEntry;
+  rank: number;
+  onViewTimeline?: (entry: LeaderboardEntry) => void;
+}
+
+const FinishedRow = memo(({ entry, rank, onViewTimeline }: FinishedRowProps) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
+  const hasNavigationLog = entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0;
   
   return (
     <TableRow key={entry.id} className={rowClass}>
@@ -98,7 +113,29 @@ const FinishedRow = memo(({ entry, rank }: { entry: LeaderboardEntry; rank: numb
         {getRankIcon(rank)}
       </TableCell>
       <TableCell className={`font-medium text-xs py-2 ${isLightText ? 'text-white' : ''}`}>
-        {entry.name}
+        <div className="flex items-center gap-1">
+          <span>{entry.name}</span>
+          {hasNavigationLog && onViewTimeline && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onViewTimeline(entry);
+                    }}
+                    className={`p-0.5 rounded hover:bg-white/20 transition-colors ${isLightText ? 'text-white/80' : 'text-primary'}`}
+                  >
+                    <Timer className="w-3.5 h-3.5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Lihat Log Pengerjaan</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
       </TableCell>
       <TableCell className={`text-center text-xs py-2 ${isLightText ? 'text-white/90' : ''}`}>
         {entry.duration_minutes != null ? `${entry.duration_minutes} mnt` : '-'}
@@ -143,7 +180,8 @@ const FinishedRow = memo(({ entry, rank }: { entry: LeaderboardEntry; rank: numb
     prevProps.rank === nextProps.rank &&
     prev.id === next.id &&
     prev.total_score === next.total_score &&
-    prev.duration_minutes === next.duration_minutes
+    prev.duration_minutes === next.duration_minutes &&
+    prevProps.onViewTimeline === nextProps.onViewTimeline
   );
 });
 
@@ -154,6 +192,8 @@ type StatusFilter = 'all' | 'lulus' | 'tidak_lulus';
 const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null);
+  const [timelineModalOpen, setTimelineModalOpen] = useState(false);
 
   // Filter and sort data
   const finishedData = useMemo(() => {
@@ -197,6 +237,11 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
     setStatusFilter('all');
+  }, []);
+
+  const handleViewTimeline = useCallback((entry: LeaderboardEntry) => {
+    setSelectedEntry(entry);
+    setTimelineModalOpen(true);
   }, []);
 
   const hasActiveFilters = searchQuery || statusFilter !== 'all';
@@ -304,6 +349,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
                   key={entry.id} 
                   entry={entry} 
                   rank={idx + 1}
+                  onViewTimeline={handleViewTimeline}
                 />
               ))}
             </TableBody>
@@ -315,7 +361,19 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
       <div className="px-2 py-1.5 bg-muted/50 border border-t-0 rounded-b-lg text-[10px] text-muted-foreground">
         <span className="text-green-600 dark:text-green-400 font-medium">L</span> = Lulus, 
         <span className="text-red-600 dark:text-red-400 font-medium ml-1">TL</span> = Tidak Lulus
+        <span className="ml-2">
+          <Timer className="w-3 h-3 inline mr-0.5" /> = Lihat Log
+        </span>
       </div>
+      
+      {/* Timeline Log Modal */}
+      <TimelineLogModal
+        open={timelineModalOpen}
+        onOpenChange={setTimelineModalOpen}
+        participantName={selectedEntry?.name || ''}
+        navigationLog={selectedEntry?.navigation_log || null}
+        examDurationMinutes={selectedEntry?.duration_minutes || 0}
+      />
     </div>
   );
 });

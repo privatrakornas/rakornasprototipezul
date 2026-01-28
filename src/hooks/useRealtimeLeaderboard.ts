@@ -27,6 +27,8 @@ export interface LeaderboardEntry {
   answered_count?: number;
   total_questions?: number;
   device_fingerprint?: string;
+  // Navigation timeline log (sent on submit for finished sessions)
+  navigation_log?: any[] | null;
 }
 
 // Check if a participant passes all subjects
@@ -213,6 +215,7 @@ export const useRealtimeLeaderboard = () => {
           answered_count: s.answered_count || 0,
           total_questions: s.total_questions || TOTAL_QUESTIONS,
           device_fingerprint: s.device_fingerprint,
+          navigation_log: s.navigation_log || null, // Include timeline log
         };
       });
 

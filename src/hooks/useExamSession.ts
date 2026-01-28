@@ -1,6 +1,7 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { questions } from '@/data/questions';
+import type { NavigationEvent } from './useNavigationTimeline';
 
 const TOTAL_QUESTIONS = 110;
 const QUESTION_POSITION_DEBOUNCE_MS = 300; // Reduced debounce for faster admin sync (was 800ms)
@@ -342,6 +343,36 @@ export const useExamSession = () => {
     }, QUESTION_POSITION_DEBOUNCE_MS);
   }, []);
 
+  // Save navigation log to database (called once on submit)
+  // ZERO NETWORK LAG: This is only called at the end when submitting
+  const saveNavigationLog = useCallback(async (navigationLog: NavigationEvent[]) => {
+    const sessionId = sessionIdRef.current || sessionStorage.getItem('examSessionId');
+    if (!sessionId || navigationLog.length === 0) {
+      console.log('[ExamSession] Skip saving navigation log: no session or empty log');
+      return true; // Return true to not block submission
+    }
+
+    try {
+      console.log('[ExamSession] Saving navigation log with', navigationLog.length, 'events');
+      
+      const { error } = await supabase
+        .from('exam_sessions')
+        .update({ navigation_log: navigationLog as any })
+        .eq('id', sessionId);
+      
+      if (error) {
+        console.error('[ExamSession] Failed to save navigation log:', error);
+        return false;
+      }
+      
+      console.log('[ExamSession] Navigation log saved successfully');
+      return true;
+    } catch (err) {
+      console.error('[ExamSession] Error saving navigation log:', err);
+      return false;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     // Check for existing session
@@ -365,7 +396,8 @@ export const useExamSession = () => {
     updateScores,
     finishSession,
     abortSession,
-    syncQuestionPosition, // New: debounced question position sync
+    syncQuestionPosition,
+    saveNavigationLog, // New: save navigation timeline on submit
     sessionId: sessionIdRef.current,
   };
 };

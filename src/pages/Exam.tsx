@@ -9,6 +9,7 @@ import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, Sh
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
+import { useNavigationTimeline, type NavigationAction } from '@/hooks/useNavigationTimeline';
 import { useToast } from '@/hooks/use-toast';
 import { useContentProtection } from '@/hooks/useContentProtection';
 import { supabase } from '@/integrations/supabase/client';
@@ -95,7 +96,8 @@ const Exam = () => {
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
   const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition } = useExamSession();
+  const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition, saveNavigationLog } = useExamSession();
+  const { logNavigation, getNavigationLog, clearNavigationLog } = useNavigationTimeline();
   
   // ============ CONTENT PROTECTION - ANTI-CHEAT ============
   // Disable right-click, copy-paste, keyboard shortcuts, etc.
@@ -184,7 +186,7 @@ const Exam = () => {
     };
   }, [navigate, toast]);
 
-  // Create exam session on mount
+  // Create exam session on mount + log start event
   useEffect(() => {
     const initSession = async () => {
       // Check if we already have a session
@@ -195,43 +197,46 @@ const Exam = () => {
       
       sessionInitializedRef.current = true;
       await createSession(userName, deviceFingerprint, examStartedAt);
+      
+      // Log exam start in navigation timeline
+      logNavigation('start', EXAM_TIME, 1);
     };
     
     initSession();
-  }, [userName, deviceFingerprint, examStartedAt, createSession]);
+  }, [userName, deviceFingerprint, examStartedAt, createSession, logNavigation]);
 
-  // Anti-cheat: detect tab/window switch -> Show violation dialog
-  // CRITICAL: Do NOT redirect immediately - wait for user confirmation and DB update
+  // ============ SMART FOCUS DETECTION (Page Visibility API) ============
+  // UPDATED: Uses ONLY document.visibilityState instead of window.onblur
+  // This prevents false positives from browser pop-ups (e.g., "Save Password")
+  // 
+  // PERINGATAN MUNCUL (Curang): Hanya jika document.visibilityState === 'hidden'
+  // PERINGATAN TIDAK MUNCUL (Aman): Jika focus hilang tapi halaman masih visible
   useEffect(() => {
     const antiCheatTriggeredRef = { current: false };
 
-    const handleViolation = () => {
-      // Prevent multiple triggers and skip if already submitting or dialog open
-      if (antiCheatTriggeredRef.current || isSubmitting || violationDialogOpen) return;
-      
-      antiCheatTriggeredRef.current = true;
-      console.log('[ANTI-CHEAT] Detected tab/window switch - showing violation dialog');
-      
-      // Show the violation dialog - user must click button to proceed
-      setViolationDialogOpen(true);
-    };
-
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        handleViolation();
+      // ONLY trigger if document is actually hidden (tab switch, minimize)
+      // NOT triggered by pop-ups, notifications, or overlays
+      if (document.visibilityState === 'hidden') {
+        // Prevent multiple triggers and skip if already submitting or dialog open
+        if (antiCheatTriggeredRef.current || isSubmitting || violationDialogOpen) return;
+        
+        antiCheatTriggeredRef.current = true;
+        console.log('[ANTI-CHEAT] Page Visibility API: document.hidden = true (tab switch detected)');
+        
+        // Show the violation dialog - user must click button to proceed
+        setViolationDialogOpen(true);
+      } else {
+        console.log('[ANTI-CHEAT] Page Visibility API: document.visible (safe - no violation)');
       }
     };
 
-    const handleBlur = () => {
-      handleViolation();
-    };
-
+    // NOTE: We intentionally do NOT listen to 'blur' event anymore
+    // Blur is triggered by browser popups, password managers, etc.
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('blur', handleBlur);
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('blur', handleBlur);
     };
   }, [isSubmitting, violationDialogOpen]);
 
@@ -350,6 +355,13 @@ const Exam = () => {
     
     setIsSubmitting(true);
     
+    // Log submit event in navigation timeline (BEFORE saving to DB)
+    logNavigation(
+      isAutoSubmit ? 'auto_submit' : 'submit', 
+      timeLeft, 
+      questions[currentQuestion].id
+    );
+    
     // Calculate real duration based on started_at and current time
     const finishedAt = new Date().toISOString();
     const startTime = new Date(examStartedAt).getTime();
@@ -361,6 +373,11 @@ const Exam = () => {
     if (durationMinutes > MAX_DURATION_MINUTES) {
       durationMinutes = MAX_DURATION_MINUTES;
     }
+    
+    // ZERO NETWORK LAG: Save navigation log ONCE on submit (bulk send)
+    const navLog = getNavigationLog();
+    console.log('[Exam] Saving navigation log with', navLog.length, 'events');
+    await saveNavigationLog(navLog);
     
     // Finish the exam session (MUST succeed before navigation)
     const finishedOk = await finishSession(durationMinutes);
@@ -380,9 +397,12 @@ const Exam = () => {
     localStorage.setItem('examDuration', String(durationMinutes));
     localStorage.setItem('examStartedAt', examStartedAt);
     localStorage.setItem('examFinishedAt', finishedAt);
+    
+    // Clear navigation log after successful submit
+    clearNavigationLog();
 
     navigate('/results');
-  }, [answers, navigate, timeLeft, examStartedAt, finishSession, canSubmit, toast, isSubmitting]);
+  }, [answers, navigate, timeLeft, examStartedAt, finishSession, canSubmit, toast, isSubmitting, currentQuestion, logNavigation, getNavigationLog, saveNavigationLog, clearNavigationLog]);
 
   // Timer with auto-submit
   useEffect(() => {
@@ -424,11 +444,17 @@ const Exam = () => {
   };
 
   const handleNavClick = useCallback((idx: number) => {
+    const previousQ = questions[currentQuestion].id;
+    const newQ = questions[idx].id;
+    
+    // Log jump navigation (clicking question number in grid)
+    logNavigation('jump', timeLeft, newQ, previousQ);
+    
     setCurrentQuestion(idx);
     setNavOpen(false);
     // Sync question position to database (debounced, non-blocking)
     syncQuestionPosition(idx);
-  }, [syncQuestionPosition]);
+  }, [syncQuestionPosition, currentQuestion, timeLeft, logNavigation]);
 
   const question = questions[currentQuestion];
 
@@ -659,6 +685,8 @@ const Exam = () => {
                 size="sm"
                 onClick={() => {
                   const newIdx = Math.max(0, currentQuestion - 1);
+                  // Log prev navigation
+                  logNavigation('prev', timeLeft, questions[newIdx].id);
                   setCurrentQuestion(newIdx);
                   syncQuestionPosition(newIdx);
                 }}
@@ -671,6 +699,8 @@ const Exam = () => {
                 size="sm"
                 onClick={() => {
                   const newIdx = currentQuestion === 109 ? 0 : currentQuestion + 1;
+                  // Log next navigation
+                  logNavigation('next', timeLeft, questions[newIdx].id);
                   setCurrentQuestion(newIdx);
                   syncQuestionPosition(newIdx);
                 }}
