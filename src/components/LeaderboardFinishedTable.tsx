@@ -15,6 +15,8 @@ import {
   X,
   ChevronDown,
   Timer,
+  ShieldAlert,
+  AlertTriangle,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import {
@@ -32,6 +34,7 @@ import {
 import type { LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import { isLulus } from '@/hooks/useRealtimeLeaderboard';
 import TimelineLogModal from '@/components/admin/TimelineLogModal';
+import { analyzeNavigationAnomalies, type NavigationEvent } from '@/utils/anomalyDetection';
 
 const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
 
@@ -100,9 +103,84 @@ interface FinishedRowProps {
   entry: LeaderboardEntry;
   rank: number;
   onViewTimeline?: (entry: LeaderboardEntry) => void;
+  anomalyRisk?: 'low' | 'medium' | 'high' | 'critical';
+  anomalyScore?: number;
 }
 
-const FinishedRow = memo(({ entry, rank, onViewTimeline }: FinishedRowProps) => {
+const getAnomalyBadge = (risk: string, score: number, isLightText: boolean) => {
+  if (risk === 'low') return null;
+  
+  if (risk === 'critical') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold ${
+              isLightText 
+                ? 'bg-red-500/80 text-white' 
+                : 'bg-destructive text-destructive-foreground'
+            }`}>
+              <ShieldAlert className="w-2.5 h-2.5" />
+              !
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            <p className="font-semibold text-destructive">Risiko Kritis ({score}/100)</p>
+            <p className="text-muted-foreground">Pola mencurigakan terdeteksi</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  if (risk === 'high') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold ${
+              isLightText 
+                ? 'bg-orange-500/80 text-white' 
+                : 'bg-orange-500 text-white'
+            }`}>
+              <AlertTriangle className="w-2.5 h-2.5" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            <p className="font-semibold text-orange-600">Risiko Tinggi ({score}/100)</p>
+            <p className="text-muted-foreground">Perlu investigasi lebih lanjut</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  if (risk === 'medium') {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] ${
+              isLightText 
+                ? 'bg-yellow-500/60 text-white' 
+                : 'bg-yellow-500/20 text-yellow-700 dark:text-yellow-400'
+            }`}>
+              <AlertTriangle className="w-2.5 h-2.5" />
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="top" className="text-xs">
+            <p className="font-semibold text-yellow-600">Risiko Sedang ({score}/100)</p>
+            <p className="text-muted-foreground">Beberapa pola perlu perhatian</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+  
+  return null;
+};
+
+const FinishedRow = memo(({ entry, rank, onViewTimeline, anomalyRisk, anomalyScore }: FinishedRowProps) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
   const hasNavigationLog = entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0;
@@ -115,6 +193,9 @@ const FinishedRow = memo(({ entry, rank, onViewTimeline }: FinishedRowProps) => 
       <TableCell className={`font-medium text-xs py-2 ${isLightText ? 'text-white' : ''}`}>
         <div className="flex items-center gap-1">
           <span>{entry.name}</span>
+          {/* Anomaly Badge */}
+          {anomalyRisk && anomalyScore !== undefined && getAnomalyBadge(anomalyRisk, anomalyScore, isLightText)}
+          {/* Timeline Log Button */}
           {hasNavigationLog && onViewTimeline && (
             <TooltipProvider>
               <Tooltip>
@@ -181,7 +262,9 @@ const FinishedRow = memo(({ entry, rank, onViewTimeline }: FinishedRowProps) => 
     prev.id === next.id &&
     prev.total_score === next.total_score &&
     prev.duration_minutes === next.duration_minutes &&
-    prevProps.onViewTimeline === nextProps.onViewTimeline
+    prevProps.onViewTimeline === nextProps.onViewTimeline &&
+    prevProps.anomalyRisk === nextProps.anomalyRisk &&
+    prevProps.anomalyScore === nextProps.anomalyScore
   );
 });
 
@@ -231,6 +314,27 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
       });
   }, [data, searchQuery, statusFilter]);
 
+  // Precompute anomaly analysis for all entries with navigation logs
+  const anomalyMap = useMemo(() => {
+    const map = new Map<string, { risk: 'low' | 'medium' | 'high' | 'critical'; score: number }>();
+    finishedData.forEach(entry => {
+      if (entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0) {
+        const analysis = analyzeNavigationAnomalies(entry.navigation_log as NavigationEvent[]);
+        map.set(entry.id, { risk: analysis.overallRisk, score: analysis.riskScore });
+      }
+    });
+    return map;
+  }, [finishedData]);
+
+  // Count high-risk entries
+  const highRiskCount = useMemo(() => {
+    let count = 0;
+    anomalyMap.forEach(({ risk }) => {
+      if (risk === 'high' || risk === 'critical') count++;
+    });
+    return count;
+  }, [anomalyMap]);
+
   // Total finished count (before filters)
   const totalFinished = useMemo(() => data.filter(e => e.status === 'finished').length, [data]);
 
@@ -253,6 +357,21 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4" />
           <h3 className="font-bold text-sm">Riwayat Selesai</h3>
+          {highRiskCount > 0 && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-red-500 rounded text-[10px] font-bold">
+                    <ShieldAlert className="w-3 h-3" />
+                    {highRiskCount}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{highRiskCount} peserta dengan risiko anomali tinggi/kritis</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
         </div>
         <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
           {finishedData.length}{hasActiveFilters ? `/${totalFinished}` : ''} peserta
@@ -344,25 +463,40 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {finishedData.map((entry, idx) => (
-                <FinishedRow 
-                  key={entry.id} 
-                  entry={entry} 
-                  rank={idx + 1}
-                  onViewTimeline={handleViewTimeline}
-                />
-              ))}
+              {finishedData.map((entry, idx) => {
+                const anomalyData = anomalyMap.get(entry.id);
+                return (
+                  <FinishedRow 
+                    key={entry.id} 
+                    entry={entry} 
+                    rank={idx + 1}
+                    onViewTimeline={handleViewTimeline}
+                    anomalyRisk={anomalyData?.risk}
+                    anomalyScore={anomalyData?.score}
+                  />
+                );
+              })}
             </TableBody>
           </Table>
         )}
       </div>
       
       {/* Legend */}
-      <div className="px-2 py-1.5 bg-muted/50 border border-t-0 rounded-b-lg text-[10px] text-muted-foreground">
-        <span className="text-green-600 dark:text-green-400 font-medium">L</span> = Lulus, 
-        <span className="text-red-600 dark:text-red-400 font-medium ml-1">TL</span> = Tidak Lulus
-        <span className="ml-2">
-          <Timer className="w-3 h-3 inline mr-0.5" /> = Lihat Log
+      <div className="px-2 py-1.5 bg-muted/50 border border-t-0 rounded-b-lg text-[10px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-1">
+        <span>
+          <span className="text-green-600 dark:text-green-400 font-medium">L</span> = Lulus
+        </span>
+        <span>
+          <span className="text-red-600 dark:text-red-400 font-medium">TL</span> = Tidak Lulus
+        </span>
+        <span>
+          <Timer className="w-3 h-3 inline mr-0.5" /> = Log
+        </span>
+        <span>
+          <ShieldAlert className="w-3 h-3 inline mr-0.5 text-destructive" /> = Risiko Kritis
+        </span>
+        <span>
+          <AlertTriangle className="w-3 h-3 inline mr-0.5 text-orange-500" /> = Risiko Tinggi
         </span>
       </div>
       
