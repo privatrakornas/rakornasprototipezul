@@ -22,10 +22,12 @@ import {
   FileSpreadsheet,
   FileText,
   List,
+  Flame,
   BarChart3,
 } from 'lucide-react';
 import { exportTimelineToExcel, exportTimelineToPDF } from '@/utils/exportTimeline';
 import TimelineChart from './TimelineChart';
+import TimelineHeatmap from './TimelineHeatmap';
 
 interface NavigationEvent {
   timestamp: string;
@@ -255,16 +257,20 @@ export const TimelineLogModal = ({
               </div>
             )}
             
-            {/* Tabs for Timeline and Chart */}
+            {/* Tabs for Timeline, Chart, and Heatmap */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="timeline" className="flex items-center gap-1">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="timeline" className="flex items-center gap-1 text-xs">
                   <List className="w-4 h-4" />
-                  Timeline
+                  <span className="hidden sm:inline">Timeline</span>
                 </TabsTrigger>
-                <TabsTrigger value="chart" className="flex items-center gap-1">
+                <TabsTrigger value="heatmap" className="flex items-center gap-1 text-xs">
+                  <Flame className="w-4 h-4" />
+                  <span className="hidden sm:inline">Heatmap</span>
+                </TabsTrigger>
+                <TabsTrigger value="chart" className="flex items-center gap-1 text-xs">
                   <BarChart3 className="w-4 h-4" />
-                  Visualisasi
+                  <span className="hidden sm:inline">Grafik</span>
                 </TabsTrigger>
               </TabsList>
               
@@ -324,6 +330,12 @@ export const TimelineLogModal = ({
                       </div>
                     ))}
                   </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="heatmap" className="flex-1 min-h-0 mt-3">
+                <ScrollArea className="h-[350px]">
+                  <TimelineHeatmap navigationLog={navigationLog} />
                 </ScrollArea>
               </TabsContent>
               
