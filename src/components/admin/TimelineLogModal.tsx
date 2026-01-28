@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Clock, 
   ChevronRight, 
@@ -18,7 +19,13 @@ import {
   Timer,
   Play,
   ArrowRight,
+  FileSpreadsheet,
+  FileText,
+  List,
+  BarChart3,
 } from 'lucide-react';
+import { exportTimelineToExcel, exportTimelineToPDF } from '@/utils/exportTimeline';
+import TimelineChart from './TimelineChart';
 
 interface NavigationEvent {
   timestamp: string;
@@ -69,18 +76,18 @@ const formatDuration = (seconds: number): string => {
 const getActionIcon = (action: string) => {
   switch (action) {
     case 'next':
-      return <ChevronRight className="w-4 h-4 text-blue-500" />;
+      return <ChevronRight className="w-4 h-4 text-chart-1" />;
     case 'prev':
-      return <ChevronLeft className="w-4 h-4 text-orange-500" />;
+      return <ChevronLeft className="w-4 h-4 text-chart-2" />;
     case 'jump':
-      return <Grid3X3 className="w-4 h-4 text-purple-500" />;
+      return <Grid3X3 className="w-4 h-4 text-chart-3" />;
     case 'submit':
     case 'auto_submit':
-      return <Send className="w-4 h-4 text-green-500" />;
+      return <Send className="w-4 h-4 text-chart-4" />;
     case 'start':
-      return <Play className="w-4 h-4 text-emerald-500" />;
+      return <Play className="w-4 h-4 text-chart-5" />;
     default:
-      return <ArrowRight className="w-4 h-4 text-gray-500" />;
+      return <ArrowRight className="w-4 h-4 text-muted-foreground" />;
   }
 };
 
@@ -125,6 +132,8 @@ export const TimelineLogModal = ({
   navigationLog,
   examDurationMinutes,
 }: TimelineLogModalProps) => {
+  const [activeTab, setActiveTab] = useState<string>('timeline');
+  
   // Process navigation log into timeline entries
   const timelineEntries = useMemo((): TimelineEntry[] => {
     if (!navigationLog || navigationLog.length === 0) return [];
@@ -188,9 +197,21 @@ export const TimelineLogModal = ({
     };
   }, [navigationLog]);
 
+  const handleExportExcel = () => {
+    if (navigationLog && navigationLog.length > 0) {
+      exportTimelineToExcel(navigationLog, participantName, examDurationMinutes);
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (navigationLog && navigationLog.length > 0) {
+      exportTimelineToPDF(navigationLog, participantName, examDurationMinutes);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Timer className="w-5 h-5 text-primary" />
@@ -220,80 +241,126 @@ export const TimelineLogModal = ({
                   <p className="text-xs text-muted-foreground">Total Aksi</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-500">{stats.nextCount}</p>
+                  <p className="text-2xl font-bold text-chart-1">{stats.nextCount}</p>
                   <p className="text-xs text-muted-foreground">Next</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-orange-500">{stats.prevCount}</p>
+                  <p className="text-2xl font-bold text-chart-2">{stats.prevCount}</p>
                   <p className="text-xs text-muted-foreground">Previous</p>
                 </div>
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-purple-500">{stats.jumpCount}</p>
+                  <p className="text-2xl font-bold text-chart-3">{stats.jumpCount}</p>
                   <p className="text-xs text-muted-foreground">Lompat</p>
                 </div>
               </div>
             )}
             
-            {/* Most Visited Questions */}
-            {stats && stats.mostVisited.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 px-1">
-                <span>Soal paling sering dikunjungi:</span>
-                {stats.mostVisited.map(({ question, count }) => (
-                  <Badge key={question} variant="outline" className="text-xs">
-                    No. {question} ({count}x)
-                  </Badge>
-                ))}
-              </div>
-            )}
-            
-            {/* Timeline List */}
-            <ScrollArea className="flex-1 min-h-0 pr-4">
-              <div className="space-y-2">
-                {timelineEntries.map((entry, idx) => (
-                  <div 
-                    key={idx}
-                    className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
-                  >
-                    {/* Timeline indicator */}
-                    <div className="flex flex-col items-center">
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-                        {getActionIcon(entry.action)}
-                      </div>
-                      {idx < timelineEntries.length - 1 && (
-                        <div className="w-0.5 h-4 bg-muted-foreground/20 mt-1" />
-                      )}
-                    </div>
-                    
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm">
-                            Soal No. {entry.questionNumber}
-                          </span>
-                          <Badge variant={getActionBadgeVariant(entry.action)} className="text-xs">
-                            {entry.actionLabel}
-                          </Badge>
-                        </div>
-                        <span className="text-xs font-medium text-primary whitespace-nowrap">
-                          {formatDuration(entry.durationSeconds)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        <span>
-                          {entry.startTime} → {entry.endTime}
-                        </span>
-                      </div>
-                    </div>
+            {/* Tabs for Timeline and Chart */}
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col min-h-0">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="timeline" className="flex items-center gap-1">
+                  <List className="w-4 h-4" />
+                  Timeline
+                </TabsTrigger>
+                <TabsTrigger value="chart" className="flex items-center gap-1">
+                  <BarChart3 className="w-4 h-4" />
+                  Visualisasi
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="timeline" className="flex-1 min-h-0 mt-3">
+                {/* Most Visited Questions */}
+                {stats && stats.mostVisited.length > 0 && (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2 px-1">
+                    <span>Soal paling sering dikunjungi:</span>
+                    {stats.mostVisited.map(({ question, count }) => (
+                      <Badge key={question} variant="outline" className="text-xs">
+                        No. {question} ({count}x)
+                      </Badge>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                )}
+                
+                {/* Timeline List */}
+                <ScrollArea className="h-[300px] pr-4">
+                  <div className="space-y-2">
+                    {timelineEntries.map((entry, idx) => (
+                      <div 
+                        key={idx}
+                        className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors"
+                      >
+                        {/* Timeline indicator */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                            {getActionIcon(entry.action)}
+                          </div>
+                          {idx < timelineEntries.length - 1 && (
+                            <div className="w-0.5 h-4 bg-muted-foreground/20 mt-1" />
+                          )}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm">
+                                Soal No. {entry.questionNumber}
+                              </span>
+                              <Badge variant={getActionBadgeVariant(entry.action)} className="text-xs">
+                                {entry.actionLabel}
+                              </Badge>
+                            </div>
+                            <span className="text-xs font-medium text-primary whitespace-nowrap">
+                              {formatDuration(entry.durationSeconds)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+                            <Clock className="w-3 h-3" />
+                            <span>
+                              {entry.startTime} → {entry.endTime}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </TabsContent>
+              
+              <TabsContent value="chart" className="flex-1 min-h-0 mt-3">
+                <ScrollArea className="h-[350px]">
+                  <TimelineChart navigationLog={navigationLog} />
+                </ScrollArea>
+              </TabsContent>
+            </Tabs>
           </>
         )}
         
-        <div className="flex justify-end pt-3 border-t">
+        <div className="flex items-center justify-between pt-3 border-t">
+          {navigationLog && navigationLog.length > 0 ? (
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportExcel}
+                className="flex items-center gap-1"
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                Export Excel
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportPDF}
+                className="flex items-center gap-1"
+              >
+                <FileText className="w-4 h-4" />
+                Export PDF
+              </Button>
+            </div>
+          ) : (
+            <div />
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Tutup
           </Button>
