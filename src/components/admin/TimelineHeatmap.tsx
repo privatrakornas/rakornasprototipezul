@@ -10,8 +10,12 @@ import { toast } from '@/hooks/use-toast';
 interface NavigationEvent {
   timestamp: string;
   remainingTimeSeconds: number;
-  questionNumber: number;
+  remainingTimeFormatted?: string;
   action: string;
+  fromQuestion?: number;
+  toQuestion?: number;
+  // Legacy fields for backward compatibility
+  questionNumber?: number;
   previousQuestion?: number;
 }
 
@@ -121,9 +125,12 @@ export const TimelineHeatmap = ({ navigationLog, participantName }: TimelineHeat
         ? current.remainingTimeSeconds - next.remainingTimeSeconds
         : current.remainingTimeSeconds;
       
-      const qNum = current.questionNumber;
-      timeMap[qNum] = (timeMap[qNum] || 0) + Math.max(0, duration);
-      visitMap[qNum] = (visitMap[qNum] || 0) + 1;
+      // Support both new format (toQuestion) and legacy format (questionNumber)
+      const qNum = current.toQuestion ?? current.questionNumber ?? 0;
+      if (qNum > 0) {
+        timeMap[qNum] = (timeMap[qNum] || 0) + Math.max(0, duration);
+        visitMap[qNum] = (visitMap[qNum] || 0) + 1;
+      }
     }
     
     const times = Object.values(timeMap);

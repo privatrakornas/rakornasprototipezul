@@ -6,8 +6,12 @@ import jsPDF from 'jspdf';
 interface NavigationEvent {
   timestamp: string;
   remainingTimeSeconds: number;
-  questionNumber: number;
+  remainingTimeFormatted?: string;
   action: string;
+  fromQuestion?: number;
+  toQuestion?: number;
+  // Legacy fields for backward compatibility
+  questionNumber?: number;
   previousQuestion?: number;
 }
 
@@ -15,7 +19,8 @@ interface TimelineEntry {
   startTime: string;
   endTime: string;
   durationSeconds: number;
-  questionNumber: number;
+  fromQuestion: number;
+  toQuestion: number;
   action: string;
   actionLabel: string;
 }
@@ -39,20 +44,20 @@ const formatDuration = (seconds: number): string => {
   return `${mins} menit ${secs} detik`;
 };
 
-const getActionLabel = (action: string, prevQ?: number): string => {
+const getActionLabel = (action: string, fromQ?: number, toQ?: number): string => {
   switch (action) {
     case 'next':
-      return 'Klik Next';
+      return fromQ && toQ ? `Next: ${fromQ} → ${toQ}` : 'Klik Next';
     case 'prev':
-      return 'Klik Previous';
+      return fromQ && toQ ? `Prev: ${fromQ} → ${toQ}` : 'Klik Previous';
     case 'jump':
-      return prevQ ? `Lompat dari Soal ${prevQ}` : 'Lompat Navigasi';
+      return fromQ && toQ ? `Jump: ${fromQ} → ${toQ}` : 'Lompat Navigasi';
     case 'submit':
-      return 'Submit Ujian';
+      return '🏁 Selesai & Submit';
     case 'auto_submit':
-      return 'Auto-Submit (Waktu Habis)';
+      return '⏰ Auto-Submit (Waktu Habis)';
     case 'start':
-      return 'Mulai Ujian';
+      return '🚀 Mulai Ujian';
     default:
       return action;
   }
@@ -77,13 +82,18 @@ export const processNavigationLog = (navigationLog: NavigationEvent[]): Timeline
       ? current.remainingTimeSeconds - next.remainingTimeSeconds
       : current.remainingTimeSeconds;
     
+    // Support both new format (fromQuestion/toQuestion) and legacy format (questionNumber/previousQuestion)
+    const fromQ = current.fromQuestion ?? current.previousQuestion ?? current.questionNumber ?? 0;
+    const toQ = current.toQuestion ?? current.questionNumber ?? 0;
+    
     entries.push({
-      startTime: formatRemainingTime(current.remainingTimeSeconds),
-      endTime: formatRemainingTime(next?.remainingTimeSeconds ?? 0),
+      startTime: current.remainingTimeFormatted ?? formatRemainingTime(current.remainingTimeSeconds),
+      endTime: next?.remainingTimeFormatted ?? formatRemainingTime(next?.remainingTimeSeconds ?? 0),
       durationSeconds: Math.max(0, durationSeconds),
-      questionNumber: current.questionNumber,
+      fromQuestion: fromQ,
+      toQuestion: toQ,
       action: current.action,
-      actionLabel: getActionLabel(current.action, current.previousQuestion),
+      actionLabel: getActionLabel(current.action, fromQ, toQ),
     });
   }
   
@@ -112,14 +122,20 @@ export const calculateTimelineStats = (navigationLog: NavigationEvent[]) => {
       ? current.remainingTimeSeconds - next.remainingTimeSeconds
       : current.remainingTimeSeconds;
     
-    timePerQuestion[current.questionNumber] = 
-      (timePerQuestion[current.questionNumber] || 0) + Math.max(0, duration);
+    // Support both new format (toQuestion) and legacy format (questionNumber)
+    const qNum = current.toQuestion ?? current.questionNumber ?? 0;
+    if (qNum > 0) {
+      timePerQuestion[qNum] = (timePerQuestion[qNum] || 0) + Math.max(0, duration);
+    }
   }
   
-  // Find most visited questions
+  // Find most visited questions (using toQuestion for new format, questionNumber for legacy)
   const questionVisits: Record<number, number> = {};
   navigationLog.forEach(e => {
-    questionVisits[e.questionNumber] = (questionVisits[e.questionNumber] || 0) + 1;
+    const qNum = e.toQuestion ?? e.questionNumber ?? 0;
+    if (qNum > 0) {
+      questionVisits[qNum] = (questionVisits[qNum] || 0) + 1;
+    }
   });
   
   const mostVisited = Object.entries(questionVisits)
@@ -153,14 +169,15 @@ export const exportTimelineToExcel = (
   const entries = processNavigationLog(navigationLog);
   const stats = calculateTimelineStats(navigationLog);
   
-  // Timeline sheet data
-  const timelineHeaders = ['No', 'Waktu Mulai', 'Waktu Selesai', 'Durasi', 'Nomor Soal', 'Aksi'];
+  // Timeline sheet data - Updated to show from → to format
+  const timelineHeaders = ['No', 'Waktu Mulai', 'Waktu Selesai', 'Durasi', 'Dari Soal', 'Ke Soal', 'Aksi'];
   const timelineRows = entries.map((entry, idx) => [
     idx + 1,
     entry.startTime,
     entry.endTime,
     formatDuration(entry.durationSeconds),
-    entry.questionNumber,
+    entry.fromQuestion,
+    entry.toQuestion,
     entry.actionLabel,
   ]);
   
@@ -170,7 +187,8 @@ export const exportTimelineToExcel = (
     { wch: 12 }, // Waktu Mulai
     { wch: 12 }, // Waktu Selesai
     { wch: 18 }, // Durasi
-    { wch: 12 }, // Nomor Soal
+    { wch: 10 }, // Dari Soal
+    { wch: 10 }, // Ke Soal
     { wch: 25 }, // Aksi
   ];
   
@@ -309,9 +327,9 @@ export const exportTimelineToPDF = (
   doc.text('DETAIL TIMELINE NAVIGASI', margin, y);
   y += 8;
   
-  // Table header
-  const colWidths = [10, 25, 25, 35, 15, 60];
-  const headers = ['No', 'Mulai', 'Selesai', 'Durasi', 'Soal', 'Aksi'];
+  // Table header - Updated for from/to format
+  const colWidths = [10, 22, 22, 32, 25, 55];
+  const headers = ['No', 'Mulai', 'Selesai', 'Durasi', 'Navigasi', 'Aksi'];
   
   doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
@@ -334,17 +352,22 @@ export const exportTimelineToPDF = (
     }
     
     x = margin;
+    // Show from → to navigation
+    const navigationText = entry.fromQuestion === entry.toQuestion 
+      ? `Q${entry.toQuestion}` 
+      : `Q${entry.fromQuestion}→${entry.toQuestion}`;
+    
     const row = [
       String(idx + 1),
       entry.startTime,
       entry.endTime,
       formatDuration(entry.durationSeconds),
-      String(entry.questionNumber),
+      navigationText,
       entry.actionLabel,
     ];
     
     row.forEach((cell, cellIdx) => {
-      const cellText = cell.length > 15 && cellIdx === 5 ? cell.substring(0, 15) + '...' : cell;
+      const cellText = cell.length > 18 && cellIdx === 5 ? cell.substring(0, 18) + '...' : cell;
       doc.text(cellText, x + 1, y);
       x += colWidths[cellIdx];
     });

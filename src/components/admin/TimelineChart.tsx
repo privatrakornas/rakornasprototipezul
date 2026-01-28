@@ -21,8 +21,12 @@ import { BarChart3, PieChartIcon, TrendingUp } from 'lucide-react';
 interface NavigationEvent {
   timestamp: string;
   remainingTimeSeconds: number;
-  questionNumber: number;
+  remainingTimeFormatted?: string;
   action: string;
+  fromQuestion?: number;
+  toQuestion?: number;
+  // Legacy fields for backward compatibility
+  questionNumber?: number;
   previousQuestion?: number;
 }
 
@@ -82,8 +86,11 @@ export const TimelineChart = ({ navigationLog }: TimelineChartProps) => {
         ? current.remainingTimeSeconds - next.remainingTimeSeconds
         : current.remainingTimeSeconds;
       
-      timeMap[current.questionNumber] = 
-        (timeMap[current.questionNumber] || 0) + Math.max(0, duration);
+      // Support both new format (toQuestion) and legacy format (questionNumber)
+      const qNum = current.toQuestion ?? current.questionNumber ?? 0;
+      if (qNum > 0) {
+        timeMap[qNum] = (timeMap[qNum] || 0) + Math.max(0, duration);
+      }
     }
     
     return Object.entries(timeMap)
@@ -150,7 +157,11 @@ export const TimelineChart = ({ navigationLog }: TimelineChartProps) => {
     
     const visits: Record<number, number> = {};
     navigationLog.forEach(e => {
-      visits[e.questionNumber] = (visits[e.questionNumber] || 0) + 1;
+      // Support both new format (toQuestion) and legacy format (questionNumber)
+      const qNum = e.toQuestion ?? e.questionNumber ?? 0;
+      if (qNum > 0) {
+        visits[qNum] = (visits[qNum] || 0) + 1;
+      }
     });
     
     return Object.entries(visits)

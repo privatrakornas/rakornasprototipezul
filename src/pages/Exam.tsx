@@ -198,8 +198,8 @@ const Exam = () => {
       sessionInitializedRef.current = true;
       await createSession(userName, deviceFingerprint, examStartedAt);
       
-      // Log exam start in navigation timeline
-      logNavigation('start', EXAM_TIME, 1);
+      // Log exam start in navigation timeline (from Q1 to Q1)
+      logNavigation('start', EXAM_TIME, 1, 1);
     };
     
     initSession();
@@ -356,10 +356,13 @@ const Exam = () => {
     setIsSubmitting(true);
     
     // Log submit event in navigation timeline (BEFORE saving to DB)
+    // fromQuestion = current question, toQuestion = same (submit doesn't navigate)
+    const currentQId = questions[currentQuestion].id;
     logNavigation(
       isAutoSubmit ? 'auto_submit' : 'submit', 
       timeLeft, 
-      questions[currentQuestion].id
+      currentQId,
+      currentQId
     );
     
     // Calculate real duration based on started_at and current time
@@ -444,11 +447,12 @@ const Exam = () => {
   };
 
   const handleNavClick = useCallback((idx: number) => {
-    const previousQ = questions[currentQuestion].id;
-    const newQ = questions[idx].id;
+    const fromQ = questions[currentQuestion].id;
+    const toQ = questions[idx].id;
     
     // Log jump navigation (clicking question number in grid)
-    logNavigation('jump', timeLeft, newQ, previousQ);
+    // fromQuestion = current, toQuestion = target
+    logNavigation('jump', timeLeft, fromQ, toQ);
     
     setCurrentQuestion(idx);
     setNavOpen(false);
@@ -684,9 +688,11 @@ const Exam = () => {
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  const fromQ = questions[currentQuestion].id;
                   const newIdx = Math.max(0, currentQuestion - 1);
-                  // Log prev navigation
-                  logNavigation('prev', timeLeft, questions[newIdx].id);
+                  const toQ = questions[newIdx].id;
+                  // Log prev navigation: from current to previous
+                  logNavigation('prev', timeLeft, fromQ, toQ);
                   setCurrentQuestion(newIdx);
                   syncQuestionPosition(newIdx);
                 }}
@@ -698,9 +704,11 @@ const Exam = () => {
               <Button
                 size="sm"
                 onClick={() => {
+                  const fromQ = questions[currentQuestion].id;
                   const newIdx = currentQuestion === 109 ? 0 : currentQuestion + 1;
-                  // Log next navigation
-                  logNavigation('next', timeLeft, questions[newIdx].id);
+                  const toQ = questions[newIdx].id;
+                  // Log next navigation: from current to next
+                  logNavigation('next', timeLeft, fromQ, toQ);
                   setCurrentQuestion(newIdx);
                   syncQuestionPosition(newIdx);
                 }}

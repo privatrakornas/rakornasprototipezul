@@ -13,14 +13,26 @@ export type NavigationAction =
 
 /**
  * Single navigation event structure
+ * 
+ * UPDATED: Now tracks both fromQuestion and toQuestion for complete navigation trail
  */
 export interface NavigationEvent {
   timestamp: string;           // ISO timestamp
   remainingTimeSeconds: number; // Remaining exam time in seconds
-  questionNumber: number;       // Current question number (1-indexed)
+  remainingTimeFormatted: string; // Human-readable format "MM:SS"
   action: NavigationAction;     // Type of navigation action
-  previousQuestion?: number;    // Previous question number (for jump detection)
+  fromQuestion: number;         // Question number BEFORE navigation (1-indexed)
+  toQuestion: number;           // Question number AFTER navigation (1-indexed)
 }
+
+/**
+ * Format seconds to MM:SS string
+ */
+const formatTime = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+};
 
 /**
  * Hook to track participant navigation events during exam
@@ -32,34 +44,34 @@ export const useNavigationTimeline = () => {
   const eventsRef = useRef<NavigationEvent[]>([]);
   
   /**
-   * Log a navigation event
-   * @param action - Type of navigation (next, prev, jump, submit)
+   * Log a navigation event with complete from/to tracking
+   * @param action - Type of navigation (next, prev, jump, submit, auto_submit, start)
    * @param remainingTimeSeconds - Current remaining time in seconds
-   * @param questionNumber - Current question number (1-indexed)
-   * @param previousQuestion - Previous question number (optional, for jump detection)
+   * @param fromQuestion - Question number BEFORE the action (1-indexed)
+   * @param toQuestion - Question number AFTER the action (1-indexed)
    */
   const logNavigation = useCallback((
     action: NavigationAction,
     remainingTimeSeconds: number,
-    questionNumber: number,
-    previousQuestion?: number
+    fromQuestion: number,
+    toQuestion: number
   ) => {
     const event: NavigationEvent = {
       timestamp: new Date().toISOString(),
       remainingTimeSeconds,
-      questionNumber,
+      remainingTimeFormatted: formatTime(remainingTimeSeconds),
       action,
+      fromQuestion,
+      toQuestion,
     };
-    
-    // Only include previousQuestion for jump action
-    if (action === 'jump' && previousQuestion !== undefined) {
-      event.previousQuestion = previousQuestion;
-    }
     
     eventsRef.current.push(event);
     
-    // Debug log (can be removed in production)
-    console.log('[Timeline] Event logged:', action, `Q${questionNumber}`, `${Math.floor(remainingTimeSeconds / 60)}:${String(remainingTimeSeconds % 60).padStart(2, '0')}`);
+    // Debug log with detailed info
+    const actionLabel = action === 'submit' ? '🏁 SUBMIT' : 
+                        action === 'auto_submit' ? '⏰ AUTO-SUBMIT' :
+                        action === 'start' ? '🚀 START' : action.toUpperCase();
+    console.log(`[Timeline] ${actionLabel}: Q${fromQuestion} → Q${toQuestion} @ ${formatTime(remainingTimeSeconds)}`);
   }, []);
   
   /**
