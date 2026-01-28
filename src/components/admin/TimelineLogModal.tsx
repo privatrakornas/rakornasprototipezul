@@ -335,7 +335,7 @@ export const TimelineLogModal = ({
               
               <TabsContent value="heatmap" className="flex-1 min-h-0 mt-3">
                 <ScrollArea className="h-[350px]">
-                  <TimelineHeatmap navigationLog={navigationLog} />
+                  <TimelineHeatmap navigationLog={navigationLog} participantName={participantName} />
                 </ScrollArea>
               </TabsContent>
               

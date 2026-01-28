@@ -1,8 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
-import { Flame } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Flame, Download, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import { toast } from '@/hooks/use-toast';
 
 interface NavigationEvent {
   timestamp: string;
@@ -14,6 +17,7 @@ interface NavigationEvent {
 
 interface TimelineHeatmapProps {
   navigationLog: NavigationEvent[];
+  participantName?: string;
 }
 
 const TOTAL_QUESTIONS = 110;
@@ -58,7 +62,44 @@ const getHeatColor = (intensity: number, visited: boolean): string => {
   }
 };
 
-export const TimelineHeatmap = ({ navigationLog }: TimelineHeatmapProps) => {
+export const TimelineHeatmap = ({ navigationLog, participantName }: TimelineHeatmapProps) => {
+  const heatmapRef = useRef<HTMLDivElement>(null);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExportPNG = async () => {
+    if (!heatmapRef.current) return;
+    
+    setIsExporting(true);
+    try {
+      const canvas = await html2canvas(heatmapRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2, // Higher resolution
+        logging: false,
+        useCORS: true,
+      });
+      
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const safeName = (participantName || 'heatmap').replace(/[^a-zA-Z0-9]/g, '_');
+      link.download = `heatmap_${safeName}_${timestamp}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      
+      toast({
+        title: 'Export Berhasil',
+        description: 'Heatmap berhasil disimpan sebagai PNG',
+      });
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: 'Export Gagal',
+        description: 'Terjadi kesalahan saat mengexport heatmap',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
   // Calculate time spent per question
   const { timePerQuestion, maxTime, stats } = useMemo(() => {
     if (!navigationLog || navigationLog.length === 0) {
@@ -137,7 +178,43 @@ export const TimelineHeatmap = ({ navigationLog }: TimelineHeatmapProps) => {
 
   return (
     <div className="space-y-4">
-      {/* Stats Summary */}
+      {/* Export Button */}
+      <div className="flex justify-end">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={handleExportPNG}
+          disabled={isExporting}
+          className="flex items-center gap-2"
+        >
+          {isExporting ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          Export PNG
+        </Button>
+      </div>
+
+      {/* Exportable Content */}
+      <div ref={heatmapRef} className="bg-background p-4 rounded-lg">
+        {/* Participant Name Header for Export */}
+        {participantName && (
+          <div className="text-center mb-3 pb-2 border-b">
+            <h3 className="font-semibold text-sm">Heatmap Pengerjaan: {participantName}</h3>
+            <p className="text-xs text-muted-foreground">
+              Diekspor pada {new Date().toLocaleDateString('id-ID', { 
+                day: 'numeric', 
+                month: 'long', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
+            </p>
+          </div>
+        )}
+
+        {/* Stats Summary */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-2 text-center">
           <div className="p-2 rounded-lg bg-muted/50">
@@ -262,6 +339,7 @@ export const TimelineHeatmap = ({ navigationLog }: TimelineHeatmapProps) => {
           </TooltipProvider>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
