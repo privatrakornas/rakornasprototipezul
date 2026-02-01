@@ -271,12 +271,26 @@ const FinishedRow = memo(({ entry, rank, onViewTimeline, anomalyRisk, anomalySco
 FinishedRow.displayName = 'FinishedRow';
 
 type StatusFilter = 'all' | 'lulus' | 'tidak_lulus';
+type RiskFilter = 'all' | 'high_critical' | 'medium' | 'low';
 
 const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null);
   const [timelineModalOpen, setTimelineModalOpen] = useState(false);
+
+  // Precompute anomaly analysis for all entries - do this before filtering
+  const anomalyMap = useMemo(() => {
+    const map = new Map<string, { risk: 'low' | 'medium' | 'high' | 'critical'; score: number }>();
+    data.forEach(entry => {
+      if (entry.status === 'finished' && entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0) {
+        const analysis = analyzeNavigationAnomalies(entry.navigation_log as NavigationEvent[]);
+        map.set(entry.id, { risk: analysis.overallRisk, score: analysis.riskScore });
+      }
+    });
+    return map;
+  }, [data]);
 
   // Filter and sort data
   const finishedData = useMemo(() => {
@@ -298,6 +312,20 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
           if (statusFilter === 'tidak_lulus' && lulus) return false;
         }
         
+        // Risk filter
+        if (riskFilter !== 'all') {
+          const anomalyData = anomalyMap.get(e.id);
+          if (!anomalyData) return riskFilter === 'low'; // No log = low risk
+          
+          if (riskFilter === 'high_critical') {
+            if (anomalyData.risk !== 'high' && anomalyData.risk !== 'critical') return false;
+          } else if (riskFilter === 'medium') {
+            if (anomalyData.risk !== 'medium') return false;
+          } else if (riskFilter === 'low') {
+            if (anomalyData.risk !== 'low') return false;
+          }
+        }
+        
         return true;
       })
       .sort((a, b) => {
@@ -312,19 +340,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
         if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
         return b.twk_score - a.twk_score;
       });
-  }, [data, searchQuery, statusFilter]);
-
-  // Precompute anomaly analysis for all entries with navigation logs
-  const anomalyMap = useMemo(() => {
-    const map = new Map<string, { risk: 'low' | 'medium' | 'high' | 'critical'; score: number }>();
-    finishedData.forEach(entry => {
-      if (entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0) {
-        const analysis = analyzeNavigationAnomalies(entry.navigation_log as NavigationEvent[]);
-        map.set(entry.id, { risk: analysis.overallRisk, score: analysis.riskScore });
-      }
-    });
-    return map;
-  }, [finishedData]);
+  }, [data, searchQuery, statusFilter, riskFilter, anomalyMap]);
 
   // Count high-risk entries
   const highRiskCount = useMemo(() => {
@@ -341,6 +357,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
     setStatusFilter('all');
+    setRiskFilter('all');
   }, []);
 
   const handleViewTimeline = useCallback((entry: LeaderboardEntry) => {
@@ -348,7 +365,16 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     setTimelineModalOpen(true);
   }, []);
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all';
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || riskFilter !== 'all';
+
+  const getRiskFilterLabel = () => {
+    switch (riskFilter) {
+      case 'high_critical': return 'Risiko Tinggi/Kritis';
+      case 'medium': return 'Risiko Sedang';
+      case 'low': return 'Risiko Rendah';
+      default: return 'Semua Risiko';
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -391,6 +417,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
           />
         </div>
         
+        {/* Status Filter */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
@@ -419,6 +446,50 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
             >
               <XCircle className="w-3 h-3 mr-1.5 text-red-600" />
               Tidak Lulus
+            </DropdownMenuCheckboxItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        {/* Risk Filter */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant={riskFilter !== 'all' ? 'default' : 'outline'} 
+              size="sm" 
+              className={`h-7 text-xs gap-1 ${riskFilter === 'high_critical' ? 'bg-destructive hover:bg-destructive/90' : ''}`}
+            >
+              <ShieldAlert className="w-3 h-3" />
+              {getRiskFilterLabel()}
+              <ChevronDown className="w-3 h-3" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuCheckboxItem
+              checked={riskFilter === 'all'}
+              onCheckedChange={() => setRiskFilter('all')}
+            >
+              Semua Risiko
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={riskFilter === 'high_critical'}
+              onCheckedChange={() => setRiskFilter('high_critical')}
+            >
+              <ShieldAlert className="w-3 h-3 mr-1.5 text-destructive" />
+              Tinggi/Kritis
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={riskFilter === 'medium'}
+              onCheckedChange={() => setRiskFilter('medium')}
+            >
+              <AlertTriangle className="w-3 h-3 mr-1.5 text-yellow-600" />
+              Sedang
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={riskFilter === 'low'}
+              onCheckedChange={() => setRiskFilter('low')}
+            >
+              <CheckCircle className="w-3 h-3 mr-1.5 text-green-600" />
+              Rendah
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
