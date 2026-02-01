@@ -34,6 +34,7 @@ import {
 import type { LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import { isLulus } from '@/hooks/useRealtimeLeaderboard';
 import TimelineLogModal from '@/components/admin/TimelineLogModal';
+import AnomalyExportPanel from '@/components/admin/AnomalyExportPanel';
 import { analyzeNavigationAnomalies, type NavigationEvent } from '@/utils/anomalyDetection';
 
 const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
@@ -505,6 +506,9 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
             Reset
           </Button>
         )}
+
+        {/* Anomaly Export Panel */}
+        <AnomalyExportPanel data={data} />
       </div>
       
       {/* Table with fixed height and scroll */}
