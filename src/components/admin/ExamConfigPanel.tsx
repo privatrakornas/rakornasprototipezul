@@ -30,6 +30,8 @@ const DEFAULT_CONFIG = {
   security: {
     watermarkEnabled: true,
     contentProtectionEnabled: true,
+    emailAlertEnabled: false,
+    adminEmail: '',
   },
 };
 
@@ -44,6 +46,8 @@ export interface ExamConfig {
   security: {
     watermarkEnabled: boolean;
     contentProtectionEnabled: boolean;
+    emailAlertEnabled: boolean;
+    adminEmail: string;
   };
 }
 
@@ -95,12 +99,22 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
     }));
   };
 
-  const updateSecurity = (key: 'watermarkEnabled' | 'contentProtectionEnabled', value: boolean) => {
+  const updateSecurity = (key: 'watermarkEnabled' | 'contentProtectionEnabled' | 'emailAlertEnabled', value: boolean) => {
     setConfig(prev => ({
       ...prev,
       security: {
         ...prev.security,
         [key]: value,
+      },
+    }));
+  };
+
+  const updateAdminEmail = (email: string) => {
+    setConfig(prev => ({
+      ...prev,
+      security: {
+        ...prev.security,
+        adminEmail: email,
       },
     }));
   };
@@ -201,6 +215,37 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
                 checked={config.security.contentProtectionEnabled}
                 onCheckedChange={(checked) => updateSecurity('contentProtectionEnabled', checked)}
               />
+            </div>
+            
+            <div className="p-3 bg-muted/30 rounded-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-4 h-4 text-primary" />
+                  <div>
+                    <Label className="text-sm font-medium">Email Alert Anomali</Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      Kirim email otomatis saat anomali High/Critical terdeteksi
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  checked={config.security.emailAlertEnabled}
+                  onCheckedChange={(checked) => updateSecurity('emailAlertEnabled', checked)}
+                />
+              </div>
+              {config.security.emailAlertEnabled && (
+                <div className="pl-7">
+                  <Label htmlFor="admin-email" className="text-xs">Email Admin</Label>
+                  <Input
+                    id="admin-email"
+                    type="email"
+                    placeholder="admin@example.com"
+                    value={config.security.adminEmail || ''}
+                    onChange={(e) => updateAdminEmail(e.target.value)}
+                    className="h-8 mt-1"
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>

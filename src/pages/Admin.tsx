@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAdminData } from '@/hooks/useAdminData';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import { useAdminNotifications } from '@/hooks/useAdminNotifications';
+import { useExamConfig } from '@/components/admin/ExamConfigPanel';
 import {
   ExamSession,
   AdminLogin,
@@ -33,8 +34,15 @@ const Admin = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
   
+  // Get exam config for email alerts
+  const examConfig = useExamConfig();
+  
   // Enable admin notifications when authenticated
-  const { notifications, clearNotifications, notificationCount } = useAdminNotifications({ enabled: isAuthenticated });
+  const { notifications, clearNotifications, notificationCount } = useAdminNotifications({ 
+    enabled: isAuthenticated,
+    emailAlertEnabled: examConfig.security.emailAlertEnabled,
+    adminEmail: examConfig.security.adminEmail,
+  });
 
   // Admin data hook
   const {
