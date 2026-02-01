@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { create, verify } from "https://deno.land/x/djwt@v2.8/mod.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Allowed origins for CORS - restrict to legitimate sources
 const allowedOrigins = [
@@ -126,6 +127,36 @@ async function validateSessionToken(token: string): Promise<{ valid: boolean; na
   }
 }
 
+// Helper to get PIN from database with env fallback
+async function getPinFromConfig(configKey: string, envFallback: string | undefined): Promise<string | undefined> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.log('Supabase credentials not found, using env fallback for', configKey);
+      return envFallback;
+    }
+    
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { data, error } = await supabase
+      .from('exam_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .single();
+    
+    if (error || !data) {
+      console.log('Config not found in DB for', configKey, ', using env fallback');
+      return envFallback;
+    }
+    
+    return data.config_value;
+  } catch (err) {
+    console.error('Error fetching config from DB:', err);
+    return envFallback;
+  }
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -137,8 +168,10 @@ serve(async (req) => {
 
   try {
     const { action, pin, name, token, type } = await req.json();
-    const VALID_PIN = Deno.env.get('EXAM_PIN');
-    const ADMIN_PIN = Deno.env.get('ADMIN_PIN');
+    
+    // Get PINs from database with env fallback
+    const VALID_PIN = await getPinFromConfig('exam_pin', Deno.env.get('EXAM_PIN'));
+    const ADMIN_PIN = await getPinFromConfig('admin_pin', Deno.env.get('ADMIN_PIN'));
 
     if (!VALID_PIN) {
       console.error('EXAM_PIN not configured');

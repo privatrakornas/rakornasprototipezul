@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,9 +14,14 @@ import {
   RotateCcw,
   AlertCircle,
   Shield,
-  Droplets
+  Droplets,
+  Key,
+  Eye,
+  EyeOff,
+  Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 // Default exam configuration
 const DEFAULT_CONFIG = {
@@ -68,6 +73,54 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
   });
   
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // PIN Management state
+  const [examPin, setExamPin] = useState('');
+  const [adminPin, setAdminPin] = useState('');
+  const [showExamPin, setShowExamPin] = useState(false);
+  const [showAdminPin, setShowAdminPin] = useState(false);
+  const [isLoadingPins, setIsLoadingPins] = useState(true);
+  const [isSavingPins, setIsSavingPins] = useState(false);
+  const [pinHasChanges, setPinHasChanges] = useState(false);
+  const [originalPins, setOriginalPins] = useState({ examPin: '', adminPin: '' });
+
+  // Load PINs from database
+  const loadPins = useCallback(async () => {
+    setIsLoadingPins(true);
+    try {
+      const { data, error } = await supabase
+        .from('exam_config')
+        .select('config_key, config_value')
+        .in('config_key', ['exam_pin', 'admin_pin']);
+      
+      if (error) throw error;
+      
+      const pins = { examPin: '', adminPin: '' };
+      data?.forEach(item => {
+        if (item.config_key === 'exam_pin') pins.examPin = item.config_value;
+        if (item.config_key === 'admin_pin') pins.adminPin = item.config_value;
+      });
+      
+      setExamPin(pins.examPin);
+      setAdminPin(pins.adminPin);
+      setOriginalPins(pins);
+    } catch (err) {
+      console.error('Error loading PINs:', err);
+      toast.error('Gagal memuat konfigurasi PIN');
+    } finally {
+      setIsLoadingPins(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPins();
+  }, [loadPins]);
+
+  // Check PIN changes
+  useEffect(() => {
+    const hasChanged = examPin !== originalPins.examPin || adminPin !== originalPins.adminPin;
+    setPinHasChanges(hasChanged);
+  }, [examPin, adminPin, originalPins]);
 
   // Check if config differs from saved
   useEffect(() => {
@@ -134,6 +187,45 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
     toast.info('Konfigurasi dikembalikan ke default');
   };
 
+  const savePins = async () => {
+    if (examPin.length < 4) {
+      toast.error('PIN Ujian minimal 4 karakter');
+      return;
+    }
+    if (adminPin.length < 4) {
+      toast.error('PIN Admin minimal 4 karakter');
+      return;
+    }
+
+    setIsSavingPins(true);
+    try {
+      // Update exam PIN
+      const { error: examError } = await supabase
+        .from('exam_config')
+        .update({ config_value: examPin })
+        .eq('config_key', 'exam_pin');
+      
+      if (examError) throw examError;
+
+      // Update admin PIN
+      const { error: adminError } = await supabase
+        .from('exam_config')
+        .update({ config_value: adminPin })
+        .eq('config_key', 'admin_pin');
+      
+      if (adminError) throw adminError;
+
+      setOriginalPins({ examPin, adminPin });
+      setPinHasChanges(false);
+      toast.success('PIN berhasil diperbarui');
+    } catch (err) {
+      console.error('Error saving PINs:', err);
+      toast.error('Gagal menyimpan PIN');
+    } finally {
+      setIsSavingPins(false);
+    }
+  };
+
   const isModified = (key: string, value: number) => {
     const defaultValue = key.includes('.')
       ? (DEFAULT_CONFIG.passingGrades as any)[key.split('.')[1]]
@@ -177,6 +269,91 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       </div>
 
       <div className="space-y-4">
+        {/* PIN Management */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Key className="w-4 h-4 text-muted-foreground" />
+            Manajemen PIN
+            {pinHasChanges && (
+              <Badge variant="outline" className="text-[10px] gap-1 text-amber-600 border-amber-300">
+                <AlertCircle className="w-3 h-3" />
+                Belum Disimpan
+              </Badge>
+            )}
+          </div>
+          
+          {isLoadingPins ? (
+            <div className="flex items-center justify-center py-4 pl-6">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Memuat PIN...</span>
+            </div>
+          ) : (
+            <div className="space-y-3 pl-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="exam-pin" className="text-xs">PIN Ujian (Peserta)</Label>
+                  <div className="relative">
+                    <Input
+                      id="exam-pin"
+                      type={showExamPin ? 'text' : 'password'}
+                      value={examPin}
+                      onChange={(e) => setExamPin(e.target.value)}
+                      className="h-8 pr-8"
+                      placeholder="****"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowExamPin(!showExamPin)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showExamPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">PIN untuk peserta masuk ujian</p>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="admin-pin" className="text-xs">PIN Admin</Label>
+                  <div className="relative">
+                    <Input
+                      id="admin-pin"
+                      type={showAdminPin ? 'text' : 'password'}
+                      value={adminPin}
+                      onChange={(e) => setAdminPin(e.target.value)}
+                      className="h-8 pr-8"
+                      placeholder="****"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowAdminPin(!showAdminPin)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {showAdminPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground">PIN untuk masuk panel admin</p>
+                </div>
+              </div>
+              
+              <Button
+                size="sm"
+                onClick={savePins}
+                disabled={!pinHasChanges || isSavingPins}
+                className="h-8 gap-1"
+              >
+                {isSavingPins ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Save className="w-3.5 h-3.5" />
+                )}
+                Simpan PIN
+              </Button>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
         {/* Security Settings */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
