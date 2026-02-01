@@ -149,6 +149,16 @@ const Index = () => {
           </div>
         </Card>
       </main>
+
+      {/* Footer with Admin Link */}
+      <footer className="py-4 text-center">
+        <Link 
+          to="/admin" 
+          className="text-xs text-white/40 hover:text-white/70 transition-colors"
+        >
+          Admin Panel
+        </Link>
+      </footer>
     </div>
   );
 };
