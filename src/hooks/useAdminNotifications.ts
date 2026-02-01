@@ -17,6 +17,8 @@ export interface NotificationItem {
 
 interface NotificationOptions {
   enabled?: boolean;
+  emailAlertEnabled?: boolean;
+  adminEmail?: string;
   onNewParticipant?: (name: string) => void;
   onParticipantFinished?: (name: string, isLulus: boolean) => void;
 }
@@ -28,7 +30,7 @@ let profileNameCache = new Map<string, string>();
 const PASSING_GRADES = { TWK: 65, TIU: 80, TKP: 166 };
 
 export const useAdminNotifications = (options: NotificationOptions = {}) => {
-  const { enabled = true, onNewParticipant, onParticipantFinished } = options;
+  const { enabled = true, emailAlertEnabled = false, adminEmail, onNewParticipant, onParticipantFinished } = options;
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
   const processedSessionsRef = useRef<Set<string>>(new Set());
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -47,6 +49,47 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
   const clearNotifications = useCallback(() => {
     setNotifications([]);
   }, []);
+
+  // Send email alert for high-risk anomalies
+  const sendEmailAlert = useCallback(async (
+    participantName: string,
+    participantId: string,
+    riskScore: number,
+    riskLevel: string,
+    anomalies: string[]
+  ) => {
+    if (!emailAlertEnabled || !adminEmail) return;
+    
+    try {
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-anomaly-alert`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({
+          participantName,
+          participantId,
+          riskScore,
+          riskLevel,
+          anomalies,
+          adminEmail,
+          examDate: new Date().toLocaleString('id-ID', { 
+            dateStyle: 'full', 
+            timeStyle: 'short' 
+          }),
+        }),
+      });
+      
+      if (response.ok) {
+        console.log('Email alert sent successfully');
+      } else {
+        console.error('Failed to send email alert:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error sending email alert:', error);
+    }
+  }, [emailAlertEnabled, adminEmail]);
 
   // Fetch profiles for name lookup
   const fetchProfiles = useCallback(async () => {
@@ -207,6 +250,15 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
                 riskLevel: analysis.overallRisk as 'high' | 'critical',
                 riskScore: analysis.riskScore,
               });
+              
+              // Send email alert for high/critical risk
+              sendEmailAlert(
+                name,
+                newRecord.id,
+                analysis.riskScore,
+                analysis.overallRisk === 'critical' ? 'Critical' : 'High',
+                analysis.flags.map(f => f.description)
+              );
             }
           } catch (error) {
             console.error('Error analyzing navigation anomalies:', error);
@@ -238,7 +290,7 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
         });
       }
     }
-  }, [enabled, getParticipantName, onNewParticipant, onParticipantFinished, addNotification]);
+  }, [enabled, getParticipantName, onNewParticipant, onParticipantFinished, addNotification, sendEmailAlert]);
 
   // Setup realtime subscription
   useEffect(() => {
