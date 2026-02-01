@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { Loader2, Trophy } from 'lucide-react';
+import { Loader2, Trophy, Shield } from 'lucide-react';
 import logoRakornas from '@/assets/logo-rakornas.jpg';
 
 // Hardcoded PIN for public access (client-side)
@@ -154,8 +154,9 @@ const Index = () => {
       <footer className="py-4 text-center">
         <Link 
           to="/admin" 
-          className="text-xs text-white/40 hover:text-white/70 transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
         >
+          <Shield className="w-3 h-3" />
           Admin Panel
         </Link>
       </footer>
