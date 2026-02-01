@@ -9,6 +9,8 @@ import LatexText from '@/components/LatexText';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useContentProtection } from '@/hooks/useContentProtection';
+import Watermark from '@/components/Watermark';
 
 // Sanitize name by removing dangerous Unicode characters
 const sanitizeName = (name: string): string => {
@@ -79,6 +81,13 @@ const Results = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const userName = sessionStorage.getItem('userName') || 'Peserta';
+
+  // ============ CONTENT PROTECTION - PROTECT EXAM RESULTS ============
+  // Disable right-click, copy-paste, keyboard shortcuts, etc.
+  useContentProtection({
+    showWarning: true,
+    warningMessage: '⚠️ Konten dilindungi! Tidak diperbolehkan menyalin materi pembahasan.',
+  });
 
   // Get exam timing data from localStorage (stored by Exam.tsx on submit)
   const examDuration = parseInt(localStorage.getItem('examDuration') || '0', 10);
@@ -398,6 +407,9 @@ const Results = () => {
           </div>
         </Card>
       </main>
+      
+      {/* Watermark overlay for protected page */}
+      <Watermark userName={userName} />
     </div>
   );
 };

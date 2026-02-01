@@ -11,17 +11,12 @@ import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Watermark from "./components/Watermark";
-import { useContentProtection } from "./hooks/useContentProtection";
 
 const queryClient = new QueryClient();
 
-const AppContent = () => {
-  useContentProtection();
-  
-  return (
-    <div className="protected-content no-print">
-      <Watermark />
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -35,14 +30,6 @@ const AppContent = () => {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
-    </div>
-  );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AppContent />
     </TooltipProvider>
   </QueryClientProvider>
 );
