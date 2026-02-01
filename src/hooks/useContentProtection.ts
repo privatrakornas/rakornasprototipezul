@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { toast } from 'sonner';
 
 interface UseContentProtectionOptions {
@@ -13,9 +13,25 @@ interface UseContentProtectionOptions {
  * NOTE: Tab switch / focus detection is now handled separately in Exam.tsx
  * using the Page Visibility API for smarter detection that doesn't trigger
  * on browser pop-ups like "Save Password".
+ * 
+ * Respects admin config: security.contentProtectionEnabled
  */
 
 const defaultWarningMessage = "⚠️ Aktivitas mencurigakan terdeteksi! Tindakan ini tercatat di sistem.";
+
+// Check if content protection is enabled from admin config
+const isProtectionEnabled = (): boolean => {
+  const saved = localStorage.getItem('examConfig');
+  if (saved) {
+    try {
+      const config = JSON.parse(saved);
+      return config.security?.contentProtectionEnabled !== false;
+    } catch {
+      return true;
+    }
+  }
+  return true;
+};
 
 export const useContentProtection = (options: UseContentProtectionOptions = {}) => {
   const { 
@@ -23,6 +39,19 @@ export const useContentProtection = (options: UseContentProtectionOptions = {}) 
     warningMessage = defaultWarningMessage,
     onViolation 
   } = options;
+
+  const [isEnabled, setIsEnabled] = useState(isProtectionEnabled);
+
+  // Listen for config changes
+  useEffect(() => {
+    const checkConfig = () => setIsEnabled(isProtectionEnabled());
+    window.addEventListener('storage', checkConfig);
+    const interval = setInterval(checkConfig, 1000);
+    return () => {
+      window.removeEventListener('storage', checkConfig);
+      clearInterval(interval);
+    };
+  }, []);
 
   const handleWarning = useCallback((action: string) => {
     console.log(`[CONTENT PROTECTION] Blocked action: ${action}`);
@@ -40,6 +69,12 @@ export const useContentProtection = (options: UseContentProtectionOptions = {}) 
   }, [showWarning, warningMessage, onViolation]);
 
   useEffect(() => {
+    // Skip all protection if disabled by admin
+    if (!isEnabled) {
+      console.log('[CONTENT PROTECTION] Disabled by admin config');
+      return;
+    }
+
     // ============ MOUSE EVENTS ============
     
     // Disable right-click context menu
@@ -356,7 +391,7 @@ export const useContentProtection = (options: UseContentProtectionOptions = {}) 
         existingStyle.remove();
       }
     };
-  }, [handleWarning]);
+  }, [handleWarning, isEnabled]);
 };
 
 export default useContentProtection;
