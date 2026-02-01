@@ -1,14 +1,17 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { analyzeNavigationAnomalies, type NavigationEvent } from '@/utils/anomalyDetection';
 
 export interface NotificationItem {
   id: string;
-  type: 'start' | 'finish' | 'disqualify';
+  type: 'start' | 'finish' | 'disqualify' | 'anomaly';
   name: string;
   message: string;
   description?: string;
   isLulus?: boolean;
+  riskLevel?: 'high' | 'critical';
+  riskScore?: number;
   timestamp: Date;
 }
 
@@ -166,6 +169,49 @@ export const useAdminNotifications = (options: NotificationOptions = {}) => {
         
         // Call callback if provided
         onParticipantFinished?.(name, isLulus);
+        
+        // Check for anomaly if navigation_log exists
+        if (newRecord.navigation_log && Array.isArray(newRecord.navigation_log) && newRecord.navigation_log.length > 0) {
+          try {
+            const analysis = analyzeNavigationAnomalies(newRecord.navigation_log as NavigationEvent[]);
+            
+            if (analysis.overallRisk === 'high' || analysis.overallRisk === 'critical') {
+              // Avoid duplicate anomaly notifications
+              if (processedSessionsRef.current.has(`anomaly-${newRecord.id}`)) return;
+              processedSessionsRef.current.add(`anomaly-${newRecord.id}`);
+              
+              const anomalyMessage = `${name} - Pola Mencurigakan Terdeteksi`;
+              const anomalyDescription = `Risiko ${analysis.overallRisk === 'critical' ? 'KRITIS' : 'TINGGI'} (${analysis.riskScore}/100)`;
+              
+              // Show anomaly toast
+              if (analysis.overallRisk === 'critical') {
+                toast.error(`🛡️ ANOMALI KRITIS: ${name}`, {
+                  duration: 8000,
+                  position: 'top-right',
+                  description: `Skor risiko: ${analysis.riskScore}/100 - ${analysis.flags.length} temuan`,
+                });
+              } else {
+                toast.warning(`⚠️ ANOMALI TINGGI: ${name}`, {
+                  duration: 6000,
+                  position: 'top-right',
+                  description: `Skor risiko: ${analysis.riskScore}/100 - ${analysis.flags.length} temuan`,
+                });
+              }
+              
+              // Add anomaly notification to history
+              addNotification({
+                type: 'anomaly',
+                name,
+                message: anomalyMessage,
+                description: anomalyDescription,
+                riskLevel: analysis.overallRisk as 'high' | 'critical',
+                riskScore: analysis.riskScore,
+              });
+            }
+          } catch (error) {
+            console.error('Error analyzing navigation anomalies:', error);
+          }
+        }
       }
       
       // Check if disqualified/aborted

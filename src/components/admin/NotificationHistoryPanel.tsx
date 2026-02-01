@@ -21,18 +21,21 @@ import {
   XCircle, 
   AlertTriangle,
   Trash2,
-  Clock
+  Clock,
+  ShieldAlert
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
 export interface NotificationItem {
   id: string;
-  type: 'start' | 'finish' | 'disqualify';
+  type: 'start' | 'finish' | 'disqualify' | 'anomaly';
   name: string;
   message: string;
   description?: string;
   isLulus?: boolean;
+  riskLevel?: 'high' | 'critical';
+  riskScore?: number;
   timestamp: Date;
 }
 
@@ -41,12 +44,16 @@ interface NotificationHistoryPanelProps {
   onClearAll?: () => void;
 }
 
-type NotificationType = 'all' | 'start' | 'finish' | 'disqualify';
+type NotificationType = 'all' | 'start' | 'finish' | 'disqualify' | 'anomaly';
 
-const getNotificationIcon = (type: NotificationItem['type'], isLulus?: boolean) => {
+const getNotificationIcon = (type: NotificationItem['type'], isLulus?: boolean, riskLevel?: string) => {
   switch (type) {
     case 'start':
       return <UserPlus className="w-4 h-4 text-blue-500" />;
+    case 'anomaly':
+      return riskLevel === 'critical' 
+        ? <ShieldAlert className="w-4 h-4 text-destructive" />
+        : <AlertTriangle className="w-4 h-4 text-orange-500" />;
     case 'finish':
       return isLulus 
         ? <CheckCircle className="w-4 h-4 text-green-500" />
@@ -58,7 +65,7 @@ const getNotificationIcon = (type: NotificationItem['type'], isLulus?: boolean) 
   }
 };
 
-const getNotificationBadge = (type: NotificationItem['type'], isLulus?: boolean) => {
+const getNotificationBadge = (type: NotificationItem['type'], isLulus?: boolean, riskLevel?: string) => {
   switch (type) {
     case 'start':
       return <Badge variant="secondary" className="text-[10px] bg-blue-100 text-blue-700">Mulai Ujian</Badge>;
@@ -68,6 +75,10 @@ const getNotificationBadge = (type: NotificationItem['type'], isLulus?: boolean)
         : <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-700">Selesai - TL</Badge>;
     case 'disqualify':
       return <Badge variant="destructive" className="text-[10px]">Diskualifikasi</Badge>;
+    case 'anomaly':
+      return riskLevel === 'critical'
+        ? <Badge variant="destructive" className="text-[10px]">Anomali Kritis</Badge>
+        : <Badge className="text-[10px] bg-orange-100 text-orange-700">Anomali Tinggi</Badge>;
     default:
       return null;
   }
@@ -112,6 +123,7 @@ export const NotificationHistoryPanel = ({
       case 'start': return 'Mulai';
       case 'finish': return 'Selesai';
       case 'disqualify': return 'Diskualifikasi';
+      case 'anomaly': return 'Anomali';
       default: return 'Semua';
     }
   };
@@ -189,6 +201,13 @@ export const NotificationHistoryPanel = ({
               <AlertTriangle className="w-3 h-3 mr-1.5 text-amber-500" />
               Diskualifikasi
             </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={typeFilter === 'anomaly'}
+              onCheckedChange={() => setTypeFilter('anomaly')}
+            >
+              <ShieldAlert className="w-3 h-3 mr-1.5 text-destructive" />
+              Anomali
+            </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
@@ -224,12 +243,12 @@ export const NotificationHistoryPanel = ({
                 className="flex items-start gap-3 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
               >
                 <div className="mt-0.5">
-                  {getNotificationIcon(notif.type, notif.isLulus)}
+                  {getNotificationIcon(notif.type, notif.isLulus, notif.riskLevel)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="font-medium text-sm truncate">{notif.name}</span>
-                    {getNotificationBadge(notif.type, notif.isLulus)}
+                    {getNotificationBadge(notif.type, notif.isLulus, notif.riskLevel)}
                   </div>
                   <p className="text-xs text-muted-foreground line-clamp-2">
                     {notif.message}
