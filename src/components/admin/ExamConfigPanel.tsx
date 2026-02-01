@@ -5,13 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { 
   Settings, 
   Clock, 
   Target, 
   Save, 
   RotateCcw,
-  AlertCircle
+  AlertCircle,
+  Shield,
+  Droplets
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -24,6 +27,10 @@ const DEFAULT_CONFIG = {
     TKP: 166,
   },
   minimumSubmitMinutes: 45,
+  security: {
+    watermarkEnabled: true,
+    contentProtectionEnabled: true,
+  },
 };
 
 export interface ExamConfig {
@@ -34,6 +41,10 @@ export interface ExamConfig {
     TKP: number;
   };
   minimumSubmitMinutes: number;
+  security: {
+    watermarkEnabled: boolean;
+    contentProtectionEnabled: boolean;
+  };
 }
 
 interface ExamConfigPanelProps {
@@ -44,7 +55,12 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
   const [config, setConfig] = useState<ExamConfig>(() => {
     // Load from localStorage if available
     const saved = localStorage.getItem('examConfig');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge with default to handle new fields
+      return { ...DEFAULT_CONFIG, ...parsed, security: { ...DEFAULT_CONFIG.security, ...parsed.security } };
+    }
+    return DEFAULT_CONFIG;
   });
   
   const [hasChanges, setHasChanges] = useState(false);
@@ -52,7 +68,7 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
   // Check if config differs from saved
   useEffect(() => {
     const saved = localStorage.getItem('examConfig');
-    const savedConfig = saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    const savedConfig = saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : DEFAULT_CONFIG;
     const isDifferent = JSON.stringify(config) !== JSON.stringify(savedConfig);
     setHasChanges(isDifferent);
   }, [config]);
@@ -75,6 +91,16 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       passingGrades: {
         ...prev.passingGrades,
         [category]: Math.max(0, Math.min(maxValues[category], num)),
+      },
+    }));
+  };
+
+  const updateSecurity = (key: 'watermarkEnabled' | 'contentProtectionEnabled', value: boolean) => {
+    setConfig(prev => ({
+      ...prev,
+      security: {
+        ...prev.security,
+        [key]: value,
       },
     }));
   };
@@ -137,6 +163,50 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       </div>
 
       <div className="space-y-4">
+        {/* Security Settings */}
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <Shield className="w-4 h-4 text-muted-foreground" />
+            Pengaturan Keamanan
+          </div>
+          
+          <div className="space-y-3 pl-6">
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Droplets className="w-4 h-4 text-primary" />
+                <div>
+                  <Label className="text-sm font-medium">Watermark</Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Tampilkan watermark dengan nama peserta di halaman ujian & hasil
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={config.security.watermarkEnabled}
+                onCheckedChange={(checked) => updateSecurity('watermarkEnabled', checked)}
+              />
+            </div>
+            
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Shield className="w-4 h-4 text-primary" />
+                <div>
+                  <Label className="text-sm font-medium">Proteksi Konten</Label>
+                  <p className="text-[10px] text-muted-foreground">
+                    Blokir klik kanan, copy-paste, dan screenshot di halaman ujian & hasil
+                  </p>
+                </div>
+              </div>
+              <Switch
+                checked={config.security.contentProtectionEnabled}
+                onCheckedChange={(checked) => updateSecurity('contentProtectionEnabled', checked)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Duration Settings */}
         <div className="space-y-3">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -272,14 +342,19 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
 export const useExamConfig = (): ExamConfig => {
   const [config, setConfig] = useState<ExamConfig>(() => {
     const saved = localStorage.getItem('examConfig');
-    return saved ? JSON.parse(saved) : DEFAULT_CONFIG;
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      return { ...DEFAULT_CONFIG, ...parsed, security: { ...DEFAULT_CONFIG.security, ...parsed.security } };
+    }
+    return DEFAULT_CONFIG;
   });
 
   useEffect(() => {
     const handleStorage = () => {
       const saved = localStorage.getItem('examConfig');
       if (saved) {
-        setConfig(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setConfig({ ...DEFAULT_CONFIG, ...parsed, security: { ...DEFAULT_CONFIG.security, ...parsed.security } });
       }
     };
 

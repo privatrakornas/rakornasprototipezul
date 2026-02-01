@@ -1,10 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface WatermarkProps {
   userName?: string;
 }
 
 const Watermark: React.FC<WatermarkProps> = ({ userName }) => {
+  const [isEnabled, setIsEnabled] = useState(true);
+
+  // Check admin config for watermark setting
+  useEffect(() => {
+    const checkConfig = () => {
+      const saved = localStorage.getItem('examConfig');
+      if (saved) {
+        try {
+          const config = JSON.parse(saved);
+          setIsEnabled(config.security?.watermarkEnabled !== false);
+        } catch {
+          setIsEnabled(true);
+        }
+      }
+    };
+
+    checkConfig();
+    // Listen for storage changes (when admin updates config)
+    window.addEventListener('storage', checkConfig);
+    
+    // Also check periodically in case same-tab update
+    const interval = setInterval(checkConfig, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', checkConfig);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Don't render if disabled
+  if (!isEnabled) return null;
+
   // Show user name if provided, otherwise default text
   const watermarkText = userName 
     ? `PRIVAT RAKORNAS • ${userName.toUpperCase()} • DILARANG MENYEBAR`
