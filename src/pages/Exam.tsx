@@ -12,6 +12,7 @@ import { useExamSession } from '@/hooks/useExamSession';
 import { useNavigationTimeline, type NavigationAction } from '@/hooks/useNavigationTimeline';
 import { useToast } from '@/hooks/use-toast';
 import { useContentProtection } from '@/hooks/useContentProtection';
+import Watermark from '@/components/Watermark';
 import { supabase } from '@/integrations/supabase/client';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
@@ -830,6 +831,9 @@ const Exam = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Watermark overlay for protected page */}
+      <Watermark userName={userName} />
     </div>
   );
 };
