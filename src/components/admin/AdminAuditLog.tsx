@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectSeparator, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown, Settings2 } from 'lucide-react';
@@ -248,21 +248,27 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
               <SelectContent>
                 <SelectItem value="all">Semua Aksi ({logs.length})</SelectItem>
                 <SelectSeparator />
-                <SelectItem value="login" className="font-medium">
-                  🔐 Login Admin ({actionCounts.login || 0})
-                </SelectItem>
-                <SelectItem value="peserta" className="font-medium">
-                  👤 Manajemen Peserta ({actionCounts.peserta || 0})
-                </SelectItem>
-                <SelectItem value="pin" className="font-medium">
-                  🔑 Manajemen PIN ({actionCounts.pin || 0})
-                </SelectItem>
-                <SelectSeparator />
-                {uniqueActions.map(action => (
-                  <SelectItem key={action} value={action}>
-                    {getActionLabel(action)} ({actionCounts[action] || 0})
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-muted-foreground">Kategori</SelectLabel>
+                  <SelectItem value="login" className="font-medium">
+                    🔐 Login Admin ({actionCounts.login || 0})
                   </SelectItem>
-                ))}
+                  <SelectItem value="peserta" className="font-medium">
+                    👤 Manajemen Peserta ({actionCounts.peserta || 0})
+                  </SelectItem>
+                  <SelectItem value="pin" className="font-medium">
+                    🔑 Manajemen PIN ({actionCounts.pin || 0})
+                  </SelectItem>
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel className="text-xs text-muted-foreground">Aksi Individual</SelectLabel>
+                  {uniqueActions.map(action => (
+                    <SelectItem key={action} value={action}>
+                      {getActionLabel(action)} ({actionCounts[action] || 0})
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
 
