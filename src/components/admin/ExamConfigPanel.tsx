@@ -68,9 +68,10 @@ export interface ExamConfig {
 
 interface ExamConfigPanelProps {
   onConfigChange?: (config: ExamConfig) => void;
+  logAuditAction?: (action: string, targetId: string | null, targetName: string | null, details: string) => Promise<void>;
 }
 
-export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
+export const ExamConfigPanel = ({ onConfigChange, logAuditAction }: ExamConfigPanelProps) => {
   const [config, setConfig] = useState<ExamConfig>(() => {
     // Load from localStorage if available
     const saved = localStorage.getItem('examConfig');
@@ -229,6 +230,20 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       
       if (adminError) throw adminError;
 
+      // Log to audit
+      const changedPins: string[] = [];
+      if (originalPins.examPin !== examPin) changedPins.push('PIN Ujian');
+      if (originalPins.adminPin !== adminPin) changedPins.push('PIN Admin');
+      
+      if (logAuditAction && changedPins.length > 0) {
+        await logAuditAction(
+          'PIN_CHANGE',
+          null,
+          null,
+          `Perubahan: ${changedPins.join(', ')}`
+        );
+      }
+
       setOriginalPins({ examPin, adminPin });
       setPinHasChanges(false);
       toast.success('PIN berhasil diperbarui');
@@ -258,6 +273,16 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
         .eq('config_key', 'admin_pin');
       
       if (adminError) throw adminError;
+
+      // Log to audit
+      if (logAuditAction) {
+        await logAuditAction(
+          'PIN_RESET',
+          null,
+          null,
+          'PIN direset ke default (Ujian: 2024, Admin: admin123)'
+        );
+      }
 
       setExamPin(DEFAULT_PINS.examPin);
       setAdminPin(DEFAULT_PINS.adminPin);
