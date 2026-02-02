@@ -19,6 +19,11 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
 
 interface AdminAuditLogProps {
@@ -118,22 +123,46 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
     setSearchQuery('');
   };
 
-  const handleExportCSV = () => {
-    if (filteredLogs.length === 0) {
-      toast.error('Tidak ada data untuk diexport');
-      return;
+  // Get logs by category
+  const getLogsByCategory = (category: string) => {
+    switch (category) {
+      case 'login':
+        return logs.filter(log => 
+          log.action === 'ADMIN_LOGIN' || log.action === 'ADMIN_LOGIN_FAILED' || log.action === 'ADMIN_LOGOUT'
+        );
+      case 'peserta':
+        return logs.filter(log => 
+          log.action === 'DISQUALIFY' || log.action === 'SOFT_DELETE' || log.action === 'RESTORE'
+        );
+      case 'pin':
+        return logs.filter(log => 
+          log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET'
+        );
+      default:
+        return logs;
     }
-    exportAuditLogsToCSV(filteredLogs);
-    toast.success(`${filteredLogs.length} log berhasil diexport ke CSV`);
   };
 
-  const handleExportExcel = () => {
-    if (filteredLogs.length === 0) {
+  const handleExportCSV = (category?: string) => {
+    const logsToExport = category ? getLogsByCategory(category) : filteredLogs;
+    if (logsToExport.length === 0) {
       toast.error('Tidak ada data untuk diexport');
       return;
     }
-    exportAuditLogsToExcel(filteredLogs);
-    toast.success(`${filteredLogs.length} log berhasil diexport ke Excel`);
+    const filename = category ? `audit-log-${category}` : 'audit-log';
+    exportAuditLogsToCSV(logsToExport, filename);
+    toast.success(`${logsToExport.length} log berhasil diexport ke CSV`);
+  };
+
+  const handleExportExcel = (category?: string) => {
+    const logsToExport = category ? getLogsByCategory(category) : filteredLogs;
+    if (logsToExport.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    const filename = category ? `audit-log-${category}` : 'audit-log';
+    exportAuditLogsToExcel(logsToExport, filename);
+    toast.success(`${logsToExport.length} log berhasil diexport ke Excel`);
   };
 
   // Get unique actions for filter dropdown
@@ -186,15 +215,67 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
                   <span className="hidden sm:inline">Export</span>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportCSV}>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>Export Semua (Filter Aktif)</DropdownMenuLabel>
+                <DropdownMenuItem onClick={() => handleExportCSV()}>
                   <FileText className="w-4 h-4 mr-2" />
-                  Export CSV
+                  CSV ({filteredLogs.length} log)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportExcel}>
+                <DropdownMenuItem onClick={() => handleExportExcel()}>
                   <FileText className="w-4 h-4 mr-2" />
-                  Export Excel (.xlsx)
+                  Excel ({filteredLogs.length} log)
                 </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Export Per Kategori</DropdownMenuLabel>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    🔐 Login Admin ({actionCounts.login || 0})
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleExportCSV('login')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportExcel('login')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    👤 Manajemen Peserta ({actionCounts.peserta || 0})
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleExportCSV('peserta')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportExcel('peserta')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+                
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>
+                    🔑 Manajemen PIN ({actionCounts.pin || 0})
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem onClick={() => handleExportCSV('pin')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleExportExcel('pin')}>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Export Excel
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
               </DropdownMenuContent>
             </DropdownMenu>
             <Button
