@@ -187,6 +187,9 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
     toast.info('Konfigurasi dikembalikan ke default');
   };
 
+  const DEFAULT_PINS = { examPin: '2024', adminPin: 'admin123' };
+  const [isResettingPins, setIsResettingPins] = useState(false);
+
   const savePins = async () => {
     if (examPin.length < 4) {
       toast.error('PIN Ujian minimal 4 karakter');
@@ -223,6 +226,38 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       toast.error('Gagal menyimpan PIN');
     } finally {
       setIsSavingPins(false);
+    }
+  };
+
+  const resetPinsToDefault = async () => {
+    setIsResettingPins(true);
+    try {
+      // Reset exam PIN to default
+      const { error: examError } = await supabase
+        .from('exam_config')
+        .update({ config_value: DEFAULT_PINS.examPin })
+        .eq('config_key', 'exam_pin');
+      
+      if (examError) throw examError;
+
+      // Reset admin PIN to default
+      const { error: adminError } = await supabase
+        .from('exam_config')
+        .update({ config_value: DEFAULT_PINS.adminPin })
+        .eq('config_key', 'admin_pin');
+      
+      if (adminError) throw adminError;
+
+      setExamPin(DEFAULT_PINS.examPin);
+      setAdminPin(DEFAULT_PINS.adminPin);
+      setOriginalPins(DEFAULT_PINS);
+      setPinHasChanges(false);
+      toast.success('PIN berhasil direset ke default (Ujian: 2024, Admin: admin123)');
+    } catch (err) {
+      console.error('Error resetting PINs:', err);
+      toast.error('Gagal mereset PIN');
+    } finally {
+      setIsResettingPins(false);
     }
   };
 
@@ -335,19 +370,35 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
                 </div>
               </div>
               
-              <Button
-                size="sm"
-                onClick={savePins}
-                disabled={!pinHasChanges || isSavingPins}
-                className="h-8 gap-1"
-              >
-                {isSavingPins ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Save className="w-3.5 h-3.5" />
-                )}
-                Simpan PIN
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={savePins}
+                  disabled={!pinHasChanges || isSavingPins}
+                  className="h-8 gap-1"
+                >
+                  {isSavingPins ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  Simpan PIN
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={resetPinsToDefault}
+                  disabled={isResettingPins}
+                  className="h-8 gap-1 text-muted-foreground"
+                >
+                  {isResettingPins ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  )}
+                  Reset Default
+                </Button>
+              </div>
             </div>
           )}
         </div>
