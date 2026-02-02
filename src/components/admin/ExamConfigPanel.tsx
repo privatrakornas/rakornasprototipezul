@@ -6,6 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { 
   Settings, 
   Clock, 
@@ -189,6 +199,7 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
 
   const DEFAULT_PINS = { examPin: '2024', adminPin: 'admin123' };
   const [isResettingPins, setIsResettingPins] = useState(false);
+  const [showResetPinDialog, setShowResetPinDialog] = useState(false);
 
   const savePins = async () => {
     if (examPin.length < 4) {
@@ -252,6 +263,7 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
       setAdminPin(DEFAULT_PINS.adminPin);
       setOriginalPins(DEFAULT_PINS);
       setPinHasChanges(false);
+      setShowResetPinDialog(false);
       toast.success('PIN berhasil direset ke default (Ujian: 2024, Admin: admin123)');
     } catch (err) {
       console.error('Error resetting PINs:', err);
@@ -387,7 +399,7 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={resetPinsToDefault}
+                  onClick={() => setShowResetPinDialog(true)}
                   disabled={isResettingPins}
                   className="h-8 gap-1 text-muted-foreground"
                 >
@@ -399,6 +411,48 @@ export const ExamConfigPanel = ({ onConfigChange }: ExamConfigPanelProps) => {
                   Reset Default
                 </Button>
               </div>
+
+              {/* Reset PIN Confirmation Dialog */}
+              <AlertDialog open={showResetPinDialog} onOpenChange={setShowResetPinDialog}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2">
+                      <RotateCcw className="w-5 h-5 text-amber-600" />
+                      Reset PIN ke Default?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Tindakan ini akan mengubah PIN ke nilai default:
+                      <ul className="mt-2 space-y-1 text-sm">
+                        <li>• <strong>PIN Ujian (Peserta):</strong> 2024</li>
+                        <li>• <strong>PIN Admin:</strong> admin123</li>
+                      </ul>
+                      <p className="mt-3 text-amber-600 font-medium">
+                        Pastikan Anda mengingat PIN default sebelum melanjutkan.
+                      </p>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isResettingPins}>Batal</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={resetPinsToDefault}
+                      disabled={isResettingPins}
+                      className="bg-amber-600 hover:bg-amber-700"
+                    >
+                      {isResettingPins ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Mereset...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="w-4 h-4 mr-2" />
+                          Ya, Reset PIN
+                        </>
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
         </div>
