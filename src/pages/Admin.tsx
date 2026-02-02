@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -27,6 +27,7 @@ import {
   BackupRestorePanel,
   BackupSchedulePanel,
   ScheduledExportPanel,
+  ExamPackageManagement,
 } from '@/components/admin';
 import { BatchActionsPanel } from '@/components/admin/BatchActionsPanel';
 
@@ -299,7 +300,7 @@ const Admin = () => {
         />
 
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-7 lg:w-[1200px]">
+          <TabsList className="grid w-full grid-cols-8 lg:w-[1400px]">
             <TabsTrigger value="leaderboard" className="gap-2">
               <Monitor className="w-4 h-4" />
               <span className="hidden sm:inline">Leaderboard</span>
@@ -311,6 +312,10 @@ const Admin = () => {
             <TabsTrigger value="monitoring" className="gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Sesi Aktif</span>
+            </TabsTrigger>
+            <TabsTrigger value="packages" className="gap-2">
+              <Package className="w-4 h-4" />
+              <span className="hidden sm:inline">Paket Soal</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2 relative">
               <Bell className="w-4 h-4" />
@@ -374,6 +379,10 @@ const Admin = () => {
               hasActiveFilters={hasActiveFilters}
               onDelete={handleSoftDelete}
             />
+          </TabsContent>
+
+          <TabsContent value="packages">
+            <ExamPackageManagement logAuditAction={logAuditAction} />
           </TabsContent>
 
           <TabsContent value="notifications">
