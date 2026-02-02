@@ -87,10 +87,21 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
       const logDate = new Date(log.created_at);
       const matchesDateFrom = !dateFrom || logDate >= new Date(dateFrom);
       const matchesDateTo = !dateTo || logDate <= new Date(dateTo + 'T23:59:59');
-      // Handle special "pin" filter for both PIN_CHANGE and PIN_RESET
-      const matchesAction = actionFilter === 'all' 
-        || (actionFilter === 'pin' && (log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET'))
-        || log.action === actionFilter;
+      
+      // Handle category filters
+      let matchesAction = actionFilter === 'all';
+      if (!matchesAction) {
+        if (actionFilter === 'pin') {
+          matchesAction = log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET';
+        } else if (actionFilter === 'login') {
+          matchesAction = log.action === 'ADMIN_LOGIN' || log.action === 'ADMIN_LOGIN_FAILED' || log.action === 'ADMIN_LOGOUT';
+        } else if (actionFilter === 'peserta') {
+          matchesAction = log.action === 'DISQUALIFY' || log.action === 'SOFT_DELETE' || log.action === 'RESTORE';
+        } else {
+          matchesAction = log.action === actionFilter;
+        }
+      }
+      
       const matchesSearch = !query || 
         (log.target_name?.toLowerCase().includes(query)) ||
         (log.details?.toLowerCase().includes(query));
@@ -213,6 +224,12 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Aksi</SelectItem>
+                <SelectItem value="login" className="font-medium">
+                  🔐 Login Admin
+                </SelectItem>
+                <SelectItem value="peserta" className="font-medium">
+                  👤 Manajemen Peserta
+                </SelectItem>
                 <SelectItem value="pin" className="font-medium">
                   🔑 Manajemen PIN
                 </SelectItem>
