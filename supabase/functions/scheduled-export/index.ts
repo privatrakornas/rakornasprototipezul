@@ -234,10 +234,12 @@ serve(async (req: Request) => {
     });
 
     const emailData = await emailResponse.json();
+    let emailSent = false;
     if (!emailResponse.ok) {
       console.error("Failed to send email:", emailData);
     } else {
       console.log("Email sent successfully:", emailData);
+      emailSent = true;
     }
 
     // Log the action
@@ -250,7 +252,7 @@ serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         summary,
-        emailSent: true,
+        emailSent,
         filename,
       }),
       {
