@@ -184,3 +184,50 @@ export const exportAuditLogsToExcel = (
   const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
   downloadExcel(workbook, `${filename}-${timestamp}.xlsx`);
 };
+
+// Multi-sheet Excel export for all categories
+export const exportAuditLogsMultiSheet = (
+  logs: AuditLog[],
+  filename: string = 'audit-log-lengkap'
+) => {
+  const headers = getAuditLogHeaders();
+  
+  // Categorize logs
+  const loginLogs = logs.filter(log => 
+    log.action === 'ADMIN_LOGIN' || log.action === 'ADMIN_LOGIN_FAILED' || log.action === 'ADMIN_LOGOUT'
+  );
+  const pesertaLogs = logs.filter(log => 
+    log.action === 'DISQUALIFY' || log.action === 'SOFT_DELETE' || log.action === 'RESTORE'
+  );
+  const pinLogs = logs.filter(log => 
+    log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET'
+  );
+
+  const workbook = XLSX.utils.book_new();
+
+  // Helper to create worksheet
+  const createSheet = (data: AuditLog[], sheetName: string) => {
+    const rows = data.map(mapAuditLogToRow);
+    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    worksheet['!cols'] = [
+      { wch: 20 }, { wch: 20 }, { wch: 36 }, { wch: 25 }, { wch: 40 }, { wch: 15 }, { wch: 50 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  };
+
+  // Add all sheets
+  createSheet(logs, 'Semua Log');
+  createSheet(loginLogs, 'Login Admin');
+  createSheet(pesertaLogs, 'Manajemen Peserta');
+  createSheet(pinLogs, 'Manajemen PIN');
+
+  const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
+  downloadExcel(workbook, `${filename}-${timestamp}.xlsx`);
+  
+  return {
+    total: logs.length,
+    login: loginLogs.length,
+    peserta: pesertaLogs.length,
+    pin: pinLogs.length,
+  };
+};

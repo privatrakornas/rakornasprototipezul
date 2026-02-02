@@ -12,7 +12,7 @@ import { Loader2, RefreshCw, FileText, Download, X, Filter, Search, ChevronDown,
 import { AuditLog } from './types';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
-import { exportAuditLogsToCSV, exportAuditLogsToExcel } from '@/utils/exportCSV';
+import { exportAuditLogsToCSV, exportAuditLogsToExcel, exportAuditLogsMultiSheet } from '@/utils/exportCSV';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -165,6 +165,16 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
     toast.success(`${logsToExport.length} log berhasil diexport ke Excel`);
   };
 
+  const handleExportMultiSheet = () => {
+    if (logs.length === 0) {
+      toast.error('Tidak ada data untuk diexport');
+      return;
+    }
+    const counts = exportAuditLogsMultiSheet(logs);
+    toast.success(`Export berhasil: ${counts.total} log dalam 4 sheet (Login: ${counts.login}, Peserta: ${counts.peserta}, PIN: ${counts.pin})`);
+  
+  };
+
   // Get unique actions for filter dropdown
   const uniqueActions = useMemo(() => {
     const actions = new Set(logs.map(log => log.action));
@@ -216,6 +226,13 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuLabel>📊 Export Multi-Sheet</DropdownMenuLabel>
+                <DropdownMenuItem onClick={handleExportMultiSheet}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Excel 4 Sheet ({logs.length} log)
+                </DropdownMenuItem>
+                
+                <DropdownMenuSeparator />
                 <DropdownMenuLabel>Export Semua (Filter Aktif)</DropdownMenuLabel>
                 <DropdownMenuItem onClick={() => handleExportCSV()}>
                   <FileText className="w-4 h-4 mr-2" />
