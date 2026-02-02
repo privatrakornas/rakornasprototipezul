@@ -226,7 +226,7 @@ serve(async (req: Request) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Sistem Ujian <noreply@resend.dev>",
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "Sistem Ujian <onboarding@resend.dev>",
         to: [adminEmail],
         subject: `📊 Laporan Export Harian - ${formatDateTime(now)}`,
         html: generateEmailHtml(summary, adminEmail),
