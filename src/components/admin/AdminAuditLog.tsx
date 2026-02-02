@@ -87,7 +87,10 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
       const logDate = new Date(log.created_at);
       const matchesDateFrom = !dateFrom || logDate >= new Date(dateFrom);
       const matchesDateTo = !dateTo || logDate <= new Date(dateTo + 'T23:59:59');
-      const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+      // Handle special "pin" filter for both PIN_CHANGE and PIN_RESET
+      const matchesAction = actionFilter === 'all' 
+        || (actionFilter === 'pin' && (log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET'))
+        || log.action === actionFilter;
       const matchesSearch = !query || 
         (log.target_name?.toLowerCase().includes(query)) ||
         (log.details?.toLowerCase().includes(query));
@@ -210,6 +213,9 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Aksi</SelectItem>
+                <SelectItem value="pin" className="font-medium">
+                  🔑 Manajemen PIN
+                </SelectItem>
                 {uniqueActions.map(action => (
                   <SelectItem key={action} value={action}>
                     {getActionLabel(action)}
