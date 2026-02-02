@@ -271,7 +271,9 @@ const Admin = () => {
       <AdminHeader 
         onRefresh={fetchAllSessions} 
         onLogout={handleLogout} 
-        isFetching={isFetching} 
+        isFetching={isFetching}
+        sessions={[...ongoingSessions, ...disqualifiedSessions, ...deletedSessions]}
+        auditLogs={auditLogs}
       />
 
       <main className="container mx-auto px-4 py-6 space-y-6">
