@@ -5,7 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, FileText, AlertCircle, CheckCircle2, X, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Upload, FileText, AlertCircle, CheckCircle2, X, Loader2, Edit2, Trash2, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
@@ -44,6 +49,11 @@ const WordQuestionImport = ({ packageId, packageName, onSuccess, logAuditAction 
   const [parseErrors, setParseErrors] = useState<string[]>([]);
   const [progress, setProgress] = useState(0);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // Preview/Edit state
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState<ParsedQuestion | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number>(-1);
 
   const parseWordDocument = async (file: File) => {
     setIsProcessing(true);
@@ -368,6 +378,37 @@ const WordQuestionImport = ({ packageId, packageName, onSuccess, logAuditAction 
     return { twk, tiu, tkp };
   };
 
+  // Preview/Edit handlers
+  const openEditDialog = (question: ParsedQuestion, index: number) => {
+    setEditingQuestion({ ...question });
+    setEditingIndex(index);
+    setPreviewDialogOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingQuestion && editingIndex >= 0) {
+      const updated = [...parsedQuestions];
+      updated[editingIndex] = editingQuestion;
+      setParsedQuestions(updated);
+      setPreviewDialogOpen(false);
+      setEditingQuestion(null);
+      setEditingIndex(-1);
+      toast.success('Soal berhasil diperbarui');
+    }
+  };
+
+  const handleDeleteQuestion = (index: number) => {
+    const updated = parsedQuestions.filter((_, i) => i !== index);
+    setParsedQuestions(updated);
+    toast.success('Soal dihapus dari daftar');
+  };
+
+  const updateEditingQuestion = (field: keyof ParsedQuestion, value: any) => {
+    if (editingQuestion) {
+      setEditingQuestion({ ...editingQuestion, [field]: value });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -445,12 +486,12 @@ const WordQuestionImport = ({ packageId, packageName, onSuccess, logAuditAction 
             </Alert>
           )}
 
-          {/* Parsed Results */}
+          {/* Parsed Results with Preview/Edit */}
           {parsedQuestions.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                   <span className="font-medium">{parsedQuestions.length} soal berhasil di-parse</span>
                 </div>
                 <div className="flex gap-2">
@@ -460,13 +501,52 @@ const WordQuestionImport = ({ packageId, packageName, onSuccess, logAuditAction 
                 </div>
               </div>
 
-              <ScrollArea className="h-64 border rounded-lg p-4">
+              <Alert>
+                <Eye className="h-4 w-4" />
+                <AlertTitle>Preview & Edit</AlertTitle>
+                <AlertDescription>
+                  Klik tombol edit untuk melihat dan mengubah soal sebelum disimpan ke database.
+                </AlertDescription>
+              </Alert>
+
+              <ScrollArea className="h-80 border rounded-lg p-4">
                 <div className="space-y-3">
                   {parsedQuestions.map((q, i) => (
-                    <div key={i} className="p-3 bg-muted/50 rounded-lg text-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="secondary">{q.category}</Badge>
-                        <span className="font-medium">#{q.questionNumber}</span>
+                    <div key={i} className="p-3 bg-muted/50 rounded-lg text-sm group hover:bg-muted transition-colors">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="secondary">{q.category}</Badge>
+                          <span className="font-medium">#{q.questionNumber}</span>
+                          {q.category === 'TKP' ? (
+                            <span className="text-xs text-muted-foreground">
+                              (Skor: A={q.pointsA}, B={q.pointsB}, C={q.pointsC}, D={q.pointsD}, E={q.pointsE})
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">
+                              (Jawaban: {q.correctAnswer})
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => openEditDialog(q, i)}
+                            title="Edit soal"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteQuestion(i)}
+                            title="Hapus soal"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       <p className="text-muted-foreground line-clamp-2">
                         {q.questionText}
@@ -498,6 +578,127 @@ const WordQuestionImport = ({ packageId, packageName, onSuccess, logAuditAction 
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Question Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Soal #{editingQuestion?.questionNumber}</DialogTitle>
+            <DialogDescription>
+              Periksa dan edit soal sebelum menyimpan ke database
+            </DialogDescription>
+          </DialogHeader>
+          
+          {editingQuestion && (
+            <div className="space-y-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Kategori</Label>
+                  <Select
+                    value={editingQuestion.category}
+                    onValueChange={(v) => updateEditingQuestion('category', v)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="TWK">TWK</SelectItem>
+                      <SelectItem value="TIU">TIU</SelectItem>
+                      <SelectItem value="TKP">TKP</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Nomor Soal</Label>
+                  <Input
+                    type="number"
+                    value={editingQuestion.questionNumber}
+                    onChange={(e) => updateEditingQuestion('questionNumber', parseInt(e.target.value) || 1)}
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Pertanyaan</Label>
+                <Textarea
+                  value={editingQuestion.questionText}
+                  onChange={(e) => updateEditingQuestion('questionText', e.target.value)}
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3">
+                {['A', 'B', 'C', 'D', 'E'].map((opt) => (
+                  <div key={opt} className="space-y-1">
+                    <Label className="text-xs">Opsi {opt}</Label>
+                    <Input
+                      value={editingQuestion[`option${opt}` as keyof ParsedQuestion] as string || ''}
+                      onChange={(e) => updateEditingQuestion(`option${opt}` as keyof ParsedQuestion, e.target.value)}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {editingQuestion.category === 'TKP' ? (
+                <div className="space-y-2">
+                  <Label>Skor per Opsi (1-5)</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {['A', 'B', 'C', 'D', 'E'].map((opt) => (
+                      <div key={opt} className="space-y-1">
+                        <Label className="text-xs text-center block">{opt}</Label>
+                        <Input
+                          type="number"
+                          min={1}
+                          max={5}
+                          value={editingQuestion[`points${opt}` as keyof ParsedQuestion] as number || 1}
+                          onChange={(e) => updateEditingQuestion(`points${opt}` as keyof ParsedQuestion, parseInt(e.target.value) || 1)}
+                          className="text-center"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Kunci Jawaban</Label>
+                  <Select
+                    value={editingQuestion.correctAnswer || 'A'}
+                    onValueChange={(v) => updateEditingQuestion('correctAnswer', v)}
+                  >
+                    <SelectTrigger className="w-24">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {['A', 'B', 'C', 'D', 'E'].map((opt) => (
+                        <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label>Pembahasan (opsional)</Label>
+                <Textarea
+                  value={editingQuestion.explanation || ''}
+                  onChange={(e) => updateEditingQuestion('explanation', e.target.value)}
+                  rows={3}
+                  placeholder="Penjelasan jawaban..."
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Simpan Perubahan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Format Guide */}
       <Card>
