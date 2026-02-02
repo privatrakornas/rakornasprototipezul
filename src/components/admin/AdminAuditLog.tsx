@@ -50,6 +50,9 @@ const getActionBadgeVariant = (action: string) => {
       return 'outline';
     case 'RESTORE':
       return 'default';
+    case 'PIN_CHANGE':
+    case 'PIN_RESET':
+      return 'secondary';
     default:
       return 'secondary';
   }
@@ -63,6 +66,8 @@ const getActionLabel = (action: string) => {
     'DISQUALIFY': 'Diskualifikasi',
     'SOFT_DELETE': 'Hapus',
     'RESTORE': 'Pulihkan',
+    'PIN_CHANGE': 'Ubah PIN',
+    'PIN_RESET': 'Reset PIN',
   };
   return labels[action] || action;
 };

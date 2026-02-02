@@ -384,7 +384,7 @@ const Admin = () => {
 
           <TabsContent value="settings">
             <div className="max-w-2xl mx-auto space-y-4">
-              <ExamConfigPanel />
+              <ExamConfigPanel logAuditAction={logAuditAction} />
               <BackupRestorePanel />
               <BackupSchedulePanel />
             </div>
