@@ -231,3 +231,85 @@ export const exportAuditLogsMultiSheet = (
     pin: pinLogs.length,
   };
 };
+
+// Bulk export: Sessions + Audit Logs in one Excel file
+export const exportBulkDataToExcel = (
+  sessions: ExamSession[],
+  auditLogs: AuditLog[],
+  filename: string = 'data-lengkap-ujian'
+) => {
+  const workbook = XLSX.utils.book_new();
+
+  // Sheet 1: All Sessions
+  const sessionHeaders = getSessionHeaders();
+  const sessionRows = sessions.map(mapSessionToRow);
+  const sessionSheet = XLSX.utils.aoa_to_sheet([sessionHeaders, ...sessionRows]);
+  sessionSheet['!cols'] = [
+    { wch: 25 }, { wch: 15 }, { wch: 8 }, { wch: 8 }, { wch: 8 }, { wch: 12 },
+    { wch: 10 }, { wch: 15 }, { wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, sessionSheet, 'Semua Peserta');
+
+  // Sheet 2: Finished sessions only
+  const finishedSessions = sessions.filter(s => s.status === 'finished');
+  const finishedRows = finishedSessions.map(mapSessionToRow);
+  const finishedSheet = XLSX.utils.aoa_to_sheet([sessionHeaders, ...finishedRows]);
+  finishedSheet['!cols'] = sessionSheet['!cols'];
+  XLSX.utils.book_append_sheet(workbook, finishedSheet, 'Selesai');
+
+  // Sheet 3: Disqualified sessions
+  const disqualifiedSessions = sessions.filter(s => s.status === 'disqualified');
+  const disqualifiedRows = disqualifiedSessions.map(mapSessionToRow);
+  const disqualifiedSheet = XLSX.utils.aoa_to_sheet([sessionHeaders, ...disqualifiedRows]);
+  disqualifiedSheet['!cols'] = sessionSheet['!cols'];
+  XLSX.utils.book_append_sheet(workbook, disqualifiedSheet, 'Diskualifikasi');
+
+  // Sheet 4: Deleted sessions
+  const deletedSessions = sessions.filter(s => s.deleted_at !== null);
+  const deletedRows = deletedSessions.map(mapSessionToRow);
+  const deletedSheet = XLSX.utils.aoa_to_sheet([sessionHeaders, ...deletedRows]);
+  deletedSheet['!cols'] = sessionSheet['!cols'];
+  XLSX.utils.book_append_sheet(workbook, deletedSheet, 'Di Sampah');
+
+  // Sheet 5: All Audit Logs
+  const auditHeaders = getAuditLogHeaders();
+  const auditRows = auditLogs.map(mapAuditLogToRow);
+  const auditSheet = XLSX.utils.aoa_to_sheet([auditHeaders, ...auditRows]);
+  auditSheet['!cols'] = [
+    { wch: 20 }, { wch: 20 }, { wch: 36 }, { wch: 25 }, { wch: 40 }, { wch: 15 }, { wch: 50 },
+  ];
+  XLSX.utils.book_append_sheet(workbook, auditSheet, 'Audit Log');
+
+  // Sheet 6: Summary
+  const summaryData = [
+    ['Ringkasan Export Data Ujian'],
+    [''],
+    ['Tanggal Export', format(new Date(), 'dd MMM yyyy HH:mm', { locale: localeId })],
+    [''],
+    ['DATA PESERTA'],
+    ['Total Peserta', sessions.length],
+    ['Selesai', finishedSessions.length],
+    ['Diskualifikasi', disqualifiedSessions.length],
+    ['Di Sampah', deletedSessions.length],
+    [''],
+    ['AUDIT LOG'],
+    ['Total Log', auditLogs.length],
+    ['Login Admin', auditLogs.filter(l => ['ADMIN_LOGIN', 'ADMIN_LOGIN_FAILED', 'ADMIN_LOGOUT'].includes(l.action)).length],
+    ['Manajemen Peserta', auditLogs.filter(l => ['DISQUALIFY', 'SOFT_DELETE', 'RESTORE'].includes(l.action)).length],
+    ['Manajemen PIN', auditLogs.filter(l => ['PIN_CHANGE', 'PIN_RESET'].includes(l.action)).length],
+  ];
+  const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+  summarySheet['!cols'] = [{ wch: 25 }, { wch: 30 }];
+  XLSX.utils.book_append_sheet(workbook, summarySheet, 'Ringkasan');
+
+  const timestamp = format(new Date(), 'yyyyMMdd-HHmm');
+  downloadExcel(workbook, `${filename}-${timestamp}.xlsx`);
+
+  return {
+    sessions: sessions.length,
+    finished: finishedSessions.length,
+    disqualified: disqualifiedSessions.length,
+    deleted: deletedSessions.length,
+    auditLogs: auditLogs.length,
+  };
+};
