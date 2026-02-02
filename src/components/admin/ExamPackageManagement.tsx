@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star, Copy, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ManualQuestionInput from './ManualQuestionInput';
@@ -49,6 +49,12 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Clone package dialog
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [packageToClone, setPackageToClone] = useState<ExamPackage | null>(null);
+  const [cloneName, setCloneName] = useState('');
+  const [isCloning, setIsCloning] = useState(false);
   
   // Add questions dialog
   const [addQuestionsDialogOpen, setAddQuestionsDialogOpen] = useState(false);
@@ -180,6 +186,91 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
       console.error('Error toggling package:', err);
       toast.error('Gagal mengubah status paket');
     }
+  };
+
+  const handleClonePackage = async () => {
+    if (!packageToClone || !cloneName.trim()) {
+      toast.error('Nama paket harus diisi');
+      return;
+    }
+
+    setIsCloning(true);
+    try {
+      // 1. Create new package
+      const { data: newPkg, error: createError } = await supabase
+        .from('exam_packages')
+        .insert({
+          name: cloneName.trim(),
+          description: packageToClone.description ? `Clone dari: ${packageToClone.name}. ${packageToClone.description}` : `Clone dari: ${packageToClone.name}`,
+          twk_count: packageToClone.twk_count,
+          tiu_count: packageToClone.tiu_count,
+          tkp_count: packageToClone.tkp_count,
+          total_questions: packageToClone.total_questions,
+        })
+        .select()
+        .single();
+
+      if (createError) throw createError;
+
+      // 2. Copy all questions from source package
+      const { data: questions, error: fetchError } = await supabase
+        .from('questions')
+        .select('*')
+        .eq('package_id', packageToClone.id);
+
+      if (fetchError) throw fetchError;
+
+      if (questions && questions.length > 0) {
+        const clonedQuestions = questions.map(q => ({
+          package_id: newPkg.id,
+          category: q.category,
+          question_number: q.question_number,
+          question_text: q.question_text,
+          option_a: q.option_a,
+          option_b: q.option_b,
+          option_c: q.option_c,
+          option_d: q.option_d,
+          option_e: q.option_e,
+          correct_answer: q.correct_answer,
+          points_a: q.points_a,
+          points_b: q.points_b,
+          points_c: q.points_c,
+          points_d: q.points_d,
+          points_e: q.points_e,
+          explanation: q.explanation,
+        }));
+
+        const { error: insertError } = await supabase
+          .from('questions')
+          .insert(clonedQuestions);
+
+        if (insertError) throw insertError;
+      }
+
+      await logAuditAction(
+        'CLONE_PACKAGE',
+        newPkg.id,
+        newPkg.name,
+        `Clone dari ${packageToClone.name} (${packageToClone.total_questions} soal)`
+      );
+
+      toast.success(`Paket "${cloneName}" berhasil dibuat dari "${packageToClone.name}"`);
+      setCloneDialogOpen(false);
+      setPackageToClone(null);
+      setCloneName('');
+      fetchPackages();
+    } catch (err) {
+      console.error('Error cloning package:', err);
+      toast.error('Gagal menduplikasi paket');
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
+  const openCloneDialog = (pkg: ExamPackage) => {
+    setPackageToClone(pkg);
+    setCloneName(`${pkg.name} (Copy)`);
+    setCloneDialogOpen(true);
   };
 
   const openAddQuestions = (pkg: ExamPackage) => {
@@ -323,6 +414,14 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => openCloneDialog(pkg)}
+                        title="Duplikasi Paket"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openEditDialog(pkg)}
                         title="Edit Paket"
                       >
@@ -335,8 +434,13 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                             size="icon"
                             onClick={() => handleSetActive(pkg, !pkg.is_active)}
                             title={pkg.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                            className={pkg.is_active ? 'text-emerald-600' : ''}
                           >
-                            <Eye className={`w-4 h-4 ${pkg.is_active ? '' : 'text-muted-foreground'}`} />
+                            {pkg.is_active ? (
+                              <CheckCircle className="w-4 h-4" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-muted-foreground" />
+                            )}
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -406,6 +510,57 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
             </Button>
             <Button onClick={handleEditPackage} disabled={isEditing}>
               {isEditing ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Clone Package Dialog */}
+      <Dialog open={cloneDialogOpen} onOpenChange={setCloneDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Duplikasi Paket Ujian</DialogTitle>
+            <DialogDescription>
+              Buat salinan dari paket "{packageToClone?.name}" beserta semua {packageToClone?.total_questions} soalnya
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="cloneName">Nama Paket Baru *</Label>
+              <Input
+                id="cloneName"
+                placeholder="Contoh: Paket Tryout 2 (Variasi)"
+                value={cloneName}
+                onChange={(e) => setCloneName(e.target.value)}
+              />
+            </div>
+            {packageToClone && (
+              <div className="p-3 bg-muted rounded-lg text-sm">
+                <p className="font-medium mb-2">Soal yang akan diduplikasi:</p>
+                <div className="flex gap-2">
+                  <Badge variant="outline">TWK: {packageToClone.twk_count}</Badge>
+                  <Badge variant="outline">TIU: {packageToClone.tiu_count}</Badge>
+                  <Badge variant="outline">TKP: {packageToClone.tkp_count}</Badge>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCloneDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button onClick={handleClonePackage} disabled={isCloning}>
+              {isCloning ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Menduplikasi...
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Duplikasi
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
