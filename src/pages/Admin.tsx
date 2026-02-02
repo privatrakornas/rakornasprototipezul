@@ -26,6 +26,7 @@ import {
   ExamConfigPanel,
   BackupRestorePanel,
   BackupSchedulePanel,
+  ScheduledExportPanel,
 } from '@/components/admin';
 import { BatchActionsPanel } from '@/components/admin/BatchActionsPanel';
 
@@ -387,6 +388,7 @@ const Admin = () => {
           <TabsContent value="settings">
             <div className="max-w-2xl mx-auto space-y-4">
               <ExamConfigPanel logAuditAction={logAuditAction} />
+              <ScheduledExportPanel logAuditAction={logAuditAction} />
               <BackupRestorePanel />
               <BackupSchedulePanel />
             </div>
