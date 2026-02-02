@@ -142,6 +142,29 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
     return Array.from(actions).sort();
   }, [logs]);
 
+  // Count logs per category and action
+  const actionCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    // Category counts
+    counts.login = logs.filter(log => 
+      log.action === 'ADMIN_LOGIN' || log.action === 'ADMIN_LOGIN_FAILED' || log.action === 'ADMIN_LOGOUT'
+    ).length;
+    counts.peserta = logs.filter(log => 
+      log.action === 'DISQUALIFY' || log.action === 'SOFT_DELETE' || log.action === 'RESTORE'
+    ).length;
+    counts.pin = logs.filter(log => 
+      log.action === 'PIN_CHANGE' || log.action === 'PIN_RESET'
+    ).length;
+    
+    // Individual action counts
+    logs.forEach(log => {
+      counts[log.action] = (counts[log.action] || 0) + 1;
+    });
+    
+    return counts;
+  }, [logs]);
+
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b bg-muted">
@@ -223,19 +246,19 @@ export const AdminAuditLog = ({ logs, isFetching, onRefresh, totalCount, hasMore
                 <SelectValue placeholder="Semua Aksi" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Aksi</SelectItem>
+                <SelectItem value="all">Semua Aksi ({logs.length})</SelectItem>
                 <SelectItem value="login" className="font-medium">
-                  🔐 Login Admin
+                  🔐 Login Admin ({actionCounts.login || 0})
                 </SelectItem>
                 <SelectItem value="peserta" className="font-medium">
-                  👤 Manajemen Peserta
+                  👤 Manajemen Peserta ({actionCounts.peserta || 0})
                 </SelectItem>
                 <SelectItem value="pin" className="font-medium">
-                  🔑 Manajemen PIN
+                  🔑 Manajemen PIN ({actionCounts.pin || 0})
                 </SelectItem>
                 {uniqueActions.map(action => (
                   <SelectItem key={action} value={action}>
-                    {getActionLabel(action)}
+                    {getActionLabel(action)} ({actionCounts[action] || 0})
                   </SelectItem>
                 ))}
               </SelectContent>
