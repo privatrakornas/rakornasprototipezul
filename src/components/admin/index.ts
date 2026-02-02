@@ -14,6 +14,7 @@ export { default as BatchActionsPanel, BatchSelectCell } from './BatchActionsPan
 export { default as ExamConfigPanel, useExamConfig } from './ExamConfigPanel';
 export { default as BackupRestorePanel } from './BackupRestorePanel';
 export { default as BackupSchedulePanel } from './BackupSchedulePanel';
+export { default as ScheduledExportPanel } from './ScheduledExportPanel';
 export { default as TimelineLogModal } from './TimelineLogModal';
 export { default as TimelineChart } from './TimelineChart';
 export { default as TimelineHeatmap } from './TimelineHeatmap';
