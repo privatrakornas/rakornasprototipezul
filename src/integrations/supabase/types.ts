@@ -116,6 +116,48 @@ export type Database = {
         }
         Relationships: []
       }
+      exam_packages: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          tiu_count: number
+          tkp_count: number
+          total_questions: number
+          twk_count: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          tiu_count?: number
+          tkp_count?: number
+          total_questions?: number
+          twk_count?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          tiu_count?: number
+          tkp_count?: number
+          total_questions?: number
+          twk_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       exam_results: {
         Row: {
           created_at: string
@@ -269,6 +311,7 @@ export type Database = {
           option_c: string
           option_d: string
           option_e: string
+          package_id: string | null
           points_a: number | null
           points_b: number | null
           points_c: number | null
@@ -289,6 +332,7 @@ export type Database = {
           option_c: string
           option_d: string
           option_e: string
+          package_id?: string | null
           points_a?: number | null
           points_b?: number | null
           points_c?: number | null
@@ -309,6 +353,7 @@ export type Database = {
           option_c?: string
           option_d?: string
           option_e?: string
+          package_id?: string | null
           points_a?: number | null
           points_b?: number | null
           points_c?: number | null
@@ -318,7 +363,15 @@ export type Database = {
           question_text?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "questions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "exam_packages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_answers: {
         Row: {
