@@ -4,12 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
-import { questions } from '@/data/questions';
-import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, ShieldAlert, Loader2 } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
 import { useNavigationTimeline, type NavigationAction } from '@/hooks/useNavigationTimeline';
+import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
 import { useToast } from '@/hooks/use-toast';
 import { useContentProtection } from '@/hooks/useContentProtection';
 import Watermark from '@/components/Watermark';
@@ -20,15 +20,20 @@ const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
 const MIN_DURATION_MINUTES = 45; // Minimum 45 minutes before submit
 const STATUS_CHECK_INTERVAL = 10000; // Check status every 10 seconds
 
+// Import Question type from hook
+import type { Question } from '@/data/questions';
+
 // Memoized Question Navigation Grid - prevents re-renders from timer
 interface QuestionNavGridProps {
+  questions: Question[];
   answers: Record<number, string>;
   currentQuestion: number;
   onNavClick: (idx: number) => void;
 }
 
-const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: QuestionNavGridProps) => {
+const QuestionNavGrid = memo(({ questions, answers, currentQuestion, onNavClick }: QuestionNavGridProps) => {
   const isAnswered = (id: number) => answers[id] !== undefined;
+  const totalQuestions = questions.length;
 
   return (
     <div className="flex flex-col h-full">
@@ -43,15 +48,15 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded bg-[hsl(var(--unanswered))] border" />
-              <span className="font-medium">{110 - Object.keys(answers).length}</span>
+              <span className="font-medium">{totalQuestions - Object.keys(answers).length}</span>
             </div>
           </div>
         </div>
       </div>
       
-      {/* Grid 10 kolom x 11 baris = 110 tombol - tersebar vertikal */}
+      {/* Grid - dynamic rows based on total questions */}
       <div className="flex-1 p-2 overflow-hidden">
-        <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: 'repeat(11, 1fr)' }}>
+        <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: `repeat(${Math.ceil(totalQuestions / 10)}, 1fr)` }}>
           {questions.map((q, idx) => {
             const answered = isAnswered(q.id);
             const selectedLetter = answers[q.id];
@@ -99,6 +104,9 @@ const Exam = () => {
   const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition, saveNavigationLog } = useExamSession();
   const { logNavigation, getNavigationLog, clearNavigationLog } = useNavigationTimeline();
+  
+  // Fetch questions from active package
+  const { questions, isLoading: isLoadingQuestions, error: questionsError, activePackage } = useActivePackageQuestions();
   
   // ============ CONTENT PROTECTION - ANTI-CHEAT ============
   // Disable right-click, copy-paste, keyboard shortcuts, etc.
@@ -466,6 +474,30 @@ const Exam = () => {
   // Calculate remaining time until submit is allowed
   const minutesUntilCanSubmit = Math.max(0, MIN_DURATION_MINUTES - getElapsedMinutes());
 
+  // Loading state for questions
+  if (isLoadingQuestions) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-b from-white to-secondary">
+        <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+        <p className="text-lg text-muted-foreground">Memuat soal ujian...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (questionsError || questions.length === 0) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gradient-to-b from-white to-secondary">
+        <AlertTriangle className="w-12 h-12 text-destructive mb-4" />
+        <p className="text-lg text-destructive font-medium mb-2">Gagal Memuat Soal</p>
+        <p className="text-muted-foreground mb-4">{questionsError || 'Tidak ada soal tersedia'}</p>
+        <Button variant="outline" onClick={() => navigate('/')}>
+          Kembali ke Login
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
       {/* Fixed Header */}
@@ -520,7 +552,7 @@ const Exam = () => {
           <Card className="p-2 md:p-3 animate-fade-in flex flex-col min-h-full">
             {/* Question Header - Compact */}
             <div className="flex items-center justify-between gap-2 mb-1.5 flex-shrink-0">
-              <span className="text-muted-foreground text-[11px]">Soal {question.id}/110</span>
+              <span className="text-muted-foreground text-[11px]">Soal {question.id}/{questions.length}</span>
               <span className="px-1.5 py-0.5 bg-accent/20 text-accent rounded text-[10px] font-medium">
                 {question.category} - {question.code}
               </span>
@@ -724,6 +756,7 @@ const Exam = () => {
         {/* Desktop: Right Sidebar - Question Navigation */}
         <aside className="hidden lg:flex w-64 bg-card border-l flex-col flex-shrink-0">
           <QuestionNavGrid 
+            questions={questions}
             answers={answers} 
             currentQuestion={currentQuestion} 
             onNavClick={handleNavClick} 
@@ -746,6 +779,7 @@ const Exam = () => {
                 <SheetTitle>Navigasi Soal</SheetTitle>
               </VisuallyHidden>
               <QuestionNavGrid 
+                questions={questions}
                 answers={answers} 
                 currentQuestion={currentQuestion} 
                 onNavClick={handleNavClick} 
