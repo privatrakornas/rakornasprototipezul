@@ -8,12 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star, Copy, CheckCircle, Loader2, List } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star, Copy, CheckCircle, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ManualQuestionInput from './ManualQuestionInput';
 import WordQuestionImport from './WordQuestionImport';
-import QuestionListViewer from './QuestionListViewer';
 
 interface ExamPackage {
   id: string;
@@ -60,10 +59,6 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
   // Add questions dialog
   const [addQuestionsDialogOpen, setAddQuestionsDialogOpen] = useState(false);
   const [activeInputTab, setActiveInputTab] = useState('manual');
-  
-  // View questions dialog
-  const [viewQuestionsDialogOpen, setViewQuestionsDialogOpen] = useState(false);
-  const [viewingPackage, setViewingPackage] = useState<ExamPackage | null>(null);
 
   useEffect(() => {
     fetchPackages();
@@ -290,11 +285,6 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
     setEditDialogOpen(true);
   };
 
-  const openViewQuestions = (pkg: ExamPackage) => {
-    setViewingPackage(pkg);
-    setViewQuestionsDialogOpen(true);
-  };
-
   const handleQuestionsAdded = () => {
     setAddQuestionsDialogOpen(false);
     fetchPackages();
@@ -420,14 +410,6 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                         title="Tambah Soal"
                       >
                         <Plus className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => openViewQuestions(pkg)}
-                        title="Lihat Daftar Soal"
-                      >
-                        <List className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -630,17 +612,6 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
           </Tabs>
         </DialogContent>
       </Dialog>
-
-      {/* View Questions Dialog */}
-      {viewingPackage && (
-        <QuestionListViewer
-          open={viewQuestionsDialogOpen}
-          onOpenChange={setViewQuestionsDialogOpen}
-          packageId={viewingPackage.id}
-          packageName={viewingPackage.name}
-          onRefresh={fetchPackages}
-        />
-      )}
     </div>
   );
 };
