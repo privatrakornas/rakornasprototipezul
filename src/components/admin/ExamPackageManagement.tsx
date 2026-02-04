@@ -8,11 +8,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star, Copy, CheckCircle, Loader2 } from 'lucide-react';
+import { Package, Plus, Trash2, Edit2, FileText, Upload, Eye, RefreshCw, Star, Copy, CheckCircle, Loader2, List } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ManualQuestionInput from './ManualQuestionInput';
 import WordQuestionImport from './WordQuestionImport';
+import QuestionViewer from './QuestionViewer';
+import PackageExport from './PackageExport';
 
 interface ExamPackage {
   id: string;
@@ -59,6 +61,10 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
   // Add questions dialog
   const [addQuestionsDialogOpen, setAddQuestionsDialogOpen] = useState(false);
   const [activeInputTab, setActiveInputTab] = useState('manual');
+  
+  // View questions dialog
+  const [viewQuestionsDialogOpen, setViewQuestionsDialogOpen] = useState(false);
+  const [viewingPackage, setViewingPackage] = useState<ExamPackage | null>(null);
 
   useEffect(() => {
     fetchPackages();
@@ -285,6 +291,11 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
     setEditDialogOpen(true);
   };
 
+  const openViewQuestions = (pkg: ExamPackage) => {
+    setViewingPackage(pkg);
+    setViewQuestionsDialogOpen(true);
+  };
+
   const handleQuestionsAdded = () => {
     setAddQuestionsDialogOpen(false);
     fetchPackages();
@@ -406,11 +417,20 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => openViewQuestions(pkg)}
+                        title="Lihat Soal"
+                      >
+                        <List className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => openAddQuestions(pkg)}
                         title="Tambah Soal"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
+                      <PackageExport package_={pkg} logAuditAction={logAuditAction} />
                       <Button
                         variant="ghost"
                         size="icon"
@@ -434,7 +454,7 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                             size="icon"
                             onClick={() => handleSetActive(pkg, !pkg.is_active)}
                             title={pkg.is_active ? 'Nonaktifkan' : 'Aktifkan'}
-                            className={pkg.is_active ? 'text-emerald-600' : ''}
+                            className={pkg.is_active ? 'text-primary' : ''}
                           >
                             {pkg.is_active ? (
                               <CheckCircle className="w-4 h-4" />
@@ -610,6 +630,30 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
               )}
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Questions Dialog */}
+      <Dialog open={viewQuestionsDialogOpen} onOpenChange={setViewQuestionsDialogOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <List className="w-5 h-5" />
+              Daftar Soal - {viewingPackage?.name}
+            </DialogTitle>
+            <DialogDescription>
+              Lihat, edit, atau hapus soal individual dalam paket ini
+            </DialogDescription>
+          </DialogHeader>
+          
+          {viewingPackage && (
+            <QuestionViewer
+              packageId={viewingPackage.id}
+              packageName={viewingPackage.name}
+              logAuditAction={logAuditAction}
+              onQuestionsChanged={fetchPackages}
+            />
+          )}
         </DialogContent>
       </Dialog>
     </div>
