@@ -23,3 +23,5 @@ export { default as AnomalyExportPanel } from './AnomalyExportPanel';
 export { default as ExamPackageManagement } from './ExamPackageManagement';
 export { default as ManualQuestionInput } from './ManualQuestionInput';
 export { default as WordQuestionImport } from './WordQuestionImport';
+export { default as QuestionViewer } from './QuestionViewer';
+export { default as PackageExport } from './PackageExport';
