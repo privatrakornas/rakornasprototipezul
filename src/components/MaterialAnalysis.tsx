@@ -1,4 +1,4 @@
-import { questions } from '@/data/questions';
+import type { Question } from '@/data/questions';
 
 interface MaterialStats {
   name: string;
@@ -43,10 +43,10 @@ const getCategoryFromId = (questionId: number): 'TWK' | 'TIU' | 'TKP' => {
   return 'TKP';
 };
 
-export const calculateMaterialStats = (answers: Record<number, string>): MaterialStats[] => {
+export const calculateMaterialStats = (answers: Record<number, string>, questionsData: Question[]): MaterialStats[] => {
   const materialMap = new Map<string, MaterialStats>();
   
-  questions.forEach((q) => {
+  questionsData.forEach((q) => {
     const materialName = getMaterialName(q.id, q.code);
     if (!materialName) return;
     
@@ -83,10 +83,13 @@ export const calculateMaterialStats = (answers: Record<number, string>): Materia
 
 interface MaterialAnalysisProps {
   answers: Record<number, string>;
+  questions?: Question[];
 }
 
-const MaterialAnalysis = ({ answers }: MaterialAnalysisProps) => {
-  const stats = calculateMaterialStats(answers);
+const MaterialAnalysis = ({ answers, questions: questionsProp }: MaterialAnalysisProps) => {
+  // Use provided questions or fallback to empty (caller should provide)
+  const questionsData = questionsProp || [];
+  const stats = calculateMaterialStats(answers, questionsData);
   
   // Group by category
   const twkStats = stats.filter(s => s.category === 'TWK');

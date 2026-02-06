@@ -3,6 +3,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { 
   Trophy, 
   Medal, 
@@ -14,12 +21,17 @@ import {
   Eye,
   Clock,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  MoreVertical,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import ExamMirrorModal from './ExamMirrorModal';
 import LeaderboardExportPanel from './LeaderboardExportPanel';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const PASSING_GRADE = { TWK: 65, TIU: 80, TKP: 166 };
 const TOTAL_EXAM_TIME = 100 * 60; // 100 minutes in seconds
@@ -72,11 +84,15 @@ const formatRemainingTime = (startedAt: string | null | undefined): string => {
 const FinishedRow = memo(({ 
   entry, 
   rank, 
-  onNameClick 
+  onNameClick,
+  onSoftDelete,
+  onPermanentDelete,
 }: { 
   entry: LeaderboardEntry; 
   rank: number;
   onNameClick: (entry: LeaderboardEntry) => void;
+  onSoftDelete: (entry: LeaderboardEntry) => void;
+  onPermanentDelete: (entry: LeaderboardEntry) => void;
 }) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
@@ -125,6 +141,30 @@ const FinishedRow = memo(({
           {lulus ? <CheckCircle className="w-2.5 h-2.5" /> : <XCircle className="w-2.5 h-2.5" />}
           {lulus ? 'L' : 'TL'}
         </span>
+      </TableCell>
+      <TableCell className="text-center py-2">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              className={`h-6 w-6 p-0 ${isLightText ? 'text-white hover:bg-white/20' : ''}`}
+            >
+              <MoreVertical className="w-3.5 h-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem onClick={() => onSoftDelete(entry)} className="text-amber-600">
+              <Trash2 className="w-3.5 h-3.5 mr-2" />
+              Hapus (ke Sampah)
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onPermanentDelete(entry)} className="text-destructive">
+              <AlertTriangle className="w-3.5 h-3.5 mr-2" />
+              Hapus Permanen
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </TableCell>
     </TableRow>
   );
@@ -188,6 +228,11 @@ const AdminLeaderboardMirror = () => {
   const [selectedSession, setSelectedSession] = useState<LeaderboardEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Delete action states
+  const [softDeleteTarget, setSoftDeleteTarget] = useState<LeaderboardEntry | null>(null);
+  const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<LeaderboardEntry | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   // Split data
   const finishedData = data
     .filter(e => e.status === 'finished')
@@ -214,6 +259,87 @@ const AdminLeaderboardMirror = () => {
     await refetch();
     setIsRefreshing(false);
   }, [refetch]);
+
+  const handleSoftDelete = useCallback((entry: LeaderboardEntry) => {
+    setSoftDeleteTarget(entry);
+  }, []);
+
+  const handlePermanentDelete = useCallback((entry: LeaderboardEntry) => {
+    setPermanentDeleteTarget(entry);
+  }, []);
+
+  const confirmSoftDelete = useCallback(async () => {
+    if (!softDeleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const realId = softDeleteTarget.id.replace('legacy-', '');
+      const isLegacy = softDeleteTarget.id.startsWith('legacy-');
+
+      if (isLegacy) {
+        // For legacy entries, delete from exam_results
+        const { error } = await supabase.from('exam_results').delete().eq('id', realId);
+        if (error) throw error;
+      } else {
+        // Soft delete from exam_sessions
+        const { error } = await supabase
+          .from('exam_sessions')
+          .update({ deleted_at: new Date().toISOString() })
+          .eq('id', realId);
+        if (error) throw error;
+      }
+
+      await supabase.from('audit_logs').insert({
+        action: isLegacy ? 'DELETE_LEGACY_RESULT' : 'SOFT_DELETE',
+        target_id: realId,
+        target_name: softDeleteTarget.name,
+        details: `Dihapus dari Riwayat admin. Skor: ${softDeleteTarget.total_score}`,
+      });
+
+      toast.success(`${softDeleteTarget.name} berhasil ${isLegacy ? 'dihapus' : 'dipindahkan ke Sampah'}`);
+      setSoftDeleteTarget(null);
+      await refetch();
+    } catch (error) {
+      console.error('Soft delete error:', error);
+      toast.error('Gagal menghapus data');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [softDeleteTarget, refetch]);
+
+  const confirmPermanentDelete = useCallback(async () => {
+    if (!permanentDeleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const realId = permanentDeleteTarget.id.replace('legacy-', '');
+      const isLegacy = permanentDeleteTarget.id.startsWith('legacy-');
+
+      if (isLegacy) {
+        const { error } = await supabase.from('exam_results').delete().eq('id', realId);
+        if (error) throw error;
+      } else {
+        // Also delete related user_answers first
+        await supabase.from('user_answers').delete().eq('session_id', realId);
+        const { error } = await supabase.from('exam_sessions').delete().eq('id', realId);
+        if (error) throw error;
+      }
+
+      await supabase.from('audit_logs').insert({
+        action: 'PERMANENT_DELETE',
+        target_id: realId,
+        target_name: permanentDeleteTarget.name,
+        details: `Dihapus permanen dari Riwayat. Skor: ${permanentDeleteTarget.total_score}`,
+      });
+
+      toast.success(`${permanentDeleteTarget.name} berhasil dihapus permanen`);
+      setPermanentDeleteTarget(null);
+      await refetch();
+    } catch (error) {
+      console.error('Permanent delete error:', error);
+      toast.error('Gagal menghapus data permanen');
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [permanentDeleteTarget, refetch]);
 
   if (isLoading) {
     return (
@@ -275,8 +401,9 @@ const AdminLeaderboardMirror = () => {
                     <TableHead className="text-center text-[10px]">TIU</TableHead>
                     <TableHead className="text-center text-[10px]">TKP</TableHead>
                     <TableHead className="text-center text-[10px]">Total</TableHead>
-                    <TableHead className="text-center text-[10px]">Ket</TableHead>
-                  </TableRow>
+                     <TableHead className="text-center text-[10px]">Ket</TableHead>
+                     <TableHead className="text-center text-[10px] w-10">Aksi</TableHead>
+                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {finishedData.map((entry, idx) => (
@@ -285,6 +412,8 @@ const AdminLeaderboardMirror = () => {
                       entry={entry} 
                       rank={idx + 1}
                       onNameClick={handleNameClick}
+                      onSoftDelete={handleSoftDelete}
+                      onPermanentDelete={handlePermanentDelete}
                     />
                   ))}
                 </TableBody>
@@ -363,6 +492,57 @@ const AdminLeaderboardMirror = () => {
         sessionName={selectedSession?.name || ''}
         isLive={selectedSession?.status === 'ongoing'}
       />
+
+      {/* Soft Delete Confirmation */}
+      {softDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isDeleting && setSoftDeleteTarget(null)}>
+          <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full mx-4 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-amber-600">
+              <Trash2 className="w-5 h-5" />
+              <h3 className="font-semibold text-lg">Hapus ke Sampah</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Data <strong>{softDeleteTarget.name}</strong> akan dipindahkan ke Sampah dan bisa dipulihkan kembali.
+            </p>
+            <div className="bg-muted p-3 rounded text-sm space-y-1">
+              <p><strong>Skor:</strong> TWK:{softDeleteTarget.twk_score} TIU:{softDeleteTarget.tiu_score} TKP:{softDeleteTarget.tkp_score}</p>
+              <p><strong>Total:</strong> {softDeleteTarget.total_score}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setSoftDeleteTarget(null)} disabled={isDeleting}>Batal</Button>
+              <Button onClick={confirmSoftDelete} disabled={isDeleting} className="bg-amber-600 hover:bg-amber-700">
+                {isDeleting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menghapus...</> : <><Trash2 className="w-4 h-4 mr-2" />Hapus ke Sampah</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permanent Delete Confirmation */}
+      {permanentDeleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !isDeleting && setPermanentDeleteTarget(null)}>
+          <div className="bg-background rounded-lg shadow-lg p-6 max-w-md w-full mx-4 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              <h3 className="font-semibold text-lg">Hapus Permanen</h3>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Data <strong>{permanentDeleteTarget.name}</strong> akan dihapus permanen.
+              <span className="font-semibold text-destructive"> Tindakan ini TIDAK dapat dibatalkan!</span>
+            </p>
+            <div className="bg-destructive/10 border border-destructive/20 p-3 rounded text-sm space-y-1">
+              <p><strong>Skor:</strong> TWK:{permanentDeleteTarget.twk_score} TIU:{permanentDeleteTarget.tiu_score} TKP:{permanentDeleteTarget.tkp_score}</p>
+              <p><strong>Total:</strong> {permanentDeleteTarget.total_score}</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setPermanentDeleteTarget(null)} disabled={isDeleting}>Batal</Button>
+              <Button variant="destructive" onClick={confirmPermanentDelete} disabled={isDeleting}>
+                {isDeleting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Menghapus...</> : <><Trash2 className="w-4 h-4 mr-2" />Hapus Permanen</>}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
