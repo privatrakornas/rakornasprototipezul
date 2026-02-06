@@ -267,6 +267,18 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
 
     setIsImporting(true);
     try {
+      // Check for duplicate package name
+      const { data: existing } = await supabase
+        .from('exam_packages')
+        .select('id')
+        .ilike('name', customName.trim())
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        toast.error(`Paket dengan nama "${customName.trim()}" sudah ada. Gunakan nama lain.`);
+        setIsImporting(false);
+        return;
+      }
       const twkCount = importData.questions.filter(q => q.category === 'TWK').length;
       const tiuCount = importData.questions.filter(q => q.category === 'TIU').length;
       const tkpCount = importData.questions.filter(q => q.category === 'TKP').length;
