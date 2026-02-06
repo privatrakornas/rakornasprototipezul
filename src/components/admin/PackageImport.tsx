@@ -5,9 +5,10 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Upload, FileJson, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Upload, FileJson, FileSpreadsheet, Loader2, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 interface ImportedQuestion {
   category: string;
@@ -65,8 +66,11 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.name.endsWith('.json')) {
-      setParseError('File harus berformat .json');
+    const isJson = file.name.endsWith('.json');
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+    if (!isJson && !isExcel) {
+      setParseError('File harus berformat .json atau .xlsx/.xls');
       setImportData(null);
       return;
     }
@@ -77,12 +81,19 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
       return;
     }
 
+    if (isJson) {
+      parseJsonFile(file);
+    } else {
+      parseExcelFile(file);
+    }
+  };
+
+  const parseJsonFile = (file: File) => {
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const json = JSON.parse(event.target?.result as string);
         
-        // Validate structure
         if (!json.package || !json.questions || !Array.isArray(json.questions)) {
           setParseError('Format JSON tidak valid. Pastikan file berasal dari fitur Export Paket.');
           setImportData(null);
@@ -95,22 +106,9 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
           return;
         }
 
-        // Validate each question has required fields
-        const validCategories = ['TWK', 'TIU', 'TKP'];
-        const invalidQuestions = json.questions.filter(
-          (q: any) =>
-            !q.category ||
-            !validCategories.includes(q.category) ||
-            !q.question_text ||
-            !q.option_a ||
-            !q.option_b ||
-            !q.option_c ||
-            !q.option_d ||
-            !q.option_e
-        );
-
-        if (invalidQuestions.length > 0) {
-          setParseError(`${invalidQuestions.length} soal memiliki data yang tidak lengkap atau kategori tidak valid.`);
+        const invalidCount = validateQuestions(json.questions);
+        if (invalidCount > 0) {
+          setParseError(`${invalidCount} soal memiliki data yang tidak lengkap atau kategori tidak valid.`);
           setImportData(null);
           return;
         }
@@ -124,6 +122,141 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
       }
     };
     reader.readAsText(file);
+  };
+
+  const parseExcelFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+
+        let questions: ImportedQuestion[] = [];
+        const allSheetName = workbook.SheetNames.find(
+          s => s.toLowerCase().includes('semua soal') || s.toLowerCase() === 'all'
+        );
+
+        if (allSheetName) {
+          questions = parseAllQuestionsSheet(workbook.Sheets[allSheetName]);
+        } else {
+          const categorySheets = ['TWK', 'TIU', 'TKP'];
+          for (const cat of categorySheets) {
+            const sheetName = workbook.SheetNames.find(s => s.toUpperCase() === cat);
+            if (sheetName) {
+              const catQuestions = parseCategorySheet(workbook.Sheets[sheetName], cat);
+              questions.push(...catQuestions);
+            }
+          }
+        }
+
+        if (questions.length === 0) {
+          setParseError('Tidak ditemukan soal dalam file Excel. Pastikan file berasal dari fitur Export Paket.');
+          setImportData(null);
+          return;
+        }
+
+        const invalidCount = validateQuestions(questions);
+        if (invalidCount > 0) {
+          setParseError(`${invalidCount} soal memiliki data yang tidak lengkap atau kategori tidak valid.`);
+          setImportData(null);
+          return;
+        }
+
+        let packageName = file.name.replace(/\.(xlsx|xls)$/, '');
+        const infoSheetName = workbook.SheetNames.find(
+          s => s.toLowerCase().includes('info paket') || s.toLowerCase() === 'info'
+        );
+        if (infoSheetName) {
+          const infoRows = XLSX.utils.sheet_to_json<Record<string, any>>(workbook.Sheets[infoSheetName]);
+          if (infoRows.length > 0 && infoRows[0]['Nama Paket']) {
+            packageName = String(infoRows[0]['Nama Paket']);
+          }
+        }
+
+        const twkCount = questions.filter(q => q.category === 'TWK').length;
+        const tiuCount = questions.filter(q => q.category === 'TIU').length;
+        const tkpCount = questions.filter(q => q.category === 'TKP').length;
+
+        const result: ImportedPackageData = {
+          package: {
+            name: packageName,
+            description: null,
+            twk_count: twkCount,
+            tiu_count: tiuCount,
+            tkp_count: tkpCount,
+            total_questions: questions.length,
+            exported_at: new Date().toISOString(),
+          },
+          questions,
+        };
+
+        setImportData(result);
+        setCustomName(`${packageName} (Import)`);
+        setParseError(null);
+      } catch (err) {
+        console.error('Excel parse error:', err);
+        setParseError('Gagal membaca file Excel. Pastikan format file benar.');
+        setImportData(null);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const parseAllQuestionsSheet = (sheet: XLSX.WorkSheet): ImportedQuestion[] => {
+    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+    return rows.map((row, idx) => ({
+      category: String(row['Kategori'] || '').toUpperCase(),
+      question_number: Number(row['No']) || idx + 1,
+      question_text: String(row['Pertanyaan'] || ''),
+      option_a: String(row['Opsi A'] || ''),
+      option_b: String(row['Opsi B'] || ''),
+      option_c: String(row['Opsi C'] || ''),
+      option_d: String(row['Opsi D'] || ''),
+      option_e: String(row['Opsi E'] || ''),
+      correct_answer: row['Kunci Jawaban'] && row['Kunci Jawaban'] !== '-' ? String(row['Kunci Jawaban']) : null,
+      points_a: row['Skor A'] != null ? Number(row['Skor A']) : null,
+      points_b: row['Skor B'] != null ? Number(row['Skor B']) : null,
+      points_c: row['Skor C'] != null ? Number(row['Skor C']) : null,
+      points_d: row['Skor D'] != null ? Number(row['Skor D']) : null,
+      points_e: row['Skor E'] != null ? Number(row['Skor E']) : null,
+      explanation: row['Pembahasan'] && row['Pembahasan'] !== '-' ? String(row['Pembahasan']) : null,
+    }));
+  };
+
+  const parseCategorySheet = (sheet: XLSX.WorkSheet, category: string): ImportedQuestion[] => {
+    const rows = XLSX.utils.sheet_to_json<Record<string, any>>(sheet);
+    return rows.map((row, idx) => ({
+      category,
+      question_number: Number(row['No']) || idx + 1,
+      question_text: String(row['Pertanyaan'] || ''),
+      option_a: String(row['Opsi A'] || ''),
+      option_b: String(row['Opsi B'] || ''),
+      option_c: String(row['Opsi C'] || ''),
+      option_d: String(row['Opsi D'] || ''),
+      option_e: String(row['Opsi E'] || ''),
+      correct_answer: row['Kunci Jawaban'] && row['Kunci Jawaban'] !== '-' ? String(row['Kunci Jawaban']) : null,
+      points_a: row['Skor A'] != null ? Number(row['Skor A']) : null,
+      points_b: row['Skor B'] != null ? Number(row['Skor B']) : null,
+      points_c: row['Skor C'] != null ? Number(row['Skor C']) : null,
+      points_d: row['Skor D'] != null ? Number(row['Skor D']) : null,
+      points_e: row['Skor E'] != null ? Number(row['Skor E']) : null,
+      explanation: row['Pembahasan'] && row['Pembahasan'] !== '-' ? String(row['Pembahasan']) : null,
+    }));
+  };
+
+  const validateQuestions = (questions: ImportedQuestion[]): number => {
+    const validCategories = ['TWK', 'TIU', 'TKP'];
+    return questions.filter(
+      (q) =>
+        !q.category ||
+        !validCategories.includes(q.category) ||
+        !q.question_text ||
+        !q.option_a ||
+        !q.option_b ||
+        !q.option_c ||
+        !q.option_d ||
+        !q.option_e
+    ).length;
   };
 
   const handleImport = async () => {
@@ -222,7 +355,7 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
         }}
       >
         <Upload className="w-4 h-4 mr-2" />
-        Import JSON
+        Import JSON/Excel
       </Button>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => {
@@ -232,22 +365,22 @@ const PackageImport = ({ logAuditAction, onSuccess }: PackageImportProps) => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <FileJson className="w-5 h-5" />
-              Import Paket dari JSON
+              <FileSpreadsheet className="w-5 h-5" />
+              Import Paket dari JSON / Excel
             </DialogTitle>
             <DialogDescription>
-              Upload file JSON yang dihasilkan dari fitur Export Paket untuk membuat paket baru
+              Upload file JSON atau Excel (.xlsx) yang dihasilkan dari fitur Export Paket untuk membuat paket baru
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* File Input */}
             <div className="space-y-2">
-              <Label>File JSON Backup</Label>
+              <Label>File Backup (JSON / Excel)</Label>
               <Input
                 ref={fileInputRef}
                 type="file"
-                accept=".json"
+                accept=".json,.xlsx,.xls"
                 onChange={handleFileSelect}
                 className="cursor-pointer"
               />
