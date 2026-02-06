@@ -1,9 +1,8 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { questions } from '@/data/questions';
+import type { Question } from '@/data/questions';
 import type { NavigationEvent } from './useNavigationTimeline';
 
-const TOTAL_QUESTIONS = 110;
 const QUESTION_POSITION_DEBOUNCE_MS = 300; // Reduced debounce for faster admin sync (was 800ms)
 
 interface ScoreUpdate {
@@ -14,8 +13,8 @@ interface ScoreUpdate {
   answered_count: number;
 }
 
-// Calculate scores based on current answers
-const calculateScores = (answers: Record<number, string>): ScoreUpdate => {
+// Calculate scores based on current answers and provided questions
+const calculateScores = (answers: Record<number, string>, questions: Question[]): ScoreUpdate => {
   let twk = 0, tiu = 0, tkp = 0;
   let answeredCount = 0;
 
@@ -47,7 +46,7 @@ const calculateScores = (answers: Record<number, string>): ScoreUpdate => {
   };
 };
 
-export const useExamSession = () => {
+export const useExamSession = (questions: Question[]) => {
   const sessionIdRef = useRef<string | null>(null);
   const updateQueueRef = useRef<ScoreUpdate | null>(null);
   const isUpdatingRef = useRef(false);
@@ -65,7 +64,7 @@ export const useExamSession = () => {
       started_at: startedAt,
       status: 'ongoing',
       answered_count: 0,
-      total_questions: TOTAL_QUESTIONS,
+      total_questions: questions.length,
     };
 
     try {
@@ -99,7 +98,7 @@ export const useExamSession = () => {
       console.error('Error creating session:', err);
       return null;
     }
-  }, []);
+  }, [questions]);
 
   // Save individual answer to user_answers table
   const saveUserAnswer = useCallback(async (
@@ -175,7 +174,7 @@ export const useExamSession = () => {
 
   // Update scores with debouncing (500ms delay to batch updates)
   const updateScores = useCallback((answers: Record<number, string>, lastAnsweredQuestion?: { id: number; category: string; answer: string }) => {
-    const scores = calculateScores(answers);
+    const scores = calculateScores(answers, questions);
     updateQueueRef.current = scores;
 
     // Save individual answer to user_answers table
@@ -211,7 +210,7 @@ export const useExamSession = () => {
 
     // Debounce updates to every 500ms
     updateTimeoutRef.current = setTimeout(processUpdate, 500);
-  }, [processUpdate, saveUserAnswer]);
+  }, [processUpdate, saveUserAnswer, questions]);
 
   // Finish session when exam is submitted
   const finishSession = useCallback(async (durationMinutes: number) => {
