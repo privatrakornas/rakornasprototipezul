@@ -4,16 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader, DialogFooter } from '@/components/ui/dialog';
-import { questions } from '@/data/questions';
-import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Clock, ChevronLeft, ChevronRight, Grid3X3, ZoomIn, X, AlertTriangle, ShieldAlert, Loader2 } from 'lucide-react';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import LatexText from '@/components/LatexText';
 import { useExamSession } from '@/hooks/useExamSession';
+import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
 import { useNavigationTimeline, type NavigationAction } from '@/hooks/useNavigationTimeline';
 import { useToast } from '@/hooks/use-toast';
 import { useContentProtection } from '@/hooks/useContentProtection';
 import Watermark from '@/components/Watermark';
 import { supabase } from '@/integrations/supabase/client';
+import type { Question } from '@/data/questions';
 
 const EXAM_TIME = 100 * 60; // 100 minutes in seconds
 const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
@@ -22,12 +23,13 @@ const STATUS_CHECK_INTERVAL = 10000; // Check status every 10 seconds
 
 // Memoized Question Navigation Grid - prevents re-renders from timer
 interface QuestionNavGridProps {
+  questions: Question[];
   answers: Record<number, string>;
   currentQuestion: number;
   onNavClick: (idx: number) => void;
 }
 
-const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: QuestionNavGridProps) => {
+const QuestionNavGrid = memo(({ questions, answers, currentQuestion, onNavClick }: QuestionNavGridProps) => {
   const isAnswered = (id: number) => answers[id] !== undefined;
 
   return (
@@ -43,7 +45,7 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
             </div>
             <div className="flex items-center gap-1">
               <div className="w-2.5 h-2.5 rounded bg-[hsl(var(--unanswered))] border" />
-              <span className="font-medium">{110 - Object.keys(answers).length}</span>
+              <span className="font-medium">{questions.length - Object.keys(answers).length}</span>
             </div>
           </div>
         </div>
@@ -51,7 +53,7 @@ const QuestionNavGrid = memo(({ answers, currentQuestion, onNavClick }: Question
       
       {/* Grid 10 kolom x 11 baris = 110 tombol - tersebar vertikal */}
       <div className="flex-1 p-2 overflow-hidden">
-        <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: 'repeat(11, 1fr)' }}>
+      <div className="grid grid-cols-10 gap-1 h-full" style={{ gridTemplateRows: `repeat(${Math.ceil(questions.length / 10)}, 1fr)` }}>
           {questions.map((q, idx) => {
             const answered = isAnswered(q.id);
             const selectedLetter = answers[q.id];
@@ -86,6 +88,7 @@ QuestionNavGrid.displayName = 'QuestionNavGrid';
 const Exam = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { questions, isLoading: isLoadingQuestions, activePackageName } = useActivePackageQuestions();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [timeLeft, setTimeLeft] = useState(EXAM_TIME);
@@ -97,7 +100,7 @@ const Exam = () => {
   const sessionInitializedRef = useRef(false);
   const autoSubmitTriggeredRef = useRef(false);
   const statusCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition, saveNavigationLog } = useExamSession();
+  const { createSession, updateScores, finishSession, abortSession, syncQuestionPosition, saveNavigationLog } = useExamSession(questions);
   const { logNavigation, getNavigationLog, clearNavigationLog } = useNavigationTimeline();
   
   // ============ CONTENT PROTECTION - ANTI-CHEAT ============
@@ -466,6 +469,16 @@ const Exam = () => {
   // Calculate remaining time until submit is allowed
   const minutesUntilCanSubmit = Math.max(0, MIN_DURATION_MINUTES - getElapsedMinutes());
 
+  // Show loading screen while questions are being fetched
+  if (isLoadingQuestions || questions.length === 0) {
+    return (
+      <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground text-sm">Memuat soal ujian...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="h-screen bg-gradient-to-b from-white to-secondary flex flex-col overflow-hidden">
       {/* Fixed Header */}
@@ -520,7 +533,7 @@ const Exam = () => {
           <Card className="p-2 md:p-3 animate-fade-in flex flex-col min-h-full">
             {/* Question Header - Compact */}
             <div className="flex items-center justify-between gap-2 mb-1.5 flex-shrink-0">
-              <span className="text-muted-foreground text-[11px]">Soal {question.id}/110</span>
+              <span className="text-muted-foreground text-[11px]">Soal {question.id}/{questions.length}</span>
               <span className="px-1.5 py-0.5 bg-accent/20 text-accent rounded text-[10px] font-medium">
                 {question.category} - {question.code}
               </span>
@@ -706,7 +719,7 @@ const Exam = () => {
                 size="sm"
                 onClick={() => {
                   const fromQ = questions[currentQuestion].id;
-                  const newIdx = currentQuestion === 109 ? 0 : currentQuestion + 1;
+                  const newIdx = currentQuestion === questions.length - 1 ? 0 : currentQuestion + 1;
                   const toQ = questions[newIdx].id;
                   // Log next navigation: from current to next
                   logNavigation('next', timeLeft, fromQ, toQ);
@@ -724,6 +737,7 @@ const Exam = () => {
         {/* Desktop: Right Sidebar - Question Navigation */}
         <aside className="hidden lg:flex w-64 bg-card border-l flex-col flex-shrink-0">
           <QuestionNavGrid 
+            questions={questions}
             answers={answers} 
             currentQuestion={currentQuestion} 
             onNavClick={handleNavClick} 
@@ -746,6 +760,7 @@ const Exam = () => {
                 <SheetTitle>Navigasi Soal</SheetTitle>
               </VisuallyHidden>
               <QuestionNavGrid 
+                questions={questions}
                 answers={answers} 
                 currentQuestion={currentQuestion} 
                 onNavClick={handleNavClick} 
