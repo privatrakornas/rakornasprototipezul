@@ -219,3 +219,68 @@ export const RestoreDialog = ({
     </Dialog>
   );
 };
+
+interface PermanentDeleteDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  session: ExamSession | null;
+  onConfirm: () => void;
+  isLoading: boolean;
+}
+
+export const PermanentDeleteDialog = ({
+  open,
+  onOpenChange,
+  session,
+  onConfirm,
+  isLoading,
+}: PermanentDeleteDialogProps) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-destructive">
+            <Trash2 className="w-5 h-5" />
+            Hapus Permanen
+          </DialogTitle>
+          <DialogDescription>
+            Anda akan menghapus permanen data <strong>{session?.name}</strong>. 
+            <span className="font-semibold text-destructive"> Tindakan ini TIDAK dapat dibatalkan!</span>
+          </DialogDescription>
+        </DialogHeader>
+        
+        {session && (
+          <div className="bg-red-50 p-3 rounded-md text-sm space-y-1 border border-red-200">
+            <p><strong>Nama:</strong> {session.name}</p>
+            <p><strong>Status:</strong> {session.status}</p>
+            <p><strong>Skor:</strong> TWK:{session.twk_score} TIU:{session.tiu_score} TKP:{session.tkp_score}</p>
+            <p><strong>Total:</strong> {session.total_score}</p>
+          </div>
+        )}
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+            Batal
+          </Button>
+          <Button 
+            variant="destructive"
+            onClick={onConfirm} 
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Menghapus...
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Hapus Permanen
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

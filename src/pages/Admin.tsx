@@ -22,6 +22,7 @@ import {
   DisqualifyDialog,
   DeleteDialog,
   RestoreDialog,
+  PermanentDeleteDialog,
   NotificationHistoryPanel,
   ExamConfigPanel,
   BackupRestorePanel,
@@ -262,6 +263,54 @@ const Admin = () => {
     }
   };
 
+  // Permanent delete states
+  const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] = useState(false);
+  const [sessionToPermanentDelete, setSessionToPermanentDelete] = useState<ExamSession | null>(null);
+  const [isPermanentDeleting, setIsPermanentDeleting] = useState(false);
+
+  const handlePermanentDelete = (session: ExamSession) => {
+    setSessionToPermanentDelete(session);
+    setPermanentDeleteDialogOpen(true);
+  };
+
+  const confirmPermanentDelete = async () => {
+    if (!sessionToPermanentDelete) return;
+
+    setIsPermanentDeleting(true);
+    try {
+      // Delete related user_answers first
+      await supabase.from('user_answers').delete().eq('session_id', sessionToPermanentDelete.id);
+      
+      const { error } = await supabase
+        .from('exam_sessions')
+        .delete()
+        .eq('id', sessionToPermanentDelete.id);
+
+      if (error) {
+        console.error('Error permanently deleting session:', error);
+        toast.error('Gagal menghapus data permanen');
+        return;
+      }
+
+      await logAuditAction(
+        'PERMANENT_DELETE',
+        sessionToPermanentDelete.id,
+        sessionToPermanentDelete.name,
+        `Dihapus permanen. Skor: ${sessionToPermanentDelete.total_score}`
+      );
+
+      toast.success(`Data ${sessionToPermanentDelete.name} berhasil dihapus permanen`);
+      setPermanentDeleteDialogOpen(false);
+      setSessionToPermanentDelete(null);
+      fetchAllSessions();
+    } catch (err) {
+      console.error('Error:', err);
+      toast.error('Terjadi kesalahan');
+    } finally {
+      setIsPermanentDeleting(false);
+    }
+  };
+
   // Login form
   if (!isAuthenticated) {
     return <AdminLogin onLoginSuccess={handleLoginSuccess} logAuditAction={logAuditAction} />;
@@ -410,6 +459,7 @@ const Admin = () => {
               isFetching={isFetching}
               hasActiveFilters={hasActiveFilters}
               onRestore={handleRestore}
+              onPermanentDelete={handlePermanentDelete}
             />
           </TabsContent>
 
@@ -450,6 +500,14 @@ const Admin = () => {
         session={sessionToRestore}
         onConfirm={confirmRestore}
         isLoading={isRestoring}
+      />
+
+      <PermanentDeleteDialog
+        open={permanentDeleteDialogOpen}
+        onOpenChange={setPermanentDeleteDialogOpen}
+        session={sessionToPermanentDelete}
+        onConfirm={confirmPermanentDelete}
+        isLoading={isPermanentDeleting}
       />
     </div>
   );

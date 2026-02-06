@@ -488,6 +488,9 @@ const Exam = () => {
           <div className="text-left min-w-0 flex-1">
             <span className="text-white font-semibold block text-sm md:text-base truncate">CAT SKD - RAKORNAS</span>
             <span className="text-white/80 text-xs md:text-sm truncate block">{userName}</span>
+            {activePackageName && activePackageName !== 'Default (Hardcoded)' && (
+              <span className="text-white/60 text-[10px] md:text-xs truncate block">📦 {activePackageName}</span>
+            )}
           </div>
           
           {/* Right: Timer & Submit Button */}

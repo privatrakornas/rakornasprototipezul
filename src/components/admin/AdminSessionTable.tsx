@@ -23,6 +23,7 @@ interface AdminSessionTableProps {
   onDisqualify?: (session: ExamSession) => void;
   onDelete?: (session: ExamSession) => void;
   onRestore?: (session: ExamSession) => void;
+  onPermanentDelete?: (session: ExamSession) => void;
 }
 
 const formatDateTime = (dateStr: string | null) => {
@@ -69,6 +70,7 @@ export const AdminSessionTable = ({
   onDisqualify,
   onDelete,
   onRestore,
+  onPermanentDelete,
 }: AdminSessionTableProps) => {
   const getTableConfig = () => {
     switch (type) {
@@ -303,16 +305,31 @@ export const AdminSessionTable = ({
                         Hapus
                       </Button>
                     )}
-                    {type === 'deleted' && onRestore && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onRestore(session)}
-                        className="gap-1 text-green-600 border-green-300 hover:bg-green-50"
-                      >
-                        <RotateCcw className="w-3 h-3" />
-                        Pulihkan
-                      </Button>
+                    {type === 'deleted' && (
+                      <div className="flex items-center gap-1">
+                        {onRestore && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => onRestore(session)}
+                            className="gap-1 text-green-600 border-green-300 hover:bg-green-50"
+                          >
+                            <RotateCcw className="w-3 h-3" />
+                            Pulihkan
+                          </Button>
+                        )}
+                        {onPermanentDelete && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => onPermanentDelete(session)}
+                            className="gap-1"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            Hapus Permanen
+                          </Button>
+                        )}
+                      </div>
                     )}
                   </div>
                 </TableCell>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { questions, calculateTWKScore, calculateTIUScore, calculateTKPScore, getPassingStatus } from '@/data/questions';
+import { questions as hardcodedQuestions, calculateTWKScore, calculateTIUScore, calculateTKPScore, getPassingStatus } from '@/data/questions';
 import { Trophy, BookOpen, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import MaterialAnalysis from '@/components/MaterialAnalysis';
 import LatexText from '@/components/LatexText';
@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { useContentProtection } from '@/hooks/useContentProtection';
 import Watermark from '@/components/Watermark';
+import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
 
 // Sanitize name by removing dangerous Unicode characters
 const sanitizeName = (name: string): string => {
@@ -81,6 +82,10 @@ const Results = () => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [isSaving, setIsSaving] = useState(false);
   const userName = sessionStorage.getItem('userName') || 'Peserta';
+  const { questions: activeQuestions, isLoading: isLoadingQuestions, activePackageName } = useActivePackageQuestions();
+  
+  // Use active package questions if available, otherwise hardcoded
+  const questions = activeQuestions.length > 0 ? activeQuestions : hardcodedQuestions;
 
   // ============ CONTENT PROTECTION - PROTECT EXAM RESULTS ============
   // Disable right-click, copy-paste, keyboard shortcuts, etc.
@@ -235,7 +240,7 @@ const Results = () => {
 
           {/* Material Analysis Section */}
           <div className="mb-6 md:mb-8">
-            <MaterialAnalysis answers={answers} />
+            <MaterialAnalysis answers={answers} questions={questions} />
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 md:gap-4 justify-center">
