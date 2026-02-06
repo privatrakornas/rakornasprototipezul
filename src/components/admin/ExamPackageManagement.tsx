@@ -15,6 +15,7 @@ import ManualQuestionInput from './ManualQuestionInput';
 import WordQuestionImport from './WordQuestionImport';
 import QuestionViewer from './QuestionViewer';
 import PackageExport from './PackageExport';
+import PackageImport from './PackageImport';
 
 interface ExamPackage {
   id: string;
@@ -320,6 +321,7 @@ const ExamPackageManagement = ({ logAuditAction }: ExamPackageManagementProps) =
                 <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
+              <PackageImport logAuditAction={logAuditAction} onSuccess={fetchPackages} />
               <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                 <DialogTrigger asChild>
                   <Button size="sm">
