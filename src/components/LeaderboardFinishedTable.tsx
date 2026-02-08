@@ -3,6 +3,8 @@ import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { 
   Trophy, 
   Medal, 
@@ -17,8 +19,10 @@ import {
   Timer,
   ShieldAlert,
   AlertTriangle,
+  CalendarIcon,
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
+import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -278,6 +282,8 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [riskFilter, setRiskFilter] = useState<RiskFilter>('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null);
   const [timelineModalOpen, setTimelineModalOpen] = useState(false);
 
@@ -335,6 +341,16 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
         if (statusFilter === 'lulus' && !lulus) return false;
         if (statusFilter === 'tidak_lulus' && lulus) return false;
       }
+
+      // Date filter
+      if (dateFrom && e.created_at) {
+        const entryDate = new Date(e.created_at);
+        if (isBefore(entryDate, startOfDay(dateFrom))) return false;
+      }
+      if (dateTo && e.created_at) {
+        const entryDate = new Date(e.created_at);
+        if (isAfter(entryDate, endOfDay(dateTo))) return false;
+      }
       
       // Risk filter
       if (riskFilter !== 'all') {
@@ -352,7 +368,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
       
       return true;
     });
-  }, [allFinishedSorted, searchQuery, statusFilter, riskFilter, anomalyMap]);
+  }, [allFinishedSorted, searchQuery, statusFilter, riskFilter, anomalyMap, dateFrom, dateTo]);
 
   // Count high-risk entries
   const highRiskCount = useMemo(() => {
@@ -370,6 +386,8 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     setSearchQuery('');
     setStatusFilter('all');
     setRiskFilter('all');
+    setDateFrom(undefined);
+    setDateTo(undefined);
   }, []);
 
   const handleViewTimeline = useCallback((entry: LeaderboardEntry) => {
@@ -377,7 +395,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     setTimelineModalOpen(true);
   }, []);
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all' || riskFilter !== 'all';
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || riskFilter !== 'all' || dateFrom || dateTo;
 
   const getRiskFilterLabel = () => {
     switch (riskFilter) {
@@ -505,6 +523,52 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
             </DropdownMenuCheckboxItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Date From Filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={dateFrom ? 'default' : 'outline'}
+              size="sm"
+              className={cn('h-7 text-xs gap-1', dateFrom && 'bg-primary text-primary-foreground')}
+            >
+              <CalendarIcon className="w-3 h-3" />
+              {dateFrom ? format(dateFrom, 'dd/MM/yy') : 'Dari'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateFrom}
+              onSelect={setDateFrom}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
+
+        {/* Date To Filter */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              variant={dateTo ? 'default' : 'outline'}
+              size="sm"
+              className={cn('h-7 text-xs gap-1', dateTo && 'bg-primary text-primary-foreground')}
+            >
+              <CalendarIcon className="w-3 h-3" />
+              {dateTo ? format(dateTo, 'dd/MM/yy') : 'Sampai'}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0" align="start">
+            <Calendar
+              mode="single"
+              selected={dateTo}
+              onSelect={setDateTo}
+              initialFocus
+              className={cn("p-3 pointer-events-auto")}
+            />
+          </PopoverContent>
+        </Popover>
 
         {hasActiveFilters && (
           <Button 

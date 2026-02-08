@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
@@ -25,6 +26,8 @@ import {
   AlertTriangle,
   Search,
   X,
+  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import ExamMirrorModal from './ExamMirrorModal';
@@ -170,6 +173,7 @@ const AdminLeaderboardMirror = () => {
   const [selectedSession, setSelectedSession] = useState<LeaderboardEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'lulus' | 'tidak_lulus'>('all');
 
   // Delete action states
   const [softDeleteTarget, setSoftDeleteTarget] = useState<LeaderboardEntry | null>(null);
@@ -201,12 +205,30 @@ const AdminLeaderboardMirror = () => {
     return map;
   }, [allFinishedSorted]);
 
-  // Filter by search while preserving original ranks
+  // Filter by search and status while preserving original ranks
   const finishedData = useMemo(() => {
-    if (!searchQuery.trim()) return allFinishedSorted;
-    const query = searchQuery.toLowerCase();
-    return allFinishedSorted.filter(e => e.name.toLowerCase().includes(query));
-  }, [allFinishedSorted, searchQuery]);
+    return allFinishedSorted.filter(e => {
+      // Search filter
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        if (!e.name.toLowerCase().includes(query)) return false;
+      }
+      // Status filter
+      if (statusFilter !== 'all') {
+        const lulus = isLulus(e);
+        if (statusFilter === 'lulus' && !lulus) return false;
+        if (statusFilter === 'tidak_lulus' && lulus) return false;
+      }
+      return true;
+    });
+  }, [allFinishedSorted, searchQuery, statusFilter]);
+
+  const hasActiveFilters = searchQuery || statusFilter !== 'all';
+
+  const clearFilters = useCallback(() => {
+    setSearchQuery('');
+    setStatusFilter('all');
+  }, []);
 
   const handleNameClick = useCallback((entry: LeaderboardEntry) => {
     setSelectedSession(entry);
@@ -339,14 +361,14 @@ const AdminLeaderboardMirror = () => {
             <div className="flex items-center gap-2">
               <LeaderboardExportPanel data={allFinishedSorted} type="finished" />
               <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
-                {finishedData.length}{searchQuery ? `/${allFinishedSorted.length}` : ''} peserta
+                {finishedData.length}{hasActiveFilters ? `/${allFinishedSorted.length}` : ''} peserta
               </span>
             </div>
           </div>
 
-          {/* Search Bar */}
-          <div className="px-2 py-2 border-x bg-muted/30 flex items-center gap-2">
-            <div className="relative flex-1">
+          {/* Search & Filter Bar */}
+          <div className="px-2 py-2 border-x bg-muted/30 flex items-center gap-2 flex-wrap">
+            <div className="relative flex-1 min-w-[120px]">
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 type="text"
@@ -356,12 +378,46 @@ const AdminLeaderboardMirror = () => {
                 className="h-7 pl-7 text-xs"
               />
             </div>
-            {searchQuery && (
+
+            {/* Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-7 text-xs gap-1">
+                  <Filter className="w-3 h-3" />
+                  {statusFilter === 'all' ? 'Semua' : statusFilter === 'lulus' ? 'Lulus' : 'Tidak Lulus'}
+                  <ChevronDown className="w-3 h-3" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuCheckboxItem
+                  checked={statusFilter === 'all'}
+                  onCheckedChange={() => setStatusFilter('all')}
+                >
+                  Semua Status
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilter === 'lulus'}
+                  onCheckedChange={() => setStatusFilter('lulus')}
+                >
+                  <CheckCircle className="w-3 h-3 mr-1.5 text-green-600" />
+                  Lulus
+                </DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem
+                  checked={statusFilter === 'tidak_lulus'}
+                  onCheckedChange={() => setStatusFilter('tidak_lulus')}
+                >
+                  <XCircle className="w-3 h-3 mr-1.5 text-red-600" />
+                  Tidak Lulus
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {hasActiveFilters && (
               <Button
                 variant="ghost"
                 size="sm"
                 className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                onClick={() => setSearchQuery('')}
+                onClick={clearFilters}
               >
                 <X className="w-3 h-3" />
                 Reset
@@ -372,10 +428,10 @@ const AdminLeaderboardMirror = () => {
           <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
             {finishedData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
-                <p>{searchQuery ? 'Tidak ada peserta sesuai pencarian' : 'Belum ada peserta selesai'}</p>
-                {searchQuery && (
-                  <Button variant="link" size="sm" onClick={() => setSearchQuery('')} className="text-xs">
-                    Reset Pencarian
+                <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Belum ada peserta selesai'}</p>
+                {hasActiveFilters && (
+                  <Button variant="link" size="sm" onClick={clearFilters} className="text-xs">
+                    Reset Filter
                   </Button>
                 )}
               </div>
