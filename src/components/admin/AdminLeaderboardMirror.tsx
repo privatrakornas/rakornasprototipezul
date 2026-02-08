@@ -1,6 +1,7 @@
-import { useState, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   DropdownMenu,
@@ -22,6 +23,8 @@ import {
   MoreVertical,
   Trash2,
   AlertTriangle,
+  Search,
+  X,
 } from 'lucide-react';
 import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import ExamMirrorModal from './ExamMirrorModal';
@@ -166,27 +169,44 @@ const AdminLeaderboardMirror = () => {
   const [mirrorModalOpen, setMirrorModalOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<LeaderboardEntry | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Delete action states
   const [softDeleteTarget, setSoftDeleteTarget] = useState<LeaderboardEntry | null>(null);
   const [permanentDeleteTarget, setPermanentDeleteTarget] = useState<LeaderboardEntry | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Split data
-  const finishedData = data
-    .filter(e => e.status === 'finished')
-    .sort((a, b) => {
-      const aLulus = isLulus(a);
-      const bLulus = isLulus(b);
-      if (aLulus !== bLulus) return aLulus ? -1 : 1;
-      if (b.total_score !== a.total_score) return b.total_score - a.total_score;
-      const aDur = a.duration_minutes ?? 999;
-      const bDur = b.duration_minutes ?? 999;
-      if (aDur !== bDur) return aDur - bDur;
-      return 0;
-    });
+  // Full sorted finished data (for stable ranking)
+  const allFinishedSorted = useMemo(() => {
+    return data
+      .filter(e => e.status === 'finished')
+      .sort((a, b) => {
+        const aLulus = isLulus(a);
+        const bLulus = isLulus(b);
+        if (aLulus !== bLulus) return aLulus ? -1 : 1;
+        if (b.total_score !== a.total_score) return b.total_score - a.total_score;
+        const aDur = a.duration_minutes ?? 999;
+        const bDur = b.duration_minutes ?? 999;
+        if (aDur !== bDur) return aDur - bDur;
+        return 0;
+      });
+  }, [data]);
 
-  // liveData filtering is now handled inside AdminLiveScoreTable
+  // Rank map from full sorted list
+  const rankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    allFinishedSorted.forEach((entry, idx) => {
+      map.set(entry.id, idx + 1);
+    });
+    return map;
+  }, [allFinishedSorted]);
+
+  // Filter by search while preserving original ranks
+  const finishedData = useMemo(() => {
+    if (!searchQuery.trim()) return allFinishedSorted;
+    const query = searchQuery.toLowerCase();
+    return allFinishedSorted.filter(e => e.name.toLowerCase().includes(query));
+  }, [allFinishedSorted, searchQuery]);
 
   const handleNameClick = useCallback((entry: LeaderboardEntry) => {
     setSelectedSession(entry);
@@ -317,17 +337,47 @@ const AdminLeaderboardMirror = () => {
               <h3 className="font-bold text-sm">Riwayat Selesai</h3>
             </div>
             <div className="flex items-center gap-2">
-              <LeaderboardExportPanel data={finishedData} type="finished" />
+              <LeaderboardExportPanel data={allFinishedSorted} type="finished" />
               <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-medium">
-                {finishedData.length} peserta
+                {finishedData.length}{searchQuery ? `/${allFinishedSorted.length}` : ''} peserta
               </span>
             </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="px-2 py-2 border-x bg-muted/30 flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cari nama peserta..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-7 pl-7 text-xs"
+              />
+            </div>
+            {searchQuery && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                onClick={() => setSearchQuery('')}
+              >
+                <X className="w-3 h-3" />
+                Reset
+              </Button>
+            )}
           </div>
           
           <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
             {finishedData.length === 0 ? (
-              <div className="flex items-center justify-center h-32 text-muted-foreground text-sm">
-                Belum ada peserta selesai
+              <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
+                <p>{searchQuery ? 'Tidak ada peserta sesuai pencarian' : 'Belum ada peserta selesai'}</p>
+                {searchQuery && (
+                  <Button variant="link" size="sm" onClick={() => setSearchQuery('')} className="text-xs">
+                    Reset Pencarian
+                  </Button>
+                )}
               </div>
             ) : (
               <Table>
@@ -345,11 +395,11 @@ const AdminLeaderboardMirror = () => {
                    </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {finishedData.map((entry, idx) => (
+                  {finishedData.map((entry) => (
                     <FinishedRow 
                       key={entry.id} 
                       entry={entry} 
-                      rank={idx + 1}
+                      rank={rankMap.get(entry.id) ?? 0}
                       onNameClick={handleNameClick}
                       onSoftDelete={handleSoftDelete}
                       onPermanentDelete={handlePermanentDelete}

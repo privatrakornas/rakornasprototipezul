@@ -293,42 +293,10 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     return map;
   }, [data]);
 
-  // Filter and sort data
-  const finishedData = useMemo(() => {
+  // First: sort ALL finished data to assign stable ranks
+  const allFinishedSorted = useMemo(() => {
     return data
-      .filter(e => {
-        // Status filter: Only 'finished'
-        if (e.status !== 'finished') return false;
-        
-        // Search filter
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          if (!e.name.toLowerCase().includes(query)) return false;
-        }
-        
-        // Passing status filter
-        if (statusFilter !== 'all') {
-          const lulus = isLulus(e);
-          if (statusFilter === 'lulus' && !lulus) return false;
-          if (statusFilter === 'tidak_lulus' && lulus) return false;
-        }
-        
-        // Risk filter
-        if (riskFilter !== 'all') {
-          const anomalyData = anomalyMap.get(e.id);
-          if (!anomalyData) return riskFilter === 'low'; // No log = low risk
-          
-          if (riskFilter === 'high_critical') {
-            if (anomalyData.risk !== 'high' && anomalyData.risk !== 'critical') return false;
-          } else if (riskFilter === 'medium') {
-            if (anomalyData.risk !== 'medium') return false;
-          } else if (riskFilter === 'low') {
-            if (anomalyData.risk !== 'low') return false;
-          }
-        }
-        
-        return true;
-      })
+      .filter(e => e.status === 'finished')
       .sort((a, b) => {
         const aLulus = isLulus(a);
         const bLulus = isLulus(b);
@@ -341,7 +309,50 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
         if (b.tiu_score !== a.tiu_score) return b.tiu_score - a.tiu_score;
         return b.twk_score - a.twk_score;
       });
-  }, [data, searchQuery, statusFilter, riskFilter, anomalyMap]);
+  }, [data]);
+
+  // Build a rank map from the full sorted list
+  const rankMap = useMemo(() => {
+    const map = new Map<string, number>();
+    allFinishedSorted.forEach((entry, idx) => {
+      map.set(entry.id, idx + 1);
+    });
+    return map;
+  }, [allFinishedSorted]);
+
+  // Then: filter while preserving original ranks
+  const finishedData = useMemo(() => {
+    return allFinishedSorted.filter(e => {
+      // Search filter
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!e.name.toLowerCase().includes(query)) return false;
+      }
+      
+      // Passing status filter
+      if (statusFilter !== 'all') {
+        const lulus = isLulus(e);
+        if (statusFilter === 'lulus' && !lulus) return false;
+        if (statusFilter === 'tidak_lulus' && lulus) return false;
+      }
+      
+      // Risk filter
+      if (riskFilter !== 'all') {
+        const anomalyData = anomalyMap.get(e.id);
+        if (!anomalyData) return riskFilter === 'low';
+        
+        if (riskFilter === 'high_critical') {
+          if (anomalyData.risk !== 'high' && anomalyData.risk !== 'critical') return false;
+        } else if (riskFilter === 'medium') {
+          if (anomalyData.risk !== 'medium') return false;
+        } else if (riskFilter === 'low') {
+          if (anomalyData.risk !== 'low') return false;
+        }
+      }
+      
+      return true;
+    });
+  }, [allFinishedSorted, searchQuery, statusFilter, riskFilter, anomalyMap]);
 
   // Count high-risk entries
   const highRiskCount = useMemo(() => {
@@ -353,7 +364,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
   }, [anomalyMap]);
 
   // Total finished count (before filters)
-  const totalFinished = useMemo(() => data.filter(e => e.status === 'finished').length, [data]);
+  const totalFinished = allFinishedSorted.length;
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
@@ -538,13 +549,13 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {finishedData.map((entry, idx) => {
+              {finishedData.map((entry) => {
                 const anomalyData = anomalyMap.get(entry.id);
                 return (
                   <FinishedRow 
                     key={entry.id} 
                     entry={entry} 
-                    rank={idx + 1}
+                    rank={rankMap.get(entry.id) ?? 0}
                     onViewTimeline={handleViewTimeline}
                     anomalyRisk={anomalyData?.risk}
                     anomalyScore={anomalyData?.score}
