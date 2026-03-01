@@ -12,6 +12,7 @@ import { z } from 'zod';
 import { useContentProtection } from '@/hooks/useContentProtection';
 import Watermark from '@/components/Watermark';
 import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
+import SocialMediaWidget from '@/components/SocialMediaWidget';
 
 // Sanitize name by removing dangerous Unicode characters
 const sanitizeName = (name: string): string => {
@@ -258,6 +259,11 @@ const Results = () => {
             <Button variant="outline" onClick={() => navigate('/')} className="w-full sm:w-auto text-sm">
               Kembali
             </Button>
+          </div>
+
+          {/* Social Media Widget */}
+          <div className="mt-4">
+            <SocialMediaWidget />
           </div>
         </Card>
 

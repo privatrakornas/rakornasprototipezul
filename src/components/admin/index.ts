@@ -26,3 +26,4 @@ export { default as WordQuestionImport } from './WordQuestionImport';
 export { default as QuestionViewer } from './QuestionViewer';
 export { default as PackageExport } from './PackageExport';
 export { default as PackageImport } from './PackageImport';
+export { default as SocialMediaManagement } from './SocialMediaManagement';

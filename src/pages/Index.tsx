@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Loader2, Shield } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import logoRakornas from '@/assets/logo-rakornas.jpg';
+import SocialMediaWidget from '@/components/SocialMediaWidget';
 
 const Index = () => {
   const [name, setName] = useState('');
@@ -141,6 +142,10 @@ const Index = () => {
             </p>
           </div>
 
+          {/* Social Media Widget */}
+          <div className="mt-4">
+            <SocialMediaWidget />
+          </div>
         </Card>
       </main>
 
