@@ -1,4 +1,4 @@
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback, useRef } from 'react';
 import { Table, TableBody, TableHead, TableHeader, TableRow, TableCell } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -185,13 +185,13 @@ const getAnomalyBadge = (risk: string, score: number, isLightText: boolean) => {
   return null;
 };
 
-const FinishedRow = memo(({ entry, rank, onViewTimeline, anomalyRisk, anomalyScore }: FinishedRowProps) => {
+const FinishedRow = memo(({ entry, rank, onViewTimeline, anomalyRisk, anomalyScore, isHighlighted }: FinishedRowProps & { isHighlighted?: boolean }) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
   const hasNavigationLog = entry.navigation_log && Array.isArray(entry.navigation_log) && entry.navigation_log.length > 0;
   
   return (
-    <TableRow key={entry.id} className={rowClass}>
+    <TableRow key={entry.id} id={`user-row-${entry.id}`} className={`${rowClass} ${isHighlighted ? 'search-highlight-row' : ''}`}>
       <TableCell className="flex items-center justify-center py-2">
         {getRankIcon(rank)}
       </TableCell>
@@ -286,6 +286,8 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntry | null>(null);
   const [timelineModalOpen, setTimelineModalOpen] = useState(false);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Precompute anomaly analysis for all entries - do this before filtering
   const anomalyMap = useMemo(() => {
@@ -326,15 +328,9 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     return map;
   }, [allFinishedSorted]);
 
-  // Then: filter while preserving original ranks
+  // Filter by status, date, risk ONLY (search does NOT filter - it jump-to-row)
   const finishedData = useMemo(() => {
     return allFinishedSorted.filter(e => {
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase();
-        if (!e.name.toLowerCase().includes(query)) return false;
-      }
-      
       // Passing status filter
       if (statusFilter !== 'all') {
         const lulus = isLulus(e);
@@ -368,7 +364,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
       
       return true;
     });
-  }, [allFinishedSorted, searchQuery, statusFilter, riskFilter, anomalyMap, dateFrom, dateTo]);
+  }, [allFinishedSorted, statusFilter, riskFilter, anomalyMap, dateFrom, dateTo]);
 
   // Count high-risk entries
   const highRiskCount = useMemo(() => {
@@ -388,6 +384,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     setRiskFilter('all');
     setDateFrom(undefined);
     setDateTo(undefined);
+    setHighlightedId(null);
   }, []);
 
   const handleViewTimeline = useCallback((entry: LeaderboardEntry) => {
@@ -395,7 +392,26 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
     setTimelineModalOpen(true);
   }, []);
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all' || riskFilter !== 'all' || dateFrom || dateTo;
+  // Jump-to-row search handler
+  const handleSearch = useCallback(() => {
+    if (!searchQuery.trim()) return;
+    const query = searchQuery.toLowerCase();
+    const target = finishedData.find(e => e.name.toLowerCase().includes(query));
+    if (!target) {
+      setHighlightedId(null);
+      return;
+    }
+    setHighlightedId(target.id);
+    setTimeout(() => {
+      const row = document.getElementById(`user-row-${target.id}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      setTimeout(() => setHighlightedId(null), 6500);
+    }, 50);
+  }, [searchQuery, finishedData]);
+
+  const hasActiveFilters = statusFilter !== 'all' || riskFilter !== 'all' || dateFrom || dateTo;
 
   const getRiskFilterLabel = () => {
     switch (riskFilter) {
@@ -440,12 +456,14 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
           <Input
             type="text"
-            placeholder="Cari nama..."
+            placeholder="Cari & Enter untuk jump..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             className="h-7 pl-7 text-xs"
           />
         </div>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleSearch}>Cari</Button>
         
         {/* Status Filter */}
         <DropdownMenu>
@@ -587,7 +605,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
       </div>
       
       {/* Table with fixed height and scroll */}
-      <div className="flex-1 overflow-y-auto border border-t-0 bg-background" style={{ maxHeight: '70vh' }}>
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto border border-t-0 bg-background" style={{ maxHeight: '70vh' }}>
         {finishedData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
             <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Belum ada peserta selesai'}</p>
@@ -623,6 +641,7 @@ const LeaderboardFinishedTable = memo(({ data }: LeaderboardFinishedTableProps) 
                     onViewTimeline={handleViewTimeline}
                     anomalyRisk={anomalyData?.risk}
                     anomalyScore={anomalyData?.score}
+                    isHighlighted={highlightedId === entry.id}
                   />
                 );
               })}

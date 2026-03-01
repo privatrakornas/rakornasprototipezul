@@ -373,6 +373,39 @@ export type Database = {
           },
         ]
       }
+      social_media_links: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean
+          link: string
+          platform: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          link?: string
+          platform: string
+          updated_at?: string
+          username?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean
+          link?: string
+          platform?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
       user_answers: {
         Row: {
           answered_at: string

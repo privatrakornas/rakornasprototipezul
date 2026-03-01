@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings, Package } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings, Package, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -29,6 +29,7 @@ import {
   BackupSchedulePanel,
   ScheduledExportPanel,
   ExamPackageManagement,
+  SocialMediaManagement,
 } from '@/components/admin';
 import { BatchActionsPanel } from '@/components/admin/BatchActionsPanel';
 
@@ -349,7 +350,7 @@ const Admin = () => {
         />
 
         <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-8 lg:w-[1400px]">
+          <TabsList className="grid w-full grid-cols-9 lg:w-[1500px]">
             <TabsTrigger value="leaderboard" className="gap-2">
               <Monitor className="w-4 h-4" />
               <span className="hidden sm:inline">Leaderboard</span>
@@ -365,6 +366,10 @@ const Admin = () => {
             <TabsTrigger value="packages" className="gap-2">
               <Package className="w-4 h-4" />
               <span className="hidden sm:inline">Paket Soal</span>
+            </TabsTrigger>
+            <TabsTrigger value="socmed" className="gap-2">
+              <Share2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Sosmed</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2 relative">
               <Bell className="w-4 h-4" />
@@ -432,6 +437,10 @@ const Admin = () => {
 
           <TabsContent value="packages">
             <ExamPackageManagement logAuditAction={logAuditAction} />
+          </TabsContent>
+
+          <TabsContent value="socmed">
+            <SocialMediaManagement />
           </TabsContent>
 
           <TabsContent value="notifications">

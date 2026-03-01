@@ -1,8 +1,10 @@
-import { useState, useMemo, memo, useCallback } from 'react';
+import { useState, useMemo, memo, useCallback, useRef } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,6 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
 import { 
   Trophy, 
   Medal, 
@@ -28,6 +32,7 @@ import {
   X,
   Filter,
   ChevronDown,
+  CalendarIcon,
 } from 'lucide-react';
 import { useRealtimeLeaderboard, isLulus, type LeaderboardEntry } from '@/hooks/useRealtimeLeaderboard';
 import ExamMirrorModal from './ExamMirrorModal';
@@ -79,18 +84,20 @@ const FinishedRow = memo(({
   onNameClick,
   onSoftDelete,
   onPermanentDelete,
+  isHighlighted,
 }: { 
   entry: LeaderboardEntry; 
   rank: number;
   onNameClick: (entry: LeaderboardEntry) => void;
   onSoftDelete: (entry: LeaderboardEntry) => void;
   onPermanentDelete: (entry: LeaderboardEntry) => void;
+  isHighlighted?: boolean;
 }) => {
   const lulus = isLulus(entry);
   const { className: rowClass, isLightText } = getRowStyle(rank, entry);
   
   return (
-    <TableRow className={rowClass}>
+    <TableRow id={`admin-row-${entry.id}`} className={`${rowClass} ${isHighlighted ? 'search-highlight-row' : ''}`}>
       <TableCell className="flex items-center justify-center py-2">
         {getRankIcon(rank)}
       </TableCell>
@@ -174,6 +181,10 @@ const AdminLeaderboardMirror = () => {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'lulus' | 'tidak_lulus'>('all');
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   // Delete action states
   const [softDeleteTarget, setSoftDeleteTarget] = useState<LeaderboardEntry | null>(null);
@@ -205,30 +216,58 @@ const AdminLeaderboardMirror = () => {
     return map;
   }, [allFinishedSorted]);
 
-  // Filter by search and status while preserving original ranks
+  // Filter by status and date only (search does NOT filter - it jump-to-row)
   const finishedData = useMemo(() => {
     return allFinishedSorted.filter(e => {
-      // Search filter
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        if (!e.name.toLowerCase().includes(query)) return false;
-      }
       // Status filter
       if (statusFilter !== 'all') {
         const lulus = isLulus(e);
         if (statusFilter === 'lulus' && !lulus) return false;
         if (statusFilter === 'tidak_lulus' && lulus) return false;
       }
+      // Date filter
+      if (dateFrom && e.created_at) {
+        const entryDate = new Date(e.created_at);
+        if (entryDate < new Date(new Date(dateFrom).setHours(0, 0, 0, 0))) return false;
+      }
+      if (dateTo && e.created_at) {
+        const entryDate = new Date(e.created_at);
+        if (entryDate > new Date(new Date(dateTo).setHours(23, 59, 59, 999))) return false;
+      }
       return true;
     });
-  }, [allFinishedSorted, searchQuery, statusFilter]);
+  }, [allFinishedSorted, statusFilter, dateFrom, dateTo]);
 
-  const hasActiveFilters = searchQuery || statusFilter !== 'all';
+  const hasActiveFilters = statusFilter !== 'all' || dateFrom || dateTo;
 
   const clearFilters = useCallback(() => {
     setSearchQuery('');
     setStatusFilter('all');
+    setHighlightedId(null);
+    setDateFrom(undefined);
+    setDateTo(undefined);
   }, []);
+
+  // Jump-to-row search handler
+  const handleSearch = useCallback(() => {
+    if (!searchQuery.trim()) return;
+    const query = searchQuery.toLowerCase();
+    const target = finishedData.find(e => e.name.toLowerCase().includes(query));
+    if (!target) {
+      setHighlightedId(null);
+      return;
+    }
+    setHighlightedId(target.id);
+    // Scroll to row
+    setTimeout(() => {
+      const row = document.getElementById(`admin-row-${target.id}`);
+      if (row && scrollContainerRef.current) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      // Clear highlight after animation
+      setTimeout(() => setHighlightedId(null), 6500);
+    }, 50);
+  }, [searchQuery, finishedData]);
 
   const handleNameClick = useCallback((entry: LeaderboardEntry) => {
     setSelectedSession(entry);
@@ -372,12 +411,14 @@ const AdminLeaderboardMirror = () => {
               <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="Cari nama peserta..."
+                placeholder="Cari & Enter untuk jump..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="h-7 pl-7 text-xs"
               />
             </div>
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleSearch}>Cari</Button>
 
             {/* Status Filter */}
             <DropdownMenu>
@@ -389,43 +430,50 @@ const AdminLeaderboardMirror = () => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuCheckboxItem
-                  checked={statusFilter === 'all'}
-                  onCheckedChange={() => setStatusFilter('all')}
-                >
-                  Semua Status
+                <DropdownMenuCheckboxItem checked={statusFilter === 'all'} onCheckedChange={() => setStatusFilter('all')}>Semua Status</DropdownMenuCheckboxItem>
+                <DropdownMenuCheckboxItem checked={statusFilter === 'lulus'} onCheckedChange={() => setStatusFilter('lulus')}>
+                  <CheckCircle className="w-3 h-3 mr-1.5 text-green-600" /> Lulus
                 </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={statusFilter === 'lulus'}
-                  onCheckedChange={() => setStatusFilter('lulus')}
-                >
-                  <CheckCircle className="w-3 h-3 mr-1.5 text-green-600" />
-                  Lulus
-                </DropdownMenuCheckboxItem>
-                <DropdownMenuCheckboxItem
-                  checked={statusFilter === 'tidak_lulus'}
-                  onCheckedChange={() => setStatusFilter('tidak_lulus')}
-                >
-                  <XCircle className="w-3 h-3 mr-1.5 text-red-600" />
-                  Tidak Lulus
+                <DropdownMenuCheckboxItem checked={statusFilter === 'tidak_lulus'} onCheckedChange={() => setStatusFilter('tidak_lulus')}>
+                  <XCircle className="w-3 h-3 mr-1.5 text-red-600" /> Tidak Lulus
                 </DropdownMenuCheckboxItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {hasActiveFilters && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                onClick={clearFilters}
-              >
-                <X className="w-3 h-3" />
-                Reset
+            {/* Date From */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant={dateFrom ? 'default' : 'outline'} size="sm" className={cn('h-7 text-xs gap-1', dateFrom && 'bg-primary text-primary-foreground')}>
+                  <CalendarIcon className="w-3 h-3" />
+                  {dateFrom ? format(dateFrom, 'dd/MM/yy') : 'Dari'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+
+            {/* Date To */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant={dateTo ? 'default' : 'outline'} size="sm" className={cn('h-7 text-xs gap-1', dateTo && 'bg-primary text-primary-foreground')}>
+                  <CalendarIcon className="w-3 h-3" />
+                  {dateTo ? format(dateTo, 'dd/MM/yy') : 'Sampai'}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar mode="single" selected={dateTo} onSelect={setDateTo} initialFocus className={cn("p-3 pointer-events-auto")} />
+              </PopoverContent>
+            </Popover>
+
+            {(hasActiveFilters || searchQuery) && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs gap-1 text-muted-foreground hover:text-foreground" onClick={clearFilters}>
+                <X className="w-3 h-3" /> Reset
               </Button>
             )}
           </div>
           
-          <div className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
+          <div ref={scrollContainerRef} className="overflow-y-auto" style={{ maxHeight: '60vh' }}>
             {finishedData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-muted-foreground text-sm gap-2">
                 <p>{hasActiveFilters ? 'Tidak ada hasil sesuai filter' : 'Belum ada peserta selesai'}</p>
@@ -459,6 +507,7 @@ const AdminLeaderboardMirror = () => {
                       onNameClick={handleNameClick}
                       onSoftDelete={handleSoftDelete}
                       onPermanentDelete={handlePermanentDelete}
+                      isHighlighted={highlightedId === entry.id}
                     />
                   ))}
                 </TableBody>

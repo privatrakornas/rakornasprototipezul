@@ -4,6 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Trophy, Loader2, Users } from 'lucide-react';
 import { useRealtimeLeaderboard } from '@/hooks/useRealtimeLeaderboard';
 import LeaderboardFinishedTable from '@/components/LeaderboardFinishedTable';
+import SocialMediaWidget from '@/components/SocialMediaWidget';
 
 const Leaderboard = () => {
   const navigate = useNavigate();
@@ -33,6 +34,11 @@ const Leaderboard = () => {
             <Users className="w-4 h-4" />
             {finishedCount} Peserta
           </div>
+        </div>
+
+        {/* Social Media Widget */}
+        <div className="mt-3">
+          <SocialMediaWidget />
         </div>
       </div>
 
