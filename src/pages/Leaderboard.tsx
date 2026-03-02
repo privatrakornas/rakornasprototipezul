@@ -5,10 +5,12 @@ import { Trophy, Loader2, Users } from 'lucide-react';
 import { useRealtimeLeaderboard } from '@/hooks/useRealtimeLeaderboard';
 import LeaderboardFinishedTable from '@/components/LeaderboardFinishedTable';
 import SocialMediaWidget from '@/components/SocialMediaWidget';
+import { usePageConfig } from '@/hooks/useEditableConfig';
 
 const Leaderboard = () => {
   const navigate = useNavigate();
   const { data, isLoading } = useRealtimeLeaderboard();
+  const { get } = usePageConfig(['leaderboard_title', 'leaderboard_subtitle']);
 
   const finishedCount = data.filter(e => e.status === 'finished').length;
 
@@ -26,8 +28,8 @@ const Leaderboard = () => {
 
       {/* Centered Title Section */}
       <div className="text-center py-4 md:py-6 px-4">
-        <h2 className="text-2xl md:text-4xl font-extrabold uppercase tracking-wide text-primary">RAKORNAS</h2>
-        <p className="text-sm md:text-xl capitalize text-muted-foreground mt-1 md:mt-2">Rangking Topskor Nasional</p>
+        <h2 className="text-2xl md:text-4xl font-extrabold uppercase tracking-wide text-primary">{get('leaderboard_title')}</h2>
+        <p className="text-sm md:text-xl capitalize text-muted-foreground mt-1 md:mt-2">{get('leaderboard_subtitle')}</p>
         
         <div className="flex justify-center gap-4 mt-3">
           <div className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/40 rounded-full text-green-700 dark:text-green-300 text-sm font-medium">

@@ -89,6 +89,33 @@ export type Database = {
         }
         Relationships: []
       }
+      config_history: {
+        Row: {
+          changed_by: string | null
+          config_key: string
+          created_at: string
+          id: string
+          new_value: string
+          old_value: string
+        }
+        Insert: {
+          changed_by?: string | null
+          config_key: string
+          created_at?: string
+          id?: string
+          new_value: string
+          old_value: string
+        }
+        Update: {
+          changed_by?: string | null
+          config_key?: string
+          created_at?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+        }
+        Relationships: []
+      }
       exam_config: {
         Row: {
           config_key: string

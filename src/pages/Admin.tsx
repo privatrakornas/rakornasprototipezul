@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings, Package, Share2 } from 'lucide-react';
+import { Users, Trash2, FileText, BarChart3, Monitor, Bell, Settings, Package, Share2, Pencil } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -30,6 +30,7 @@ import {
   ScheduledExportPanel,
   ExamPackageManagement,
   SocialMediaManagement,
+  AdminLiveEditor,
 } from '@/components/admin';
 import { BatchActionsPanel } from '@/components/admin/BatchActionsPanel';
 
@@ -349,8 +350,12 @@ const Admin = () => {
           }}
         />
 
-        <Tabs defaultValue="leaderboard" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-9 lg:w-[1500px]">
+        <Tabs defaultValue="editor" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-10 lg:w-[1600px]">
+            <TabsTrigger value="editor" className="gap-2">
+              <Pencil className="w-4 h-4" />
+              <span className="hidden sm:inline">Editor</span>
+            </TabsTrigger>
             <TabsTrigger value="leaderboard" className="gap-2">
               <Monitor className="w-4 h-4" />
               <span className="hidden sm:inline">Leaderboard</span>
@@ -393,6 +398,10 @@ const Admin = () => {
               <span className="hidden sm:inline">Audit</span>
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="editor">
+            <AdminLiveEditor />
+          </TabsContent>
 
           <TabsContent value="leaderboard">
             <AdminLeaderboardMirror />

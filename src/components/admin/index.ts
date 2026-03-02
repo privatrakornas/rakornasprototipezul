@@ -27,3 +27,4 @@ export { default as QuestionViewer } from './QuestionViewer';
 export { default as PackageExport } from './PackageExport';
 export { default as PackageImport } from './PackageImport';
 export { default as SocialMediaManagement } from './SocialMediaManagement';
+export { default as AdminLiveEditor } from './AdminLiveEditor';
