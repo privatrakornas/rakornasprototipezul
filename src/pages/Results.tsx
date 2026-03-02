@@ -13,6 +13,7 @@ import { useContentProtection } from '@/hooks/useContentProtection';
 import Watermark from '@/components/Watermark';
 import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
 import SocialMediaWidget from '@/components/SocialMediaWidget';
+import { usePageConfig } from '@/hooks/useEditableConfig';
 
 // Sanitize name by removing dangerous Unicode characters
 const sanitizeName = (name: string): string => {
@@ -84,6 +85,7 @@ const Results = () => {
   const [isSaving, setIsSaving] = useState(false);
   const userName = sessionStorage.getItem('userName') || 'Peserta';
   const { questions: activeQuestions, isLoading: isLoadingQuestions, activePackageName } = useActivePackageQuestions();
+  const { get } = usePageConfig(['results_title', 'results_subtitle']);
   
   // Use active package questions if available, otherwise hardcoded
   const questions = activeQuestions.length > 0 ? activeQuestions : hardcodedQuestions;
@@ -200,8 +202,8 @@ const Results = () => {
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-3 md:py-4">
         <div className="container mx-auto text-center px-4">
-          <h1 className="text-lg md:text-2xl font-bold text-white">HASIL UJIAN</h1>
-          <p className="text-white/80 text-xs md:text-sm">Simulasi CAT SKD - RAKORNAS</p>
+          <h1 className="text-lg md:text-2xl font-bold text-white">{get('results_title')}</h1>
+          <p className="text-white/80 text-xs md:text-sm">{get('results_subtitle')}</p>
         </div>
       </header>
 

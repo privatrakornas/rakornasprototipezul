@@ -2,18 +2,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CheckCircle, Clock, AlertTriangle } from 'lucide-react';
+import { usePageConfig } from '@/hooks/useEditableConfig';
+import DOMPurify from 'dompurify';
 
 const Rules = () => {
   const navigate = useNavigate();
   const userName = sessionStorage.getItem('userName') || 'Peserta';
 
+  const { get } = usePageConfig([
+    'rules_title', 'rules_subtitle', 'rules_time_text', 'rules_start_button',
+  ]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
-      {/* Maroon Header */}
       <header className="metallic-maroon py-4 md:py-5">
         <div className="container mx-auto text-center px-4">
-          <h1 className="text-lg md:text-2xl font-bold text-white">PETUNJUK PENGERJAAN</h1>
-          <p className="text-white/80 text-xs md:text-sm">Simulasi CAT SKD - RAKORNAS</p>
+          <h1 className="text-lg md:text-2xl font-bold text-white">{get('rules_title')}</h1>
+          <p className="text-white/80 text-xs md:text-sm">{get('rules_subtitle')}</p>
         </div>
       </header>
 
@@ -31,9 +36,10 @@ const Rules = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-sm md:text-base text-primary">Waktu Pengerjaan</h3>
-                <p className="text-muted-foreground text-xs md:text-base">
-                  Anda memiliki waktu <strong>100 menit</strong> untuk mengerjakan <strong>110 soal</strong>.
-                </p>
+                <p
+                  className="text-muted-foreground text-xs md:text-base"
+                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(get('rules_time_text'), { ALLOWED_TAGS: ['strong', 'em', 'b', 'i'] }) }}
+                />
               </div>
             </div>
 
@@ -92,7 +98,7 @@ const Rules = () => {
               size="lg" 
               className="px-10 md:px-16 py-4 md:py-5 w-full sm:w-auto text-base md:text-lg font-bold rounded-lg bg-success hover:bg-success/90 text-white shadow-lg"
             >
-              Mulai Ujian
+              {get('rules_start_button')}
             </Button>
           </div>
         </Card>
