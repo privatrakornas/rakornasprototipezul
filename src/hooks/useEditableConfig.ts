@@ -23,6 +23,12 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   // Leaderboard page
   leaderboard_title: 'RAKORNAS',
   leaderboard_subtitle: 'Rangking Topskor Nasional',
+  // System logic
+  system_exam_duration: '100',
+  system_min_submit: '45',
+  system_pg_twk: '65',
+  system_pg_tiu: '80',
+  system_pg_tkp: '166',
 };
 
 export interface ConfigHistoryEntry {
