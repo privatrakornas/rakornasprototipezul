@@ -12,13 +12,11 @@ import { useActivePackageQuestions } from '@/hooks/useActivePackageQuestions';
 import { useNavigationTimeline, type NavigationAction } from '@/hooks/useNavigationTimeline';
 import { useToast } from '@/hooks/use-toast';
 import { useContentProtection } from '@/hooks/useContentProtection';
+import { usePageConfig } from '@/hooks/useEditableConfig';
 import Watermark from '@/components/Watermark';
 import { supabase } from '@/integrations/supabase/client';
 import type { Question } from '@/data/questions';
 
-const EXAM_TIME = 100 * 60; // 100 minutes in seconds
-const MAX_DURATION_MINUTES = 100; // Cap duration at 100 minutes
-const MIN_DURATION_MINUTES = 45; // Minimum 45 minutes before submit
 const STATUS_CHECK_INTERVAL = 10000; // Check status every 10 seconds
 
 // Memoized Question Navigation Grid - prevents re-renders from timer
@@ -88,6 +86,14 @@ QuestionNavGrid.displayName = 'QuestionNavGrid';
 const Exam = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { get: getSystemConfig } = usePageConfig([
+    'system_exam_duration', 'system_min_submit', 'system_pg_twk', 'system_pg_tiu', 'system_pg_tkp',
+  ]);
+
+  const EXAM_TIME = (parseInt(getSystemConfig('system_exam_duration')) || 100) * 60;
+  const MAX_DURATION_MINUTES = Math.floor(EXAM_TIME / 60);
+  const MIN_DURATION_MINUTES = parseInt(getSystemConfig('system_min_submit')) || 45;
+
   const { questions, isLoading: isLoadingQuestions, activePackageName } = useActivePackageQuestions();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});

@@ -9,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Save, RotateCcw, Undo2, Loader2, LogIn, BookOpen, FileText, Trophy, 
-  AlertCircle, Clock, History
+  AlertCircle, Clock, History, Settings
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useEditableConfig, EDITABLE_DEFAULTS, type ConfigHistoryEntry } from '@/hooks/useEditableConfig';
@@ -84,6 +84,13 @@ const PAGE_FIELDS: Record<string, { key: string; label: string; type: 'input' | 
   leaderboard: [
     { key: 'leaderboard_title', label: 'Judul Utama', type: 'input' },
     { key: 'leaderboard_subtitle', label: 'Subtitle', type: 'input' },
+  ],
+  system: [
+    { key: 'system_exam_duration', label: 'Durasi Ujian (menit)', type: 'input', description: 'Waktu ujian dalam menit (10-300)' },
+    { key: 'system_min_submit', label: 'Minimal Submit (menit)', type: 'input', description: 'Waktu minimum sebelum bisa submit' },
+    { key: 'system_pg_twk', label: 'Passing Grade TWK', type: 'input', description: 'Skor minimum TWK (maks 150)' },
+    { key: 'system_pg_tiu', label: 'Passing Grade TIU', type: 'input', description: 'Skor minimum TIU (maks 175)' },
+    { key: 'system_pg_tkp', label: 'Passing Grade TKP', type: 'input', description: 'Skor minimum TKP (maks 225)' },
   ],
 };
 
@@ -196,22 +203,26 @@ const AdminLiveEditor = () => {
       <Card>
         <CardContent className="p-4">
           <Tabs defaultValue="login" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="login" className="gap-1.5 text-xs">
+            <TabsList className="grid w-full grid-cols-5">
+              <TabsTrigger value="login" className="gap-1 text-xs">
                 <LogIn className="w-3.5 h-3.5" />
                 Login
               </TabsTrigger>
-              <TabsTrigger value="rules" className="gap-1.5 text-xs">
+              <TabsTrigger value="rules" className="gap-1 text-xs">
                 <BookOpen className="w-3.5 h-3.5" />
                 Petunjuk
               </TabsTrigger>
-              <TabsTrigger value="results" className="gap-1.5 text-xs">
+              <TabsTrigger value="results" className="gap-1 text-xs">
                 <FileText className="w-3.5 h-3.5" />
                 Hasil
               </TabsTrigger>
-              <TabsTrigger value="leaderboard" className="gap-1.5 text-xs">
+              <TabsTrigger value="leaderboard" className="gap-1 text-xs">
                 <Trophy className="w-3.5 h-3.5" />
                 Leaderboard
+              </TabsTrigger>
+              <TabsTrigger value="system" className="gap-1 text-xs">
+                <Settings className="w-3.5 h-3.5" />
+                Sistem
               </TabsTrigger>
             </TabsList>
 
@@ -254,6 +265,17 @@ const AdminLiveEditor = () => {
                 title="Halaman Leaderboard"
                 icon={<Trophy className="w-4 h-4 text-primary" />}
                 fields={PAGE_FIELDS.leaderboard}
+                drafts={drafts}
+                onDraftChange={handleDraftChange}
+              />
+            </TabsContent>
+
+            <TabsContent value="system">
+              <PageEditor
+                pageKey="system"
+                title="Logika & Konfigurasi Sistem"
+                icon={<Settings className="w-4 h-4 text-primary" />}
+                fields={PAGE_FIELDS.system}
                 drafts={drafts}
                 onDraftChange={handleDraftChange}
               />
