@@ -29,6 +29,9 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   system_pg_twk: '65',
   system_pg_tiu: '80',
   system_pg_tkp: '166',
+  system_twk_count: '30',
+  system_tiu_count: '35',
+  system_tkp_count: '45',
 };
 
 export interface ConfigHistoryEntry {

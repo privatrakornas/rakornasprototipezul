@@ -91,6 +91,9 @@ const PAGE_FIELDS: Record<string, { key: string; label: string; type: 'input' | 
     { key: 'system_pg_twk', label: 'Passing Grade TWK', type: 'input', description: 'Skor minimum TWK (maks 150)' },
     { key: 'system_pg_tiu', label: 'Passing Grade TIU', type: 'input', description: 'Skor minimum TIU (maks 175)' },
     { key: 'system_pg_tkp', label: 'Passing Grade TKP', type: 'input', description: 'Skor minimum TKP (maks 225)' },
+    { key: 'system_twk_count', label: 'Jumlah Soal TWK', type: 'input', description: 'Jumlah soal TWK (default 30)' },
+    { key: 'system_tiu_count', label: 'Jumlah Soal TIU', type: 'input', description: 'Jumlah soal TIU (default 35)' },
+    { key: 'system_tkp_count', label: 'Jumlah Soal TKP', type: 'input', description: 'Jumlah soal TKP (default 45)' },
   ],
 };
 
