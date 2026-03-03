@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { usePageConfig } from '@/hooks/useEditableConfig';
-import DOMPurify from 'dompurify';
+
 
 const Rules = () => {
   const navigate = useNavigate();
@@ -11,8 +11,14 @@ const Rules = () => {
 
   const { get } = usePageConfig([
     'rules_title', 'rules_subtitle', 'rules_time_text', 'rules_start_button',
-    'system_twk_count', 'system_tiu_count', 'system_tkp_count',
+    'system_twk_count', 'system_tiu_count', 'system_tkp_count', 'system_exam_duration',
   ]);
+
+  const twk = parseInt(get('system_twk_count')) || 30;
+  const tiu = parseInt(get('system_tiu_count')) || 35;
+  const tkp = parseInt(get('system_tkp_count')) || 45;
+  const totalSoal = twk + tiu + tkp;
+  const duration = parseInt(get('system_exam_duration')) || 100;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
@@ -37,10 +43,9 @@ const Rules = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-sm md:text-base text-primary">Waktu Pengerjaan</h3>
-                <p
-                  className="text-muted-foreground text-xs md:text-base"
-                  dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(get('rules_time_text'), { ALLOWED_TAGS: ['strong', 'em', 'b', 'i'] }) }}
-                />
+                <p className="text-muted-foreground text-xs md:text-base">
+                  Anda memiliki waktu <strong>{duration} menit</strong> untuk mengerjakan <strong>{totalSoal} soal</strong>.
+                </p>
               </div>
             </div>
 
