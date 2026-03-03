@@ -11,6 +11,7 @@ const Rules = () => {
 
   const { get } = usePageConfig([
     'rules_title', 'rules_subtitle', 'rules_time_text', 'rules_start_button',
+    'system_twk_count', 'system_tiu_count', 'system_tkp_count',
   ]);
 
   return (
@@ -53,15 +54,15 @@ const Rules = () => {
                 <ul className="text-muted-foreground list-none space-y-1 text-xs md:text-base mt-1">
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    TWK (Tes Wawasan Kebangsaan): 30 soal
+                    TWK (Tes Wawasan Kebangsaan): {get('system_twk_count')} soal
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    TIU (Tes Intelegensia Umum): 35 soal
+                    TIU (Tes Intelegensia Umum): {get('system_tiu_count')} soal
                   </li>
                   <li className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-primary"></span>
-                    TKP (Tes Karakteristik Pribadi): 45 soal
+                    TKP (Tes Karakteristik Pribadi): {get('system_tkp_count')} soal
                   </li>
                 </ul>
               </div>
