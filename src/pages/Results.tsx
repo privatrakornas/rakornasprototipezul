@@ -85,7 +85,7 @@ const Results = () => {
   const [isSaving, setIsSaving] = useState(false);
   const userName = sessionStorage.getItem('userName') || 'Peserta';
   const { questions: activeQuestions, isLoading: isLoadingQuestions, activePackageName } = useActivePackageQuestions();
-  const { get } = usePageConfig(['results_title', 'results_subtitle']);
+  const { get } = usePageConfig(['results_title', 'results_subtitle', 'branding_logo_url']);
   
   // Use active package questions if available, otherwise hardcoded
   const questions = activeQuestions.length > 0 ? activeQuestions : hardcodedQuestions;
@@ -201,7 +201,10 @@ const Results = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-3 md:py-4">
-        <div className="container mx-auto text-center px-4">
+        <div className="container mx-auto text-center px-4 flex flex-col items-center">
+          {get('branding_logo_url') && (
+            <img src={get('branding_logo_url')} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain mb-2 rounded" />
+          )}
           <h1 className="text-lg md:text-2xl font-bold text-white">{get('results_title')}</h1>
           <p className="text-white/80 text-xs md:text-sm">{get('results_subtitle')}</p>
         </div>

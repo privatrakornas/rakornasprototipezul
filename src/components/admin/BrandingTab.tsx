@@ -3,7 +3,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Upload, Trash2, Loader2, Image, Palette } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { Upload, Trash2, Loader2, Palette, Eye, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -20,7 +21,7 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
   const handleUpload = async (file: File, configKey: string, folder: string) => {
     if (!file) return;
 
-    const maxSize = configKey === 'branding_favicon_url' ? 1 : 5; // MB
+    const maxSize = configKey === 'branding_favicon_url' ? 1 : 5;
     if (file.size > maxSize * 1024 * 1024) {
       toast.error(`Ukuran file maksimal ${maxSize}MB`);
       return;
@@ -77,11 +78,11 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
             <img
               src={currentUrl}
               alt={label}
-              className={`${previewSize} object-contain rounded border bg-white`}
+              className={`${previewSize} object-contain rounded border bg-background`}
             />
             <div className="flex-1 min-w-0">
               <p className="text-xs truncate text-muted-foreground">{currentUrl.split('/').pop()}</p>
-              <Badge variant="outline" className="text-[10px] mt-1 text-green-600 border-green-300">Aktif</Badge>
+              <Badge variant="outline" className="text-[10px] mt-1 text-emerald-600 border-emerald-300">Aktif</Badge>
             </div>
             <div className="flex gap-1.5">
               <Button
@@ -132,7 +133,6 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
           }}
         />
 
-        {/* Manual URL input */}
         <div className="space-y-1">
           <Label className="text-[10px] text-muted-foreground">Atau masukkan URL langsung:</Label>
           <Input
@@ -145,6 +145,10 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
       </div>
     );
   };
+
+  const logoUrl = drafts['branding_logo_url'] || '';
+  const faviconUrl = drafts['branding_favicon_url'] || '';
+  const siteTitle = drafts['branding_site_title'] || 'RAKORNAS - Simulasi CAT SKD';
 
   return (
     <div className="space-y-6">
@@ -163,7 +167,7 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
         'w-16 h-16'
       )}
 
-      <div className="border-t pt-4" />
+      <Separator />
 
       {renderUploadField(
         'branding_favicon_url',
@@ -175,8 +179,10 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
         'w-10 h-10'
       )}
 
+      <Separator />
+
       {/* Site title */}
-      <div className="border-t pt-4 space-y-1.5">
+      <div className="space-y-1.5">
         <Label htmlFor="branding_site_title" className="text-xs font-medium">Judul Tab Browser</Label>
         <Input
           id="branding_site_title"
@@ -186,6 +192,80 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
           className="h-9 text-sm"
         />
         <p className="text-[10px] text-muted-foreground">Teks yang muncul di judul tab browser</p>
+      </div>
+
+      <Separator />
+
+      {/* Live Preview Section */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 text-primary" />
+          <h4 className="font-semibold text-sm">Live Preview</h4>
+        </div>
+
+        {/* Browser Tab Preview */}
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-muted-foreground">Preview Tab Browser</Label>
+          <div className="border rounded-lg overflow-hidden bg-muted/30">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/60 border-b">
+              <div className="flex gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-destructive/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400/60" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400/60" />
+              </div>
+              <div className="flex items-center gap-1.5 ml-2 px-2 py-1 bg-background rounded text-[10px] max-w-[250px]">
+                {faviconUrl ? (
+                  <img src={faviconUrl} alt="Favicon" className="w-3.5 h-3.5 object-contain flex-shrink-0" />
+                ) : (
+                  <Globe className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                )}
+                <span className="truncate text-foreground">{siteTitle}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Login Header Preview */}
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-muted-foreground">Preview Header Login</Label>
+          <div className="rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #800000 0%, #4a0000 100%)' }}>
+            <div className="flex flex-col items-center py-5 px-4">
+              {logoUrl ? (
+                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-amber-400/40 mb-2 bg-background/10">
+                  <img src={logoUrl} alt="Logo Preview" className="w-full h-full object-cover" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 rounded-full border-2 border-dashed border-white/30 mb-2 flex items-center justify-center">
+                  <span className="text-[10px] text-white/50">Logo</span>
+                </div>
+              )}
+              <span className="text-white font-bold text-sm tracking-wider">
+                {drafts['login_title'] || 'RAKORNAS'}
+              </span>
+              <span className="text-white/70 text-[10px]">
+                {drafts['login_subtitle'] || 'By Zulkarnain Sinaga'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Header Preview */}
+        <div className="space-y-1.5">
+          <Label className="text-[10px] text-muted-foreground">Preview Header Hasil</Label>
+          <div className="rounded-lg overflow-hidden" style={{ background: 'linear-gradient(135deg, #800000 0%, #4a0000 100%)' }}>
+            <div className="flex flex-col items-center py-3 px-4">
+              {logoUrl && (
+                <img src={logoUrl} alt="Logo Preview" className="w-8 h-8 object-contain mb-1.5 rounded" />
+              )}
+              <span className="text-white font-bold text-xs">
+                {drafts['results_title'] || 'HASIL UJIAN'}
+              </span>
+              <span className="text-white/70 text-[10px]">
+                {drafts['results_subtitle'] || 'Simulasi CAT SKD - RAKORNAS'}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
