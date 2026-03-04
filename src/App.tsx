@@ -11,12 +11,17 @@ import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { useDynamicFavicon } from "./hooks/useDynamicFavicon";
+import { useDynamicTitle } from "./hooks/useDynamicTitle";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
+const AppContent = () => {
+  useDynamicFavicon();
+  useDynamicTitle();
+  
+  return (
+    <>
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -30,6 +35,14 @@ const App = () => (
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
+    </>
+  );
+};
+
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <AppContent />
     </TooltipProvider>
   </QueryClientProvider>
 );
