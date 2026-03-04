@@ -19,6 +19,7 @@ const Index = () => {
   const { get } = usePageConfig([
     'login_title', 'login_subtitle', 'login_form_title',
     'login_name_label', 'login_pin_label', 'login_button_text', 'login_warning_text',
+    'branding_logo_url',
   ]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -78,7 +79,7 @@ const Index = () => {
       <header className="py-6 md:py-10">
         <div className="container mx-auto px-4 flex flex-col items-center">
           <div className="logo-frame w-24 h-24 md:w-36 md:h-36 mb-3 md:mb-5">
-            <img src={logoRakornas} alt="Logo RAKORNAS" className="w-full h-full object-cover" />
+            <img src={get('branding_logo_url') || logoRakornas} alt="Logo" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl md:text-4xl font-bold text-white tracking-wider">{get('login_title')}</h1>
           <p className="text-white/70 text-sm md:text-base mt-1">{get('login_subtitle')}</p>
