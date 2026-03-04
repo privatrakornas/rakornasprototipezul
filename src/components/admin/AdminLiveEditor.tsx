@@ -9,9 +9,10 @@ import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Save, RotateCcw, Undo2, Loader2, LogIn, BookOpen, FileText, Trophy, 
-  AlertCircle, Clock, History, Settings
+  AlertCircle, Clock, History, Settings, Palette
 } from 'lucide-react';
 import { toast } from 'sonner';
+import BrandingTab from './BrandingTab';
 import { useEditableConfig, EDITABLE_DEFAULTS, type ConfigHistoryEntry } from '@/hooks/useEditableConfig';
 import { format } from 'date-fns';
 
@@ -206,7 +207,7 @@ const AdminLiveEditor = () => {
       <Card>
         <CardContent className="p-4">
           <Tabs defaultValue="login" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="login" className="gap-1 text-xs">
                 <LogIn className="w-3.5 h-3.5" />
                 Login
@@ -226,6 +227,10 @@ const AdminLiveEditor = () => {
               <TabsTrigger value="system" className="gap-1 text-xs">
                 <Settings className="w-3.5 h-3.5" />
                 Sistem
+              </TabsTrigger>
+              <TabsTrigger value="branding" className="gap-1 text-xs">
+                <Palette className="w-3.5 h-3.5" />
+                Branding
               </TabsTrigger>
             </TabsList>
 
@@ -282,6 +287,10 @@ const AdminLiveEditor = () => {
                 drafts={drafts}
                 onDraftChange={handleDraftChange}
               />
+            </TabsContent>
+
+            <TabsContent value="branding">
+              <BrandingTab drafts={drafts} onDraftChange={handleDraftChange} />
             </TabsContent>
           </Tabs>
         </CardContent>

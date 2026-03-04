@@ -32,6 +32,10 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   system_twk_count: '30',
   system_tiu_count: '35',
   system_tkp_count: '45',
+  // Branding
+  branding_logo_url: '',
+  branding_favicon_url: '',
+  branding_site_title: 'RAKORNAS - Simulasi CAT SKD',
 };
 
 export interface ConfigHistoryEntry {
