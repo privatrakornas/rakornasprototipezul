@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { usePageConfig } from '@/hooks/useEditableConfig';
+import logoRakornas from '@/assets/logo-rakornas.jpg';
 
 
 const Rules = () => {
@@ -12,6 +13,7 @@ const Rules = () => {
   const { get } = usePageConfig([
     'rules_title', 'rules_subtitle', 'rules_time_text', 'rules_start_button',
     'system_twk_count', 'system_tiu_count', 'system_tkp_count', 'system_exam_duration',
+    'branding_logo_url',
   ]);
 
   const twk = parseInt(get('system_twk_count')) || 30;
@@ -23,7 +25,10 @@ const Rules = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-4 md:py-5">
-        <div className="container mx-auto text-center px-4">
+        <div className="container mx-auto text-center px-4 flex flex-col items-center">
+          {(get('branding_logo_url') || logoRakornas) && (
+            <img src={get('branding_logo_url') || logoRakornas} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain mb-2 rounded" />
+          )}
           <h1 className="text-lg md:text-2xl font-bold text-white">{get('rules_title')}</h1>
           <p className="text-white/80 text-xs md:text-sm">{get('rules_subtitle')}</p>
         </div>
