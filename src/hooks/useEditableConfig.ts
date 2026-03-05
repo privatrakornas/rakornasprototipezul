@@ -36,6 +36,7 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   branding_logo_url: '',
   branding_favicon_url: '',
   branding_site_title: 'RAKORNAS - Simulasi CAT SKD',
+  branding_theme_mode: 'light',
 };
 
 export interface ConfigHistoryEntry {

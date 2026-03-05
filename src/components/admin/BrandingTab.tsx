@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Trash2, Loader2, Palette, Eye, Globe } from 'lucide-react';
+import { Upload, Trash2, Loader2, Palette, Eye, Globe, Sun, Moon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -196,7 +196,33 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
 
       <Separator />
 
-      {/* Live Preview Section */}
+      {/* Theme Mode */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium">Mode Tema</Label>
+        <p className="text-[10px] text-muted-foreground">Pilih tampilan light atau dark untuk seluruh aplikasi</p>
+        <div className="flex gap-2">
+          <Button
+            variant={drafts['branding_theme_mode'] !== 'dark' ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onDraftChange('branding_theme_mode', 'light')}
+          >
+            <Sun className="w-4 h-4" />
+            Light
+          </Button>
+          <Button
+            variant={drafts['branding_theme_mode'] === 'dark' ? 'default' : 'outline'}
+            size="sm"
+            className="flex-1 gap-2"
+            onClick={() => onDraftChange('branding_theme_mode', 'dark')}
+          >
+            <Moon className="w-4 h-4" />
+            Dark
+          </Button>
+        </div>
+      </div>
+
+      <Separator />
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Eye className="w-4 h-4 text-primary" />

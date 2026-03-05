@@ -6,18 +6,22 @@ import { useRealtimeLeaderboard } from '@/hooks/useRealtimeLeaderboard';
 import LeaderboardFinishedTable from '@/components/LeaderboardFinishedTable';
 import SocialMediaWidget from '@/components/SocialMediaWidget';
 import { usePageConfig } from '@/hooks/useEditableConfig';
+import logoRakornas from '@/assets/logo-rakornas.jpg';
 
 const Leaderboard = () => {
   const navigate = useNavigate();
   const { data, isLoading } = useRealtimeLeaderboard();
-  const { get } = usePageConfig(['leaderboard_title', 'leaderboard_subtitle']);
+  const { get } = usePageConfig(['leaderboard_title', 'leaderboard_subtitle', 'branding_logo_url']);
 
   const finishedCount = data.filter(e => e.status === 'finished').length;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-white to-secondary">
       <header className="metallic-maroon py-3 md:py-4">
-        <div className="container mx-auto text-center px-4">
+        <div className="container mx-auto text-center px-4 flex flex-col items-center">
+          {(get('branding_logo_url') || logoRakornas) && (
+            <img src={get('branding_logo_url') || logoRakornas} alt="Logo" className="w-10 h-10 md:w-14 md:h-14 object-contain mb-2 rounded" />
+          )}
           <h1 className="text-lg md:text-2xl font-bold text-white flex items-center justify-center gap-2">
             <Trophy className="w-5 h-5 md:w-6 md:h-6 text-accent" /> 
             LEADERBOARD

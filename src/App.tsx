@@ -13,12 +13,14 @@ import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useDynamicFavicon } from "./hooks/useDynamicFavicon";
 import { useDynamicTitle } from "./hooks/useDynamicTitle";
+import { useDynamicTheme } from "./hooks/useDynamicTheme";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
   useDynamicFavicon();
   useDynamicTitle();
+  useDynamicTheme();
   
   return (
     <>
