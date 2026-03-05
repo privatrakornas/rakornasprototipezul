@@ -37,6 +37,8 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   branding_favicon_url: '',
   branding_site_title: 'RAKORNAS - Simulasi CAT SKD',
   branding_theme_mode: 'light',
+  branding_primary_color: '#5C0A0F',
+  branding_accent_color: '#D4AF37',
 };
 
 export interface ConfigHistoryEntry {
