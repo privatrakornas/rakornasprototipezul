@@ -4,9 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Upload, Trash2, Loader2, Palette, Eye, Globe, Sun, Moon, Trophy, BookOpen } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Upload, Trash2, Loader2, Palette, Eye, Globe, Sun, Moon, Trophy, BookOpen, RotateCcw, Type } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { GOOGLE_FONTS } from '@/hooks/useDynamicTheme';
 
 interface BrandingTabProps {
   drafts: Record<string, string>;
@@ -132,9 +134,24 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
 
       {/* Custom Colors */}
       <div className="space-y-3">
-        <div className="flex items-center gap-2">
-          <Palette className="w-4 h-4 text-primary" />
-          <h4 className="font-semibold text-sm">Warna Kustom</h4>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Palette className="w-4 h-4 text-primary" />
+            <h4 className="font-semibold text-sm">Warna Kustom</h4>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 gap-1 text-[10px]"
+            onClick={() => {
+              onDraftChange('branding_primary_color', '#5C0A0F');
+              onDraftChange('branding_accent_color', '#D4AF37');
+              toast.info('Warna direset ke default (belum disimpan)');
+            }}
+          >
+            <RotateCcw className="w-3 h-3" />
+            Reset Warna Default
+          </Button>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -157,6 +174,56 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
         <div className="flex gap-2">
           <div className="flex-1 h-8 rounded" style={{ background: primaryColor }} />
           <div className="flex-1 h-8 rounded" style={{ background: accentColor }} />
+        </div>
+      </div>
+
+      <Separator />
+
+      {/* Custom Fonts */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <Type className="w-4 h-4 text-primary" />
+          <h4 className="font-semibold text-sm">Font Kustom</h4>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Font Heading</Label>
+            <p className="text-[10px] text-muted-foreground">Untuk judul (H1-H6)</p>
+            <Select value={drafts['branding_font_heading'] || 'Inter'} onValueChange={(v) => onDraftChange('branding_font_heading', v)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GOOGLE_FONTS.map(f => (
+                  <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Font Body</Label>
+            <p className="text-[10px] text-muted-foreground">Untuk teks konten</p>
+            <Select value={drafts['branding_font_body'] || 'Inter'} onValueChange={(v) => onDraftChange('branding_font_body', v)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GOOGLE_FONTS.map(f => (
+                  <SelectItem key={f} value={f} className="text-xs">{f}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        {/* Font Preview */}
+        <div className="border rounded-lg p-4 bg-muted/20 space-y-2">
+          <p className="text-[10px] text-muted-foreground mb-2">Preview Font</p>
+          <p className="text-lg font-bold" style={{ fontFamily: `"${drafts['branding_font_heading'] || 'Inter'}", sans-serif` }}>
+            Heading: {drafts['branding_font_heading'] || 'Inter'}
+          </p>
+          <p className="text-sm" style={{ fontFamily: `"${drafts['branding_font_body'] || 'Inter'}", sans-serif` }}>
+            Body: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt.
+          </p>
         </div>
       </div>
 
