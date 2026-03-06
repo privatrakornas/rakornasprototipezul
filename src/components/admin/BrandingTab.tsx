@@ -5,20 +5,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Trash2, Loader2, Palette, Eye, Globe, Sun, Moon, Trophy, BookOpen, RotateCcw, Type } from 'lucide-react';
+import { Upload, Trash2, Loader2, Palette, Eye, Globe, Sun, Moon, Trophy, BookOpen, RotateCcw, Type, Download, FileUp, Link } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { GOOGLE_FONTS } from '@/hooks/useDynamicTheme';
+import { EDITABLE_DEFAULTS } from '@/hooks/useEditableConfig';
 
 interface BrandingTabProps {
   drafts: Record<string, string>;
   onDraftChange: (key: string, value: string) => void;
 }
 
+const BRANDING_KEYS = Object.keys(EDITABLE_DEFAULTS).filter(k => k.startsWith('branding_'));
+
 const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
   const [isUploading, setIsUploading] = useState<string | null>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const faviconInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleUpload = async (file: File, configKey: string, folder: string) => {
     if (!file) return;
@@ -46,6 +50,47 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
 
   const handleRemove = (configKey: string) => {
     onDraftChange(configKey, '');
+  };
+
+  // Export branding config as JSON
+  const handleExport = () => {
+    const brandingData: Record<string, string> = {};
+    BRANDING_KEYS.forEach(key => {
+      brandingData[key] = drafts[key] || EDITABLE_DEFAULTS[key] || '';
+    });
+    const blob = new Blob([JSON.stringify(brandingData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `branding-config-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Konfigurasi branding berhasil diekspor');
+  };
+
+  // Import branding config from JSON
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const data = JSON.parse(ev.target?.result as string);
+        if (typeof data !== 'object' || data === null) throw new Error('Invalid format');
+        let count = 0;
+        Object.entries(data).forEach(([key, value]) => {
+          if (BRANDING_KEYS.includes(key) && typeof value === 'string') {
+            onDraftChange(key, value);
+            count++;
+          }
+        });
+        toast.success(`${count} pengaturan branding diimpor (belum disimpan)`);
+      } catch {
+        toast.error('File JSON tidak valid');
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const renderUploadField = (
@@ -95,11 +140,26 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
   const primaryColor = drafts['branding_primary_color'] || '#5C0A0F';
   const accentColor = drafts['branding_accent_color'] || '#D4AF37';
 
+  const headingFontUrl = drafts['branding_font_heading_url'] || '';
+  const bodyFontUrl = drafts['branding_font_body_url'] || '';
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2 mb-3">
-        <Palette className="w-4 h-4 text-primary" />
-        <h4 className="font-semibold text-sm">Branding & Logo</h4>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Palette className="w-4 h-4 text-primary" />
+          <h4 className="font-semibold text-sm">Branding & Logo</h4>
+        </div>
+        {/* Export / Import */}
+        <div className="flex gap-1.5">
+          <Button variant="outline" size="sm" className="h-7 gap-1 text-[10px]" onClick={handleExport}>
+            <Download className="w-3 h-3" /> Export JSON
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 gap-1 text-[10px]" onClick={() => importInputRef.current?.click()}>
+            <FileUp className="w-3 h-3" /> Import JSON
+          </Button>
+          <input ref={importInputRef} type="file" accept=".json,application/json" className="hidden" onChange={handleImport} />
+        </div>
       </div>
 
       {renderUploadField('branding_logo_url', 'Logo Utama', 'Logo yang ditampilkan di header halaman login dan hasil. Format: PNG, JPG, SVG. Maks 5MB.', 'image/png,image/jpeg,image/svg+xml,image/webp', 'logo', logoInputRef, 'w-16 h-16')}
@@ -186,10 +246,11 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
           <h4 className="font-semibold text-sm">Font Kustom</h4>
         </div>
         <div className="grid grid-cols-2 gap-4">
+          {/* Heading Font */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Font Heading</Label>
             <p className="text-[10px] text-muted-foreground">Untuk judul (H1-H6)</p>
-            <Select value={drafts['branding_font_heading'] || 'Inter'} onValueChange={(v) => onDraftChange('branding_font_heading', v)}>
+            <Select value={drafts['branding_font_heading'] || 'Inter'} onValueChange={(v) => { onDraftChange('branding_font_heading', v); onDraftChange('branding_font_heading_url', ''); }}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -199,11 +260,26 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
                 ))}
               </SelectContent>
             </Select>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Link className="w-3 h-3" /> Atau URL Google Fonts:
+              </Label>
+              <Input
+                value={headingFontUrl}
+                onChange={(e) => onDraftChange('branding_font_heading_url', e.target.value)}
+                placeholder="https://fonts.googleapis.com/css2?family=..."
+                className="h-8 text-xs font-mono"
+              />
+              {headingFontUrl && (
+                <p className="text-[10px] text-emerald-600">✓ URL kustom aktif (override dropdown)</p>
+              )}
+            </div>
           </div>
+          {/* Body Font */}
           <div className="space-y-1.5">
             <Label className="text-xs font-medium">Font Body</Label>
             <p className="text-[10px] text-muted-foreground">Untuk teks konten</p>
-            <Select value={drafts['branding_font_body'] || 'Inter'} onValueChange={(v) => onDraftChange('branding_font_body', v)}>
+            <Select value={drafts['branding_font_body'] || 'Inter'} onValueChange={(v) => { onDraftChange('branding_font_body', v); onDraftChange('branding_font_body_url', ''); }}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue />
               </SelectTrigger>
@@ -213,6 +289,20 @@ const BrandingTab = ({ drafts, onDraftChange }: BrandingTabProps) => {
                 ))}
               </SelectContent>
             </Select>
+            <div className="space-y-1">
+              <Label className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Link className="w-3 h-3" /> Atau URL Google Fonts:
+              </Label>
+              <Input
+                value={bodyFontUrl}
+                onChange={(e) => onDraftChange('branding_font_body_url', e.target.value)}
+                placeholder="https://fonts.googleapis.com/css2?family=..."
+                className="h-8 text-xs font-mono"
+              />
+              {bodyFontUrl && (
+                <p className="text-[10px] text-emerald-600">✓ URL kustom aktif (override dropdown)</p>
+              )}
+            </div>
           </div>
         </div>
         {/* Font Preview */}

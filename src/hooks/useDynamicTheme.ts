@@ -42,7 +42,23 @@ function loadGoogleFont(fontFamily: string) {
   document.head.appendChild(link);
 }
 
-export { GOOGLE_FONTS };
+function loadGoogleFontUrl(url: string) {
+  const id = `gfont-custom-${url.replace(/[^a-z0-9]/gi, '-').substring(0, 40)}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = url;
+  document.head.appendChild(link);
+}
+
+function extractFontNameFromUrl(url: string): string | null {
+  const match = url.match(/family=([^&:]+)/);
+  if (!match) return null;
+  return decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+export { GOOGLE_FONTS, loadGoogleFontUrl, extractFontNameFromUrl };
 
 export function useDynamicTheme() {
   const { get, isLoading } = usePageConfig([
@@ -51,6 +67,8 @@ export function useDynamicTheme() {
     'branding_accent_color',
     'branding_font_heading',
     'branding_font_body',
+    'branding_font_heading_url',
+    'branding_font_body_url',
   ]);
 
   useEffect(() => {
@@ -85,12 +103,27 @@ export function useDynamicTheme() {
       }
     }
 
-    // Fonts
-    const headingFont = get('branding_font_heading') || 'Inter';
-    const bodyFont = get('branding_font_body') || 'Inter';
+    // Fonts - support custom URL or dropdown selection
+    const headingFontUrl = get('branding_font_heading_url');
+    const bodyFontUrl = get('branding_font_body_url');
+    let headingFont = get('branding_font_heading') || 'Inter';
+    let bodyFont = get('branding_font_body') || 'Inter';
 
-    if (headingFont !== 'Inter') loadGoogleFont(headingFont);
-    if (bodyFont !== 'Inter' && bodyFont !== headingFont) loadGoogleFont(bodyFont);
+    if (headingFontUrl) {
+      loadGoogleFontUrl(headingFontUrl);
+      const extracted = extractFontNameFromUrl(headingFontUrl);
+      if (extracted) headingFont = extracted;
+    } else if (headingFont !== 'Inter') {
+      loadGoogleFont(headingFont);
+    }
+
+    if (bodyFontUrl) {
+      loadGoogleFontUrl(bodyFontUrl);
+      const extracted = extractFontNameFromUrl(bodyFontUrl);
+      if (extracted) bodyFont = extracted;
+    } else if (bodyFont !== 'Inter' && bodyFont !== headingFont) {
+      loadGoogleFont(bodyFont);
+    }
 
     root.style.setProperty('--font-heading', `"${headingFont}", sans-serif`);
     root.style.setProperty('--font-body', `"${bodyFont}", sans-serif`);
