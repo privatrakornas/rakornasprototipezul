@@ -41,6 +41,8 @@ export const EDITABLE_DEFAULTS: Record<string, string> = {
   branding_accent_color: '#D4AF37',
   branding_font_heading: 'Inter',
   branding_font_body: 'Inter',
+  branding_font_heading_url: '',
+  branding_font_body_url: '',
 };
 
 export interface ConfigHistoryEntry {
