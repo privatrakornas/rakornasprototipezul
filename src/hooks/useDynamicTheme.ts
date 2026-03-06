@@ -26,11 +26,31 @@ function hexToHSL(hex: string): string | null {
   return `${Math.round(h * 360)} ${Math.round(s * 100)}% ${Math.round(l * 100)}%`;
 }
 
+const GOOGLE_FONTS = [
+  'Inter', 'Roboto', 'Open Sans', 'Lato', 'Montserrat', 'Poppins',
+  'Playfair Display', 'Merriweather', 'Raleway', 'Nunito', 'Source Sans 3',
+  'PT Sans', 'Oswald', 'Noto Sans', 'Ubuntu', 'Fira Sans',
+];
+
+function loadGoogleFont(fontFamily: string) {
+  const id = `gfont-${fontFamily.replace(/\s+/g, '-')}`;
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontFamily)}:wght@300;400;500;600;700;800&display=swap`;
+  document.head.appendChild(link);
+}
+
+export { GOOGLE_FONTS };
+
 export function useDynamicTheme() {
   const { get, isLoading } = usePageConfig([
     'branding_theme_mode',
     'branding_primary_color',
     'branding_accent_color',
+    'branding_font_heading',
+    'branding_font_body',
   ]);
 
   useEffect(() => {
@@ -64,5 +84,25 @@ export function useDynamicTheme() {
         root.style.setProperty('--gold', hsl);
       }
     }
+
+    // Fonts
+    const headingFont = get('branding_font_heading') || 'Inter';
+    const bodyFont = get('branding_font_body') || 'Inter';
+
+    if (headingFont !== 'Inter') loadGoogleFont(headingFont);
+    if (bodyFont !== 'Inter' && bodyFont !== headingFont) loadGoogleFont(bodyFont);
+
+    root.style.setProperty('--font-heading', `"${headingFont}", sans-serif`);
+    root.style.setProperty('--font-body', `"${bodyFont}", sans-serif`);
+    document.body.style.fontFamily = `"${bodyFont}", sans-serif`;
+
+    // Apply heading font to h1-h6
+    let style = document.getElementById('dynamic-font-style');
+    if (!style) {
+      style = document.createElement('style');
+      style.id = 'dynamic-font-style';
+      document.head.appendChild(style);
+    }
+    style.textContent = `h1,h2,h3,h4,h5,h6,.font-heading{font-family:var(--font-heading)!important}`;
   }, [isLoading, get]);
 }
