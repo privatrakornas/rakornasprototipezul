@@ -9,6 +9,8 @@ import Exam from "./pages/Exam";
 import Results from "./pages/Results";
 import Leaderboard from "./pages/Leaderboard";
 import Admin from "./pages/Admin";
+import Login from "./pages/Login";
+import OAuthConsent from "./pages/OAuthConsent";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useDynamicFavicon } from "./hooks/useDynamicFavicon";
@@ -34,6 +36,8 @@ const AppContent = () => {
           <Route path="/results" element={<ProtectedRoute><Results /></ProtectedRoute>} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

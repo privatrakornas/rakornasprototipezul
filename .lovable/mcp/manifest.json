@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "sdk_version": "0.26.1",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://wwbywxaferinpovrlpzq.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "cpns-cat-simulator",
+      "version": "0.1.0",
+      "title": "CPNS CAT Simulator"
+    },
+    "tools": [
+      {
+        "name": "get_leaderboard",
+        "title": "Get leaderboard",
+        "description": "Get the CPNS CAT exam leaderboard: participant names, TWK/TIU/TKP scores, total score and duration, ranked best-first.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "description": "How many entries to return (1-100, default 20)"
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_exam_statistics",
+        "title": "Get exam statistics",
+        "description": "Get aggregate CPNS CAT statistics: number of sessions by status, pass rate against the TWK 65 / TIU 80 / TKP 166 thresholds, and average scores.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_exam_sessions",
+        "title": "List exam sessions",
+        "description": "List CPNS CAT exam sessions with participant name, status, progress and scores. Optionally filter by status or search by participant name.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "description": "Filter by session status, e.g. ongoing, finished, aborted."
+            },
+            "search": {
+              "type": "string",
+              "description": "Case-insensitive participant name search."
+            },
+            "limit": {
+              "type": "integer",
+              "description": "How many sessions to return (1-100, default 25)."
+            }
+          },
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_exam_packages",
+        "title": "List question packages",
+        "description": "List the CPNS CAT question packages (paket soal) with their name, description, question count and whether the package is currently active.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
