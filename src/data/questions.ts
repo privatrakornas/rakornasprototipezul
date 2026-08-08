@@ -1,3 +1,9 @@
+import soal61Img from '@/assets/soal61.png';
+import soal62Img from '@/assets/soal62.png';
+import soal63Img from '@/assets/soal63.png';
+import soal64Img from '@/assets/soal64.png';
+import soal65Img from '@/assets/soal65.png';
+
 export interface Question {
   id: number;
   category: 'TWK' | 'TIU' | 'TKP';
@@ -947,7 +953,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Bentuk love berputar 90˚ berlawanan arah putaran jarum jam dan bergerak 1 langkah searah jarum jam pula. Adapun tanda panah bergerak secara diagonal.',
     hasImage: true,
-    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal61.png',
+    imageUrl: soal61Img,
   },
   {
     id: 62,
@@ -964,7 +970,7 @@ export const questions: Question[] = [
     correctAnswer: 'D',
     explanation: 'Hanya pilihan D yang memiliki lingkaran hitam di sebelah kanan.',
     hasImage: true,
-    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal62.png',
+    imageUrl: soal62Img,
   },
   {
     id: 63,
@@ -981,7 +987,7 @@ export const questions: Question[] = [
     correctAnswer: 'E',
     explanation: 'Pada dua gambar di bawah, tampak pada gambar di sebelah kiri terdapat reposisi gambar U-turn (bentuk putaran balik) dan right-turn (bentuk belok kanan) serta penambahan bentuk lingkaran hitam dari $\\frac{1}{2}$ lingkaran menjadi $\\frac{3}{4}$ lingkaran bila dibandingkan dengan gambar sebelah kiri. Dengan demikian, pada dua gambar di atas pun terjadi perubahan gambar yang sama dengan dua gambar di bawahnya.',
     hasImage: true,
-    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal63.png',
+    imageUrl: soal63Img,
   },
   {
     id: 64,
@@ -998,7 +1004,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Susunan gambar terdiri dari gambar pertama yang berada di paling luar, gambar kedua berada di tengah-tengah di dalam gambar pertama dan gambar ketiga berada di paling dalam dari seluruh gambar. Setiap gambar akan berpindah posisi secara berurutan, gambar pertama dan ketiga akan berubah warna saat pindah posisi, sementara gambar kedua tidak berubah warna saat pindah posisi.',
     hasImage: true,
-    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal64.png',
+    imageUrl: soal64Img,
   },
   {
     id: 65,
@@ -1015,7 +1021,7 @@ export const questions: Question[] = [
     correctAnswer: 'C',
     explanation: 'Setiap gambar berotasi searah jarum jam.',
     hasImage: true,
-    imageUrl: 'https://htoushzrasellolqccwh.supabase.co/storage/v1/object/public/soal-gambar/soal65.png',
+    imageUrl: soal65Img,
   },
 
   // TKP Questions (66-110) - with tiered scoring
