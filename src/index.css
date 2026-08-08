@@ -256,7 +256,7 @@
     @apply bg-destructive/20 text-destructive;
   }
 
-  /* LatexText rendered tables - solid black borders on all cells */
+  /* LatexText rendered tables - solid black borders on all cells, centered content */
   .latex-content table {
     border-collapse: collapse;
     width: 100%;
@@ -271,11 +271,11 @@
   .latex-content th,
   .latex-content td {
     padding: 0.5rem 0.75rem;
-    text-align: left;
+    text-align: center;
+    vertical-align: middle;
   }
 
   .latex-content th {
-    background-color: hsl(var(--muted));
     font-weight: 600;
   }
 }
