@@ -255,6 +255,29 @@
   .score-fail {
     @apply bg-destructive/20 text-destructive;
   }
+
+  /* LatexText rendered tables - solid black borders on all cells */
+  .latex-content table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+
+  .latex-content table,
+  .latex-content th,
+  .latex-content td {
+    border: 1px solid black;
+  }
+
+  .latex-content th,
+  .latex-content td {
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+  }
+
+  .latex-content th {
+    background-color: hsl(var(--muted));
+    font-weight: 600;
+  }
 }
 
 @layer utilities {
