@@ -71,7 +71,7 @@ const LatexText = ({ children, className = '', block = false }: LatexTextProps) 
 
     return (
       <span 
-        className={className}
+        className={`latex-content ${className}`}
         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       />
     );
