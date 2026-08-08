@@ -186,7 +186,7 @@ const QuestionViewer = ({ packageId, packageName, logAuditAction, onQuestionsCha
         .single();
 
       if (currentPackage) {
-        const updateData: Record<string, number> = {
+        const updateData: Partial<{ twk_count: number; tiu_count: number; tkp_count: number; total_questions: number }> = {
           total_questions: currentPackage.total_questions - 1,
         };
         if (question.category === 'TWK') updateData.twk_count = currentPackage.twk_count - 1;
